@@ -1,7 +1,12 @@
 package main
 
-import "github.com/medibloc/panacea-doracle/cmd/doracled/cmd"
+import (
+	"github.com/medibloc/panacea-doracle/cmd/doracled/cmd"
+	"os"
+)
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -7,6 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	NodeKeyFilePath   = "/data/node-key.sealed"
+	OracleKeyFilePath = "/data/oracle-key.sealed"
+)
+
 var (
 	homeDir string
 	rootCmd = &cobra.Command{
@@ -31,4 +36,5 @@ func init() {
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(genOracleKeyCmd)
 }

@@ -1,0 +1,28 @@
+{
+  "exe": "./build/doracled",
+  "key": "private.pem",
+  "debug": true,
+  "heapSize": 512,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 1,
+  "mounts": [
+    {
+      "source": "/home/hansol",
+      "target": "/data",
+      "type": "hostfs",
+      "readOnly": false
+    },
+    {
+      "target": "/tmp",
+      "type": "memfs"
+    }
+  ],
+  "env": [
+    {
+      "name": "HOME",
+      "value": "/data"
+    }
+  ],
+  "files": null
+}

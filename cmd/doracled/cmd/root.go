@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	NodeKeyFilePath   = "/data/node-key.sealed"
-	OracleKeyFilePath = "/data/oracle-key.sealed"
+	NodePrivKeyFilePath   = "/data/node_priv_key.sealed"
+	OraclePrivKeyFilePath = "/data/.doracle/oracle_priv_key.sealed"
+	OraclePubKeyFilePath  = "/data/.doracle/oracle_pub_key.json"
 )
 
 var (

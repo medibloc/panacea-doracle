@@ -13,8 +13,8 @@ type Config struct {
 
 type BaseConfig struct {
 	LogLevel       string `mapstructure:"log-level"`
-	OracleMnemonic string `mapstructure:"doracle-mnemonic"`
-	ListenAddr     string `mapstructure:"laddr"`
+	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
+	ListenAddr     string `mapstructure:"listen_addr"`
 }
 
 type PanaceaConfig struct {

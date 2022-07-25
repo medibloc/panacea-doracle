@@ -14,6 +14,7 @@ type Config struct {
 type BaseConfig struct {
 	LogLevel       string `mapstructure:"log-level"`
 	OracleMnemonic string `mapstructure:"doracle-mnemonic"`
+	ListenAddr     string `mapstructure:"laddr"`
 }
 
 type PanaceaConfig struct {
@@ -30,6 +31,7 @@ func DefaultConfig() *Config {
 		BaseConfig: BaseConfig{
 			LogLevel:       "info",
 			OracleMnemonic: "",
+			ListenAddr:     "127.0.0.1:8080",
 		},
 		Panacea: PanaceaConfig{
 			GRPCAddr: "127.0.0.1:9090",

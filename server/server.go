@@ -22,7 +22,7 @@ func Run(conf *config.Config) error {
 	defer svc.Close()
 
 	server := &http.Server{
-		Addr:         "127.0.0.1:8080",
+		Addr:         conf.ListenAddr,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

@@ -34,7 +34,7 @@ So please be cautious in using this command.`,
 			ok, err := input.GetConfirmation("This can replace the existing oracle-key.sealed file.\nAre you sure to make a new oracle key?", buf, os.Stderr)
 
 			if err != nil || !ok {
-				_, _ = fmt.Fprintf(os.Stderr, "%s\n", "Oracle key generation is canceled")
+				log.Printf("Oracle key generation is canceled.")
 				return err
 			}
 		}
@@ -42,24 +42,28 @@ So please be cautious in using this command.`,
 		// randomly generate a new oracle key
 		oraclePrivKey, err := secp256k1.NewPrivKey()
 		if err != nil {
-			log.Fatalf("failed to generate oracle key: %v", err)
+			log.Errorf("failed to generate oracle key: %v", err)
+			return err
 		}
 
 		// seal and store oracle private key
 		if err := sgx.SealToFile(oraclePrivKey.Serialize(), OraclePrivKeyFilePath); err != nil {
-			log.Fatalf("failed to save oracle key: %v", err)
+			log.Errorf("failed to save oracle key: %v", err)
+			return err
 		}
 
 		// generate oracle key remote report
 		oraclePubKey := oraclePrivKey.PubKey().SerializeCompressed()
 		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKey[:])
 		if err != nil {
+			log.Errorf("failed to generate remote report of oracle key: %v", err)
 			return err
 		}
 
 		// store oracle pub key and its remote report to a file
 		err = saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport)
 		if err != nil {
+			log.Errorf("failed to save oracle pub key and its remote report: %v", err)
 			return err
 		}
 

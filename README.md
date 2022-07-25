@@ -41,8 +41,8 @@ openssl rsa -in private.pem -pubout -out public.pem
 
 ### Setting `enclave.json`
 
-An example of `enclave.json` is given.
-A source directory would be mounted as `/data` in SGX.
+An example of `enclave.json`.
+A source directory is mounted as `/data` in SGX.
 
 ```json
 {
@@ -133,7 +133,9 @@ unset SGX_AESM_ADDR
 ```
 
 Run the binary using `ego` so that it can be run in the secure enclave.
+
 ### generate oracle key
+
 ```bash
 # For the first oracle that generates an oracle key,
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled gen-oracle-key

@@ -39,7 +39,6 @@ So please be cautious in using this command.`,
 
 		// get proper path for oracle key
 		oraclePrivKeyPath, oraclePubKeyPath := getKeyPaths(conf.Enclave.Enable)
-		fmt.Printf(oraclePrivKeyPath)
 
 		// If there is the existing oracle key, double-check for generating a new oracle key
 		if tos.FileExists(oraclePrivKeyPath) {

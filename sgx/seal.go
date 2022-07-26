@@ -8,13 +8,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func SealToFile(data []byte, filePath string) error {
-	sealed, err := ecrypto.SealWithProductKey(data, nil)
+// Seal returns data sealed with unique ID in SGX-enabled environments
+// If SGX is disabled, it returns the data as is.
+func Seal(data []byte, enclaveEnabled bool) ([]byte, error) {
+	if enclaveEnabled {
+		return ecrypto.SealWithUniqueKey(data, nil)
+	} else {
+		return data, nil
+	}
+}
+
+func SealToFile(data []byte, filePath string, enclaveEnabled bool) error {
+	sealedData, err := Seal(data, enclaveEnabled)
 	if err != nil {
-		return fmt.Errorf("failed to seal oracle key: %w", err)
+		return fmt.Errorf("failed to seal oracle private key: %w", err)
 	}
 
-	if err := ioutil.WriteFile(filePath, sealed, 0644); err != nil {
+	if err := ioutil.WriteFile(filePath, sealedData, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", filePath, err)
 	}
 	log.Infof("%s is written successfully", filePath)

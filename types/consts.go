@@ -1,7 +1,18 @@
 package types
 
-const (
-	NodePrivKeyFilePath   = "/data/node_priv_key.sealed"
-	OraclePrivKeyFilePath = "/data/.doracle/oracle_priv_key.sealed"
-	OraclePubKeyFilePath  = "/data/.doracle/oracle_pub_key.json"
+import "path/filepath"
+
+var (
+	DefaultDataDir    = "data"
+	DefaultDoracleDir = ".doracle"
+	DefaultConfigDir  = filepath.Join(DefaultDataDir, DefaultDoracleDir)
+
+	DefaultOraclePrivKeyName = "oracle_priv_key.sealed"
+	DefaultNodePrivKeyName   = "node_priv_key.sealed"
+
+	DefaultOraclePubKeyName = "oracle_pub_key.json"
+
+	DefaultNodePrivKeyFilePath   = filepath.Join(DefaultConfigDir, DefaultNodePrivKeyName)
+	DefaultOraclePrivKeyFilePath = filepath.Join(DefaultConfigDir, DefaultOraclePrivKeyName)
+	DefaultOraclePubKeyFilePath  = filepath.Join(DefaultConfigDir, DefaultOraclePubKeyName)
 )

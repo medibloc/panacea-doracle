@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/input"
+	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto/secp256k1"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -29,8 +31,18 @@ var genOracleKeyCmd = &cobra.Command{
 If the sealed oracle private key exist already, this command will replace the existing one.
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// get config
+		conf, err := config.ReadConfigTOML(getConfigPath())
+		if err != nil {
+			return fmt.Errorf("failed to read config from file: %w", err)
+		}
+
+		// get proper path for oracle key
+		oraclePrivKeyPath, oraclePubKeyPath := getKeyPaths(conf.Enclave.Enable)
+		fmt.Printf(oraclePrivKeyPath)
+
 		// If there is the existing oracle key, double-check for generating a new oracle key
-		if tos.FileExists(types.OraclePrivKeyFilePath) {
+		if tos.FileExists(oraclePrivKeyPath) {
 			buf := bufio.NewReader(os.Stdin)
 			ok, err := input.GetConfirmation("This can replace the existing oracle-key.sealed file.\nAre you sure to make a new oracle key?", buf, os.Stderr)
 
@@ -40,7 +52,7 @@ So please be cautious in using this command.`,
 			}
 		}
 
-		// randomly generate a new oracle key
+		// generate a new oracle key
 		oraclePrivKey, err := secp256k1.NewPrivKey()
 		if err != nil {
 			log.Errorf("failed to generate oracle key: %v", err)
@@ -48,21 +60,21 @@ So please be cautious in using this command.`,
 		}
 
 		// seal and store oracle private key
-		if err := sgx.SealToFile(oraclePrivKey.Serialize(), types.OraclePrivKeyFilePath); err != nil {
-			log.Errorf("failed to save oracle key: %v", err)
+		if err := sgx.SealToFile(oraclePrivKey.Serialize(), oraclePrivKeyPath, conf.Enclave.Enable); err != nil {
+			log.Errorf("failed to write %s: %v", oraclePrivKeyPath, err)
 			return err
 		}
 
 		// generate oracle key remote report
 		oraclePubKey := oraclePrivKey.PubKey().SerializeCompressed()
-		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKey[:])
+		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKey[:], conf.Enclave.Enable)
 		if err != nil {
 			log.Errorf("failed to generate remote report of oracle key: %v", err)
 			return err
 		}
 
 		// store oracle pub key and its remote report to a file
-		err = saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport)
+		err = saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport, oraclePubKeyPath)
 		if err != nil {
 			log.Errorf("failed to save oracle pub key and its remote report: %v", err)
 			return err
@@ -72,7 +84,7 @@ So please be cautious in using this command.`,
 	},
 }
 
-func saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte) error {
+func saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) error {
 	oraclePubKeyData := OraclePubKeyInfo{
 		PublicKey:    base64.StdEncoding.EncodeToString(oraclePubKey),
 		RemoteReport: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),
@@ -83,10 +95,18 @@ func saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte) error {
 		return fmt.Errorf("failed to marshal oracle pub key data: %w", err)
 	}
 
-	err = ioutil.WriteFile(types.OraclePubKeyFilePath, oraclePubKeyFile, 0644)
+	err = ioutil.WriteFile(path, oraclePubKeyFile, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write oracle pub key file: %w", err)
 	}
 
 	return nil
+}
+
+func getKeyPaths(enclaveEnabled bool) (string, string) {
+	if enclaveEnabled {
+		return types.DefaultOraclePrivKeyFilePath, types.DefaultOraclePubKeyFilePath
+	} else {
+		return filepath.Join(homeDir, types.DefaultOraclePrivKeyName), filepath.Join(homeDir, types.DefaultOraclePubKeyName)
+	}
 }

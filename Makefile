@@ -7,7 +7,7 @@ BUILD_FLAGS := -tags "$(build_tags)"
 
 OUT_DIR = ./build
 
-.PHONY: all build test install ego-sign clean
+.PHONY: all build test install clean
 
 all: build test install
 

@@ -38,7 +38,6 @@ grpc-addr = "{{ .Panacea.GRPCAddr }}"
 [enclave]
 
 enable = {{ .Enclave.Enable }}
-attestation-provider-addr = "{{ .Enclave.AttestationProviderAddr }}"
 
 `
 

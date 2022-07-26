@@ -1,9 +1,5 @@
 package config
 
-import (
-	"fmt"
-)
-
 type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
@@ -22,8 +18,7 @@ type PanaceaConfig struct {
 }
 
 type EnclaveConfig struct {
-	Enable                  bool   `mapstructure:"enable"`
-	AttestationProviderAddr string `mapstructure:"attestation-provider-addr"`
+	Enable bool `mapstructure:"enable"`
 }
 
 func DefaultConfig() *Config {
@@ -37,19 +32,12 @@ func DefaultConfig() *Config {
 			GRPCAddr: "127.0.0.1:9090",
 		},
 		Enclave: EnclaveConfig{
-			Enable:                  true,
-			AttestationProviderAddr: "127.0.0.1:9999",
+			Enable: true,
 		},
 	}
 }
 
 func (c *Config) validate() error {
-	if c.Enclave.Enable {
-		if c.Enclave.AttestationProviderAddr == "" {
-			return fmt.Errorf("attestation-provider-addr should be specified if enclave is enabled")
-		}
-	}
-
 	//TODO: validate other configs
 
 	return nil

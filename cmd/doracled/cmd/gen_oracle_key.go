@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -67,7 +68,8 @@ So please be cautious in using this command.`,
 
 		// generate oracle key remote report
 		oraclePubKey := oraclePrivKey.PubKey().SerializeCompressed()
-		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKey[:], conf.Enclave.Enable)
+		oraclePubKeyHash := sha256.Sum256(oraclePubKey)
+		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:], conf.Enclave.Enable)
 		if err != nil {
 			log.Errorf("failed to generate remote report of oracle key: %v", err)
 			return err

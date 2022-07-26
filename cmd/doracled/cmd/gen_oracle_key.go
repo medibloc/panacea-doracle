@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/medibloc/panacea-doracle/crypto/secp256k1"
 	"github.com/medibloc/panacea-doracle/sgx"
+	"github.com/medibloc/panacea-doracle/types"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
@@ -29,7 +30,7 @@ If the sealed oracle private key exist already, this command will replace the ex
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If there is the existing oracle key, double-check for generating a new oracle key
-		if tos.FileExists(OraclePrivKeyFilePath) {
+		if tos.FileExists(types.OraclePrivKeyFilePath) {
 			buf := bufio.NewReader(os.Stdin)
 			ok, err := input.GetConfirmation("This can replace the existing oracle-key.sealed file.\nAre you sure to make a new oracle key?", buf, os.Stderr)
 
@@ -47,7 +48,7 @@ So please be cautious in using this command.`,
 		}
 
 		// seal and store oracle private key
-		if err := sgx.SealToFile(oraclePrivKey.Serialize(), OraclePrivKeyFilePath); err != nil {
+		if err := sgx.SealToFile(oraclePrivKey.Serialize(), types.OraclePrivKeyFilePath); err != nil {
 			log.Errorf("failed to save oracle key: %v", err)
 			return err
 		}
@@ -82,7 +83,7 @@ func saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte) error {
 		return fmt.Errorf("failed to marshal oracle pub key data: %w", err)
 	}
 
-	err = ioutil.WriteFile(OraclePubKeyFilePath, oraclePubKeyFile, 0644)
+	err = ioutil.WriteFile(types.OraclePubKeyFilePath, oraclePubKeyFile, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write oracle pub key file: %w", err)
 	}

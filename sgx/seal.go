@@ -18,6 +18,7 @@ func Seal(data []byte, enclaveEnabled bool) ([]byte, error) {
 	}
 }
 
+// SealToFile seals the data and stores it to file.
 func SealToFile(data []byte, filePath string, enclaveEnabled bool) error {
 	sealedData, err := Seal(data, enclaveEnabled)
 	if err != nil {

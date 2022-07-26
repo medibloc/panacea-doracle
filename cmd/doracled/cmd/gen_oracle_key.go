@@ -19,6 +19,7 @@ import (
 	tos "github.com/tendermint/tendermint/libs/os"
 )
 
+// OraclePubKeyInfo is a struct to store oracle public key and its remote report
 type OraclePubKeyInfo struct {
 	PublicKey    string `json:"public_key"`
 	RemoteReport string `json:"remote_report"`
@@ -73,8 +74,7 @@ So please be cautious in using this command.`,
 		}
 
 		// store oracle pub key and its remote report to a file
-		err = saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport, oraclePubKeyPath)
-		if err != nil {
+		if err = storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport, oraclePubKeyPath); err != nil {
 			log.Errorf("failed to save oracle pub key and its remote report: %v", err)
 			return err
 		}
@@ -83,7 +83,8 @@ So please be cautious in using this command.`,
 	},
 }
 
-func saveOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) error {
+// storeOraclePubKey stores base64-encoded oracle public key and its remote report
+func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) error {
 	oraclePubKeyData := OraclePubKeyInfo{
 		PublicKey:    base64.StdEncoding.EncodeToString(oraclePubKey),
 		RemoteReport: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),

@@ -21,7 +21,6 @@ const DefaultConfigTemplate = `# This is a TOML config file.
 
 log-level = "{{ .BaseConfig.LogLevel }}"
 oracle-mnemonic = "{{ .BaseConfig.OracleMnemonic }}"
-data-encryption-key-file = "{{ .BaseConfig.DataEncryptionKeyFile }}"
 
 ###############################################################################
 ###                         Panacea Configuration                           ###
@@ -38,7 +37,6 @@ grpc-addr = "{{ .Panacea.GRPCAddr }}"
 [enclave]
 
 enable = {{ .Enclave.Enable }}
-attestation-provider-addr = "{{ .Enclave.AttestationProviderAddr }}"
 
 `
 

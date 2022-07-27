@@ -39,8 +39,9 @@ So please be cautious in using this command.`,
 			return fmt.Errorf("failed to read config from file: %w", err)
 		}
 
-		// get proper path for oracle key
-		oraclePrivKeyPath, oraclePubKeyPath := getKeyPaths(conf.Enclave.Enable)
+		// get path for oracle key
+		oraclePrivKeyPath := filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+		oraclePubKeyPath := filepath.Join(homeDir, types.DefaultOraclePubKeyName)
 
 		// If there is the existing oracle key, double-check for generating a new oracle key
 		if tos.FileExists(oraclePrivKeyPath) {
@@ -103,12 +104,4 @@ func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) 
 	}
 
 	return nil
-}
-
-func getKeyPaths(enclaveEnabled bool) (string, string) {
-	if enclaveEnabled {
-		return types.DefaultOraclePrivKeyFilePath, types.DefaultOraclePubKeyFilePath
-	} else {
-		return filepath.Join(homeDir, types.DefaultOraclePrivKeyName), filepath.Join(homeDir, types.DefaultOraclePubKeyName)
-	}
 }

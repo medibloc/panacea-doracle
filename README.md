@@ -78,11 +78,7 @@ A source directory is mounted as `/data` in SGX.
 ## Build
 
 ```bash
-# in SGX-enabled environment,
 make build
-
-# in SGX-disabled environment,
-GO=go make build
 ```
 
 ## EGo Sign
@@ -96,21 +92,13 @@ make ego-sign
 ## Test
 
 ```bash
-# in SGX-enabled environment,
 make test
-
-# in SGX-disabled environment,
-GO=go make test
 ```
 
 ## Installation
 
 ```bash
-# in SGX-enabled environment,
 make install
-
-# in SGX-disabled environment,
-GO=go make install
 ```
 
 ## Initialize
@@ -139,6 +127,24 @@ Run the binary using `ego` so that it can be run in the secure enclave.
 ```bash
 # For the first oracle that generates an oracle key,
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled gen-oracle-key
+```
+
+### verify remote report
+
+You can verify that that key is generated in SGX using the promised binary.
+For that, the public key and its remote report are required.
+
+```json
+{
+  "public_key" : "<base64-encoded-public-key>",
+  "remote_report": "<base64-encoded-remote-report>"
+}
+```
+
+Then, you can verify the remote report.
+
+```bash
+AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled verify-report <remote-report-path>
 ```
 
 Then, two files are generated under `~/.doracle/`

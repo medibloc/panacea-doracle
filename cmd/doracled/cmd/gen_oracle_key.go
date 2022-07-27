@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto/secp256k1"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
@@ -22,8 +21,8 @@ import (
 
 // OraclePubKeyInfo is a struct to store oracle public key and its remote report
 type OraclePubKeyInfo struct {
-	PublicKey    string `json:"public_key"`
-	RemoteReport string `json:"remote_report"`
+	PublicKeyBase64    string `json:"public_key_base_64"`
+	RemoteReportBase64 string `json:"remote_report_base_64"`
 }
 
 var genOracleKeyCmd = &cobra.Command{
@@ -33,12 +32,6 @@ var genOracleKeyCmd = &cobra.Command{
 If the sealed oracle private key exist already, this command will replace the existing one.
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// get config
-		conf, err := config.ReadConfigTOML(getConfigPath())
-		if err != nil {
-			return fmt.Errorf("failed to read config from file: %w", err)
-		}
-
 		// get path for oracle key
 		oraclePrivKeyPath := filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 		oraclePubKeyPath := filepath.Join(homeDir, types.DefaultOraclePubKeyName)
@@ -62,7 +55,7 @@ So please be cautious in using this command.`,
 		}
 
 		// seal and store oracle private key
-		if err := sgx.SealToFile(oraclePrivKey.Serialize(), oraclePrivKeyPath, conf.Enclave.Enable); err != nil {
+		if err := sgx.SealToFile(oraclePrivKey.Serialize(), oraclePrivKeyPath); err != nil {
 			log.Errorf("failed to write %s: %v", oraclePrivKeyPath, err)
 			return err
 		}
@@ -70,7 +63,7 @@ So please be cautious in using this command.`,
 		// generate oracle key remote report
 		oraclePubKey := oraclePrivKey.PubKey().SerializeCompressed()
 		oraclePubKeyHash := sha256.Sum256(oraclePubKey)
-		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:], conf.Enclave.Enable)
+		oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:])
 		if err != nil {
 			log.Errorf("failed to generate remote report of oracle key: %v", err)
 			return err
@@ -89,8 +82,8 @@ So please be cautious in using this command.`,
 // storeOraclePubKey stores base64-encoded oracle public key and its remote report
 func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) error {
 	oraclePubKeyData := OraclePubKeyInfo{
-		PublicKey:    base64.StdEncoding.EncodeToString(oraclePubKey),
-		RemoteReport: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),
+		PublicKeyBase64:    base64.StdEncoding.EncodeToString(oraclePubKey),
+		RemoteReportBase64: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),
 	}
 
 	oraclePubKeyFile, err := json.Marshal(oraclePubKeyData)

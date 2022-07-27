@@ -11,29 +11,24 @@ import (
 )
 
 var verifyReport = &cobra.Command{
-	Use:   "verify-report [report-file-path] [unique-id]",
+	Use:   "verify-report [report-file-path]",
 	Short: "Verify whether the report was properly generated in the SGX environment",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// read oracle remote report
+		// read oracle remote targetReport
 		pubKeyInfo, err := readOracleRemoteReport(args[0])
 		if err != nil {
-			log.Errorf("failed to read remote report: %v", err)
+			log.Errorf("failed to read remote targetReport: %v", err)
 			return err
 		}
 
-		if len(pubKeyInfo.RemoteReport) == 0 {
-			log.Errorf("invalid report: report is empty")
-			return nil
-		}
-
-		pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKey)
+		pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKeyBase64)
 		if err != nil {
 			log.Errorf("failed to decode oracle public key: %v", err)
 			return err
 		}
 
-		report, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReport)
+		targetReport, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReportBase64)
 		if err != nil {
 			log.Errorf("failed to decode oracle remote report: %v", err)
 			return err
@@ -41,12 +36,21 @@ var verifyReport = &cobra.Command{
 
 		// get hash of public key which is used as data
 		pubKeyHash := sha256.Sum256(pubKey)
-		if err := sgx.VerifyRemoteReport(report, pubKeyHash[:], args[1]); err != nil {
+
+		selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
+		if err != nil {
+			log.Errorf("failed to set self-enclave info: %v", err)
+			return err
+		}
+
+		// verify remote report
+		if err := sgx.VerifyRemoteReport(targetReport, pubKeyHash[:], *selfEnclaveInfo); err != nil {
 			log.Errorf("failed to verify report: %v", err)
 			return err
 		}
 
-		log.Printf("report verification success")
+		log.Infof("report verification success")
+
 		return nil
 	},
 }

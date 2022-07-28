@@ -78,7 +78,11 @@ A source directory is mounted as `/data` in SGX.
 ## Build
 
 ```bash
+# in SGX-enabled environment,
 make build
+
+# in SGX-disabled environment,
+GO=go make build
 ```
 
 ## EGo Sign
@@ -92,13 +96,21 @@ make ego-sign
 ## Test
 
 ```bash
+# in SGX-enabled environment,
 make test
+
+# in SGX-disabled environment,
+GO=go make test
 ```
 
 ## Installation
 
 ```bash
+# in SGX-enabled environment,
 make install
+
+# in SGX-disabled environment,
+GO=go make install
 ```
 
 ## Initialize

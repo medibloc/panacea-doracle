@@ -143,7 +143,7 @@ AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled gen-oracle-key
 
 ### verify remote report
 
-You can verify that that key is generated in SGX using the promised binary.
+You can verify that key is generated in SGX using the promised binary.
 For that, the public key and its remote report are required.
 
 ```json

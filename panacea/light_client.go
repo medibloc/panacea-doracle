@@ -24,7 +24,7 @@ const blockPeriod = 5 * time.Second
 
 func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trustedHeight int, trustedBlockHash []byte) (c *light.Client, err error) {
 	trustOptions := light.TrustOptions{
-		Period: 365 * 24 * time.Hour,
+		Period: 14 * 24 * time.Hour,
 		Height: int64(trustedHeight),
 		Hash:   trustedBlockHash,
 	}
@@ -34,7 +34,7 @@ func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trusted
 		return nil, err
 	}
 	pvs := []provider.Provider{pv}
-	store := dbs.New(dbm.NewMemDB())
+	store := dbs.New(dbm.NewMemDB(), chainID)
 
 	lc, err := light.NewClient(
 		ctx,
@@ -53,7 +53,7 @@ func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trusted
 func GetStoreData(ctx context.Context, rpcAddr string, lc *light.Client, storeKey string, key bytes.HexBytes, blockHeight int64, ptr codec.ProtoMarshaler) error {
 
 	// connect to rpc client
-	rpcClient, err := httprpc.New(rpcAddr)
+	rpcClient, err := httprpc.New(rpcAddr, "/websocket")
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,35 +23,12 @@ var verifyReport = &cobra.Command{
 			return err
 		}
 
-		pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKeyBase64)
-		if err != nil {
-			log.Errorf("failed to decode oracle public key: %v", err)
-			return err
-		}
-
-		targetReport, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReportBase64)
-		if err != nil {
-			log.Errorf("failed to decode oracle remote report: %v", err)
-			return err
-		}
-
-		// get hash of public key which is used as data
-		pubKeyHash := sha256.Sum256(pubKey)
-
-		selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-		if err != nil {
-			log.Errorf("failed to set self-enclave info: %v", err)
-			return err
-		}
-
-		// verify remote report
-		if err := sgx.VerifyRemoteReport(targetReport, pubKeyHash[:], *selfEnclaveInfo); err != nil {
-			log.Errorf("failed to verify report: %v", err)
+		if err := verifyPubKeyRemoteReport(*pubKeyInfo); err != nil {
+			log.Errorf("failed to verify the public key and its remote report: %v", err)
 			return err
 		}
 
 		log.Infof("report verification success")
-
 		return nil
 	},
 }
@@ -68,4 +46,31 @@ func readOracleRemoteReport(filename string) (*OraclePubKeyInfo, error) {
 	}
 
 	return &pubKeyInfo, nil
+}
+
+func verifyPubKeyRemoteReport(pubKeyInfo OraclePubKeyInfo) error {
+	pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKeyBase64)
+	if err != nil {
+		return fmt.Errorf("failed to decode oracle public key: %v", err)
+	}
+
+	targetReport, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReportBase64)
+	if err != nil {
+		return fmt.Errorf("failed to decode oracle public key remote report: %v", err)
+	}
+
+	// get hash of public key which is used as data
+	pubKeyHash := sha256.Sum256(pubKey)
+
+	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
+	if err != nil {
+		return fmt.Errorf("failed to set self-enclave info: %v", err)
+	}
+
+	// verify remote report
+	if err := sgx.VerifyRemoteReport(targetReport, pubKeyHash[:], *selfEnclaveInfo); err != nil {
+		return fmt.Errorf("failed to verify report: %v", err)
+	}
+
+	return nil
 }

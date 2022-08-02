@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/server"
 	"github.com/spf13/cobra"
 	"time"
@@ -21,6 +22,16 @@ var startCmd = &cobra.Command{
 
 		if err := initLogger(conf); err != nil {
 			return fmt.Errorf("failed to init logger: %w", err)
+		}
+
+		subscriber, err := event.NewSubscriber(conf, "")
+		if err != nil {
+			return err
+		}
+
+		err = subscriber.Run()
+		if err != nil {
+			return err
 		}
 
 		return server.Run(conf)

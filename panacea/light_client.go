@@ -6,7 +6,7 @@ import (
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/cosmos-sdk/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/ibc-go/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
@@ -15,7 +15,6 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	httprpc "github.com/tendermint/tendermint/rpc/client/http"
-
 	dbm "github.com/tendermint/tm-db"
 	"time"
 )
@@ -34,6 +33,11 @@ func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trusted
 		return nil, err
 	}
 	pvs := []provider.Provider{pv}
+	//levelDB,err := db.NewGoLevelDB("oracleDB","dir")
+	//if err != nil{
+	//	return nil, err
+	//}
+	//store := dbs.New(levelDB)
 	store := dbs.New(dbm.NewMemDB(), chainID)
 
 	lc, err := light.NewClient(

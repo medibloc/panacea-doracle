@@ -22,6 +22,7 @@ func Run(conf *config.Config) error {
 	defer svc.Close()
 
 	server := &http.Server{
+		Addr:         conf.ListenAddr,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

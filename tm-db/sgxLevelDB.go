@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -69,20 +70,24 @@ func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
 		return nil, errKeyEmpty
 	}
 	res, err := db.db.Get(key, nil)
-	// add unsealing res
 	if err != nil {
 		if err == errors.ErrNotFound {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return res, nil
+	// unseal data
+	unsealedRes, err := sgx.Unseal(res, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return unsealedRes, nil
 }
 
 // Has implements DB.
 func (db *GoLevelDB) Has(key []byte) (bool, error) {
 	bytes, err := db.Get(key)
-	// add unsealing bytes
 	if err != nil {
 		return false, err
 	}
@@ -97,8 +102,12 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 	if value == nil {
 		return errValueNil
 	}
-	// add seal value
-	if err := db.db.Put(key, value, nil); err != nil {
+	// seal value
+	sealValue, err := sgx.Seal(value, true)
+	if err != nil {
+		return err
+	}
+	if err := db.db.Put(key, sealValue, nil); err != nil {
 		return err
 	}
 	return nil
@@ -112,8 +121,12 @@ func (db *GoLevelDB) SetSync(key []byte, value []byte) error {
 	if value == nil {
 		return errValueNil
 	}
-	// add seal value
-	if err := db.db.Put(key, value, &opt.WriteOptions{Sync: true}); err != nil {
+	// seal value
+	sealValue, err := sgx.Seal(value, true)
+	if err != nil {
+		return err
+	}
+	if err := db.db.Put(key, sealValue, &opt.WriteOptions{Sync: true}); err != nil {
 		return err
 	}
 	return nil
@@ -167,7 +180,11 @@ func (db *GoLevelDB) Print() error {
 		key := itr.Key()
 		value := itr.Value()
 		// unseal value
-		fmt.Printf("[%X]:\t[%X]\n", key, value)
+		unsealValue, err := sgx.Unseal(value, true)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("[%X]:\t[%X]\n", key, unsealValue)
 	}
 	return nil
 }

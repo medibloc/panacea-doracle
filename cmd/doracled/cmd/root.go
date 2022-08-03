@@ -32,4 +32,5 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(genOracleKeyCmd)
+	rootCmd.AddCommand(verifyReport)
 }

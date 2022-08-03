@@ -141,6 +141,24 @@ Run the binary using `ego` so that it can be run in the secure enclave.
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled gen-oracle-key
 ```
 
+### verify remote report
+
+You can verify that key is generated in SGX using the promised binary.
+For that, the public key and its remote report are required.
+
+```json
+{
+  "public_key_base_64" : "<base64-encoded-public-key>",
+  "remote_report_base_64": "<base64-encoded-remote-report>"
+}
+```
+
+Then, you can verify the remote report.
+
+```bash
+AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled verify-report <remote-report-path>
+```
+
 Then, two files are generated under `~/.doracle/`
 - `oracle_priv_key.sealed` : sealed oracle private key
 - `oracle_pub_key.json` : oracle public key & its remote report

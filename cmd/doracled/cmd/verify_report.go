@@ -50,22 +50,22 @@ func readOracleRemoteReport(filename string) (*OraclePubKeyInfo, error) {
 func verifyPubKeyRemoteReport(pubKeyInfo OraclePubKeyInfo) error {
 	pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKeyBase64)
 	if err != nil {
-		return fmt.Errorf("failed to decode oracle public key: %v", err)
+		return fmt.Errorf("failed to decode oracle public key: %w", err)
 	}
 
 	targetReport, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReportBase64)
 	if err != nil {
-		return fmt.Errorf("failed to decode oracle public key remote report: %v", err)
+		return fmt.Errorf("failed to decode oracle public key remote report: %w", err)
 	}
 
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	if err != nil {
-		return fmt.Errorf("failed to set self-enclave info: %v", err)
+		return fmt.Errorf("failed to set self-enclave info: %w", err)
 	}
 
 	// verify remote report
 	if err := sgx.VerifyRemoteReport(targetReport, pubKey, *selfEnclaveInfo); err != nil {
-		return fmt.Errorf("failed to verify report: %v", err)
+		return fmt.Errorf("failed to verify report: %w", err)
 	}
 
 	return nil

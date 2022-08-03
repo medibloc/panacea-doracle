@@ -29,9 +29,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		registerOracleEvent := initEvent()
-
-		err = subscriber.Run(registerOracleEvent)
+		err = subscriber.Run(event.RegisterOracle)
 		if err != nil {
 			return err
 		}
@@ -53,12 +51,4 @@ func initLogger(conf *config.Config) error {
 	})
 
 	return nil
-}
-
-func initEvent() event.RegisterOracleEvent {
-	return event.RegisterOracleEvent{
-		EventType: "register",
-		EventAttributeKey: "oracle",
-		EventAttributeValue: "RegisterOracleEvent",
-	}
 }

@@ -3,8 +3,8 @@ package event
 var _ Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
-	EventType      string
-	EventAttributeKey string
+	EventType           string
+	EventAttributeKey   string
 	EventAttributeValue string
 }
 

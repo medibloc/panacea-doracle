@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"time"
@@ -19,7 +20,13 @@ func NewSubscriber(conf *config.Config, subscriber string) (PanaceaSubscriber, e
 	}, nil
 }
 
-func (s PanaceaSubscriber) Run(event ...Event) error {
+type PanaceaEventStatus int32
+
+const (
+	RegisterOracle PanaceaEventStatus = 1
+)
+
+func (s PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	client, err := rpchttp.New(s.WSAddr, "/websocket")
 	if err != nil {
 		return err
@@ -34,7 +41,9 @@ func (s PanaceaSubscriber) Run(event ...Event) error {
 	defer cancel()
 
 	for _, e := range event {
-		query := e.GetEventType() + "." + e.GetEventAttribute()
+		convertedEvent := convertEventStatusToEvent(e)
+		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
+		fmt.Println(query)
 		txs, err := client.Subscribe(ctx, s.Subscriber, query)
 		if err != nil {
 			return err
@@ -42,10 +51,23 @@ func (s PanaceaSubscriber) Run(event ...Event) error {
 		go func() {
 			select {
 			case <-txs:
-				e.GetEventHandler()
+				fmt.Println(txs)
 			}
 		}()
 	}
 
 	return nil
+}
+
+func convertEventStatusToEvent(e PanaceaEventStatus) Event {
+	switch e {
+	case RegisterOracle:
+		return RegisterOracleEvent{
+			EventType:           "register",
+			EventAttributeKey:   "oracle",
+			EventAttributeValue: "RegisterOracleEvent",
+		}
+	default:
+		return nil
+	}
 }

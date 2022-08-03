@@ -4,26 +4,32 @@ import (
 	"context"
 	"fmt"
 	ics23 "github.com/confio/ics23/go"
-	"github.com/cosmos/cosmos-sdk/codec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
-	"github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
 	"github.com/tendermint/tendermint/light/provider/http"
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
-	httprpc "github.com/tendermint/tendermint/rpc/client/http"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	dbm "github.com/tendermint/tm-db"
 	"time"
 )
 
-const blockPeriod = 6 * time.Second
+type RpcClient struct {
+	RpcClient   *rpchttp.HTTP
+	LightClient *light.Client
+}
 
-func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trustedHeight int, trustedBlockHash []byte) (c *light.Client, err error) {
+func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight int, trustedBlockHash []byte) (*RpcClient, error) {
+	rpcClient, err := rpchttp.New(rpcAddr, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
 	trustOptions := light.TrustOptions{
-		Period: 14 * 24 * time.Hour,
+		Period: 365 * 24 * time.Hour,
 		Height: int64(trustedHeight),
 		Hash:   trustedBlockHash,
 	}
@@ -33,11 +39,6 @@ func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trusted
 		return nil, err
 	}
 	pvs := []provider.Provider{pv}
-	//levelDB,err := db.NewGoLevelDB("oracleDB","dir")
-	//if err != nil{
-	//	return nil, err
-	//}
-	//store := dbs.New(levelDB)
 	store := dbs.New(dbm.NewMemDB(), chainID)
 
 	lc, err := light.NewClient(
@@ -50,57 +51,57 @@ func NewLightClient(ctx context.Context, chainID string, rpcAddr string, trusted
 		light.SkippingVerification(light.DefaultTrustLevel),
 		light.Logger(log.TestingLogger()),
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return lc, nil
+	return &RpcClient{
+		RpcClient:   rpcClient,
+		LightClient: lc,
+	}, nil
 }
 
-func GetStoreData(ctx context.Context, rpcAddr string, lc *light.Client, storeKey string, key bytes.HexBytes, blockHeight int64, ptr codec.ProtoMarshaler) error {
-
-	// connect to rpc client
-	rpcClient, err := httprpc.New(rpcAddr, "/websocket")
+func (q RpcClient) GetStoreData(ctx context.Context, storeKey string, key []byte) ([]byte, error) {
+	trustedBlock, err := q.LightClient.Update(ctx, time.Now())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//set queryOption prove to true
 	option := client.ABCIQueryOptions{
 		Prove:  true,
-		Height: blockHeight,
+		Height: trustedBlock.Height,
 	}
 	// query to kv store with proof option
-	result, err := rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
+	result, err := q.RpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get trustedBlock at blockHeight+1
 	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until next block is confirmed
-	trustedBlock, err := lc.VerifyLightBlockAtHeight(ctx, blockHeight+1, time.Now())
+
+	// wait a creation next block
+	textTrustedBlock, err := q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// verify query result with merkle proof & trusted block info
 	proofOps := result.Response.ProofOps
 	merkleProof, err := types.ConvertProofs(proofOps)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	sdkSpecs := []*ics23.ProofSpec{ics23.IavlSpec, ics23.TendermintSpec}
-	merkleRootKey := types.NewMerkleRoot(trustedBlock.AppHash.Bytes())
+	merkleRootKey := types.NewMerkleRoot(textTrustedBlock.AppHash.Bytes())
 
 	merklePath := types.NewMerklePath(authtypes.StoreKey, string(key))
 	err = merkleProof.VerifyMembership(sdkSpecs, merkleRootKey, merklePath, result.Response.Value)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// convert result to expected data type
-	err = ptr.Unmarshal(result.Response.Value)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return result.Response.Value, nil
 }

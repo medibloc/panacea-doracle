@@ -3,7 +3,9 @@ package event
 type Event interface {
 	GetEventType() string
 
-	GetEventAttribute() string
+	GetEventAttributeKey() string
+
+	GetEventAttributeValue() string
 
 	GetEventHandler()
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -27,6 +28,7 @@ const (
 )
 
 func (s PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
+	log.Infof("Subscribe Panacea Event run")
 	client, err := rpchttp.New(s.WSAddr, "/websocket")
 	if err != nil {
 		return err

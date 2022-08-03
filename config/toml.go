@@ -32,14 +32,6 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
 websocket-addr = "{{ .Panacea.WSAddr }}"
 
-###############################################################################
-###                         Enclave Configuration                           ###
-###############################################################################
-
-[enclave]
-
-enable = {{ .Enclave.Enable }}
-
 `
 
 var configTemplate *template.Template

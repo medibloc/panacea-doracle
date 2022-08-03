@@ -4,7 +4,6 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	Panacea PanaceaConfig `mapstructure:"panacea"`
-	Enclave EnclaveConfig `mapstructure:"enclave"`
 }
 
 type BaseConfig struct {
@@ -18,10 +17,6 @@ type PanaceaConfig struct {
 	WSAddr   string `mapstructure:"websocket-addr"`
 }
 
-type EnclaveConfig struct {
-	Enable bool `mapstructure:"enable"`
-}
-
 func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig: BaseConfig{
@@ -32,9 +27,6 @@ func DefaultConfig() *Config {
 		Panacea: PanaceaConfig{
 			GRPCAddr: "127.0.0.1:9090",
 			WSAddr:   "tcp://127.0.0.1:26657",
-		},
-		Enclave: EnclaveConfig{
-			Enable: true,
 		},
 	}
 }

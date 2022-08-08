@@ -2,7 +2,6 @@ package panacea
 
 import (
 	"context"
-	"fmt"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -16,6 +15,8 @@ type QueryClient struct {
 	interfaceRegistry codectypes.InterfaceRegistry
 }
 
+// NewQueryClient set QueryClient with rpcClient & and returns, if successful,
+// a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHeight int, trustedBlockHash []byte) (*QueryClient, error) {
 	rpcClient, err := NewRpcClient(ctx, chainID, rpcAddr, trustedBlockHeight, trustedBlockHash)
 	if err != nil {
@@ -28,6 +29,10 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}, nil
 }
 
+// Below are examples of query function that use GetStoreData function to verify queried result.
+// Need to set storeKey and key inside the query function, and change type to expected type.
+
+// GetAccount returns account from address.
 func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	acc, err := sdk.GetFromBech32(address, "panacea")
 	if err != nil {
@@ -55,10 +60,11 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	return account, nil
 }
 
-func (c QueryClient) GetBalance(address string) (sdk.Coins, error) {
+// GetBalance returns balance from address.
+func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 	acc, err := sdk.GetFromBech32(address, "panacea")
 	if err != nil {
-		return nil, err
+		return sdk.Coin{}, err
 	}
 
 	var denom = "umed"
@@ -66,25 +72,19 @@ func (c QueryClient) GetBalance(address string) (sdk.Coins, error) {
 
 	bz, err := c.rpcClient.GetStoreData(context.Background(), banktypes.StoreKey, key)
 	if err != nil {
-		return nil, err
-	}
-	fmt.Println("bz: ", bz)
-
-	var balanceAny codectypes.Any
-	err = balanceAny.Unmarshal(bz)
-	if err != nil {
-		return nil, err
+		return sdk.Coin{}, err
 	}
 
-	var balance sdk.Coins
-	err = c.interfaceRegistry.UnpackAny(&balanceAny, &balance)
+	var balance sdk.Coin
+	err = balance.Unmarshal(bz)
 	if err != nil {
-		return nil, err
+		return sdk.Coin{}, err
 	}
 
 	return balance, nil
 }
 
+// GetTopic returns topic from address and topicName.
 func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
 	acc, err := sdk.GetFromBech32(address, "panacea")
 	if err != nil {
@@ -102,11 +102,4 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 	}
 
 	return topic, nil
-}
-
-func cloneAppend(bz []byte, tail []byte) (res []byte) {
-	res = make([]byte, len(bz)+len(tail))
-	copy(res, bz)
-	copy(res[len(bz):], tail)
-	return
 }

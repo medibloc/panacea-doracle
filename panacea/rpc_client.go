@@ -16,11 +16,16 @@ import (
 	"time"
 )
 
+const blockPeriod = 6 * time.Second
+
 type RpcClient struct {
 	RpcClient   *rpchttp.HTTP
 	LightClient *light.Client
 }
 
+// NewRpcClient set RpcClient with trustedBlock Info and returns, if successful,
+// a RpcClient that can be used to query data with light client verification & merkle proof.
+// Period of trustOptions can be changed according to slashing period.
 func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight int, trustedBlockHash []byte) (*RpcClient, error) {
 	rpcClient, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
@@ -60,6 +65,8 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	}, nil
 }
 
+// GetStoreData get data from panacea with storeKey and key, then verify queried data with light client and merkle proof.
+// the returned data type is ResponseQuery.value ([]byte), so recommend to convert to expected type
 func (q RpcClient) GetStoreData(ctx context.Context, storeKey string, key []byte) ([]byte, error) {
 	trustedBlock, err := q.LightClient.Update(ctx, time.Now())
 	if err != nil {
@@ -78,9 +85,9 @@ func (q RpcClient) GetStoreData(ctx context.Context, storeKey string, key []byte
 	}
 
 	// get trustedBlock at blockHeight+1
-	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until next block is confirmed
+	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until the next block is confirmed
 
-	// wait a creation next block
+	// wait a creation of the next block
 	textTrustedBlock, err := q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
 	if err != nil {
 		return nil, err

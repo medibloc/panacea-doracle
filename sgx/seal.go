@@ -33,6 +33,8 @@ func SealToFile(data []byte, filePath string, enclaveEnabled bool) error {
 	return nil
 }
 
+// Unseal returns data unsealed with unique ID in SGX-enabled environments
+// If SGX is disabled, it returns the data as is.
 func Unseal(data []byte, enclaveEnabled bool) ([]byte, error) {
 	if enclaveEnabled {
 		return ecrypto.Unseal(data, nil)

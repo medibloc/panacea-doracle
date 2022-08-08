@@ -31,7 +31,6 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestGetBalance(t *testing.T) {
-
 	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
 	require.NoError(t, err)
 	ctx := context.Background()
@@ -49,16 +48,16 @@ func TestGetBalance(t *testing.T) {
 }
 
 func TestGetTopicLocal(t *testing.T) {
-	hash, err := hex.DecodeString("226F43C4D9962545285E736B64004A83528E36281DB8CC4B7A1C60FECA003832")
+	hash, err := hex.DecodeString("ED4C5A2E788F4D2BD9A17C49A1F2C5738C757A968B05365510F72B8D53ED61DA")
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	queryClient, err := panacea.NewQueryClient(ctx, "local", "http://127.0.0.1:26657", 99, hash)
+	queryClient, err := panacea.NewQueryClient(ctx, "gyuguen-1", "http://127.0.0.1:26657", 18, hash)
 
 	require.NoError(t, err)
 
-	mediblocLimitedAddress := "panacea1crvw2ysrlrtzyk0m2u9m0eq0jrmpf6exxx7sex"
-	topic, err := queryClient.GetTopic(mediblocLimitedAddress, "test")
+	mediblocLimitedAddress := "panacea1h6tpzqt5f9n5qdvh0ux0hfck7vm4fcjvsf0ygw"
+	topic, err := queryClient.GetTopic(mediblocLimitedAddress, "test3")
 	require.NoError(t, err)
 
 	fmt.Println("topic: ", topic.String())

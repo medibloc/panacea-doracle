@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	ics23 "github.com/confio/ics23/go"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
@@ -97,7 +96,7 @@ func (q RpcClient) GetStoreData(ctx context.Context, storeKey string, key []byte
 	sdkSpecs := []*ics23.ProofSpec{ics23.IavlSpec, ics23.TendermintSpec}
 	merkleRootKey := types.NewMerkleRoot(textTrustedBlock.AppHash.Bytes())
 
-	merklePath := types.NewMerklePath(authtypes.StoreKey, string(key))
+	merklePath := types.NewMerklePath(storeKey, string(key))
 	err = merkleProof.VerifyMembership(sdkSpecs, merkleRootKey, merklePath, result.Response.Value)
 	if err != nil {
 		return nil, err

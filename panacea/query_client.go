@@ -62,10 +62,9 @@ func (c QueryClient) GetBalance(address string) (sdk.Coins, error) {
 	}
 
 	var denom = "umed"
-	key := banktypes.CreateAccountBalancesPrefix(acc)
-	newkey := cloneAppend(key, []byte(denom))
+	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
 
-	bz, err := c.rpcClient.GetStoreData(context.Background(), banktypes.StoreKey, newkey)
+	bz, err := c.rpcClient.GetStoreData(context.Background(), banktypes.StoreKey, key)
 	if err != nil {
 		return nil, err
 	}
@@ -93,17 +92,11 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 	}
 
 	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
-	topicKey := compkey.MustEncode(&key)
+	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
 	bz, err := c.rpcClient.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
 
-	var topicAny codectypes.Any
-	err = topicAny.Unmarshal(bz)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
 	var topic aoltypes.Topic
-	err = c.interfaceRegistry.UnpackAny(&topicAny, &topic)
+	err = topic.Unmarshal(bz)
 	if err != nil {
 		return aoltypes.Topic{}, err
 	}

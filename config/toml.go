@@ -31,14 +31,6 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
 
-###############################################################################
-###                         Enclave Configuration                           ###
-###############################################################################
-
-[enclave]
-
-enable = {{ .Enclave.Enable }}
-
 `
 
 var configTemplate *template.Template

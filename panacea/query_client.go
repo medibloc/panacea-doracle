@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/medibloc/panacea-core/v2/types/compkey"
+	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
 )
 
 type QueryClient struct {
@@ -53,15 +55,8 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	return account, nil
 }
 
-func cloneAppend(bz []byte, tail []byte) (res []byte) {
-	res = make([]byte, len(bz)+len(tail))
-	copy(res, bz)
-	copy(res[len(bz):], tail)
-	return
-}
-
-func (c QueryClient) GetBalance(addr string) (sdk.Coins, error) {
-	acc, err := sdk.GetFromBech32(addr, "panacea")
+func (c QueryClient) GetBalance(address string) (sdk.Coins, error) {
+	acc, err := sdk.GetFromBech32(address, "panacea")
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +84,36 @@ func (c QueryClient) GetBalance(addr string) (sdk.Coins, error) {
 	}
 
 	return balance, nil
+}
+
+func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
+	acc, err := sdk.GetFromBech32(address, "panacea")
+	if err != nil {
+		return aoltypes.Topic{}, err
+	}
+
+	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
+	topicKey := compkey.MustEncode(&key)
+	bz, err := c.rpcClient.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
+
+	var topicAny codectypes.Any
+	err = topicAny.Unmarshal(bz)
+	if err != nil {
+		return aoltypes.Topic{}, err
+	}
+
+	var topic aoltypes.Topic
+	err = c.interfaceRegistry.UnpackAny(&topicAny, &topic)
+	if err != nil {
+		return aoltypes.Topic{}, err
+	}
+
+	return topic, nil
+}
+
+func cloneAppend(bz []byte, tail []byte) (res []byte) {
+	res = make([]byte, len(bz)+len(tail))
+	copy(res, bz)
+	copy(res[len(bz):], tail)
+	return
 }

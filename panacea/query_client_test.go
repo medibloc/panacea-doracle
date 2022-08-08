@@ -47,3 +47,19 @@ func TestGetBalance(t *testing.T) {
 	fmt.Println("balance: ", balance.String())
 
 }
+
+func TestGetTopicLocal(t *testing.T) {
+	hash, err := hex.DecodeString("226F43C4D9962545285E736B64004A83528E36281DB8CC4B7A1C60FECA003832")
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	queryClient, err := panacea.NewQueryClient(ctx, "local", "http://127.0.0.1:26657", 99, hash)
+
+	require.NoError(t, err)
+
+	mediblocLimitedAddress := "panacea1crvw2ysrlrtzyk0m2u9m0eq0jrmpf6exxx7sex"
+	topic, err := queryClient.GetTopic(mediblocLimitedAddress, "test")
+	require.NoError(t, err)
+
+	fmt.Println("topic: ", topic.String())
+}

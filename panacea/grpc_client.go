@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -28,6 +29,7 @@ func makeInterfaceRegistry() sdk.InterfaceRegistry {
 	std.RegisterInterfaces(interfaceRegistry)
 	authtypes.RegisterInterfaces(interfaceRegistry)
 	banktypes.RegisterInterfaces(interfaceRegistry)
+	aoltypes.RegisterInterfaces(interfaceRegistry)
 	return interfaceRegistry
 }
 

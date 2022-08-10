@@ -31,7 +31,7 @@ func TestSgxLevelDB(t *testing.T) {
 	fmt.Println(storedLightBlock)
 
 	// directly get data from DB
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/myongsik/light_client")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "./light_client")
 	require.NoError(t, err)
 	getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", height)), nil)
 	require.NoError(t, err)

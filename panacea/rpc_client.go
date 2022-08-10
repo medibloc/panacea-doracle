@@ -13,7 +13,7 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"os"
+	"io/ioutil"
 	"time"
 )
 
@@ -45,11 +45,18 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	}
 	pvs := []provider.Provider{pv}
 
-	err = os.MkdirAll("/home/light_client", os.ModePerm)
+	dbDir, err := ioutil.TempDir("", "light-client-example")
 	if err != nil {
 		return nil, err
 	}
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/light_client")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+
+	//err = os.MkdirAll("/home/light_client", os.ModePerm)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/light_client")
+
 	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(

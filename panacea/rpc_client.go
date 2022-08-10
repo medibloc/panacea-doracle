@@ -45,12 +45,11 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	}
 	pvs := []provider.Provider{pv}
 
-	err = os.MkdirAll("level_db", 0777)
+	err = os.MkdirAll("/home/light_client", os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
-
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "level_db")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/light_client")
 	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(

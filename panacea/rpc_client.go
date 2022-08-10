@@ -52,7 +52,7 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	//db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
 
 	if _, err := os.Stat("./light_client"); os.IsNotExist(err) {
-		err = os.Mkdir("./light_client", os.ModePerm)
+		err = os.Mkdir("./light_client", 0700)
 		if err != nil {
 			return nil, err
 		}

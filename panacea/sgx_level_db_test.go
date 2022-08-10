@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
@@ -24,16 +27,25 @@ func TestSgxLevelDB(t *testing.T) {
 	lightClient := rpcClient.LightClient
 	lightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
 
+	// get Block info using sgxLevelDB function
 	storedLightBlock, err := lightClient.TrustedLightBlock(height)
 	require.NoError(t, err)
-
 	fmt.Println(storedLightBlock)
 
-	fmt.Println("sealed hash: ", storedLightBlock.Hash())
-	blockHash, err := hex.DecodeString("6DD94FFAFC97EBDC0A5A6A32F532B69D266B6C6597A10E126B90FCE49032FC5C")
-	fmt.Println("block hash: ", blockHash)
-	unsealedHash, err := sgx.Unseal(storedLightBlock.Hash(), true)
+	// directly get data from DB
+	dbDir, err := ioutil.TempDir("", "light-client")
 	require.NoError(t, err)
-	fmt.Println("unsealed hash: ", unsealedHash)
+	defer os.RemoveAll(dbDir)
 
+	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+	require.NoError(t, err)
+	getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", height)), nil)
+	require.NoError(t, err)
+
+	fmt.Println(getFromLevelDB)
+
+	//unseal data from levelDB
+	unsealedBlock, err := sgx.Unseal(getFromLevelDB, true)
+	require.NoError(t, err)
+	fmt.Println(unsealedBlock)
 }

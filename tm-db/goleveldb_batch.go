@@ -68,7 +68,7 @@ func (b *goLevelDBBatch) write(sync bool) error {
 	if b.batch == nil {
 		return errBatchClosed
 	}
-	err := b.db.db.Write(b.batch, &opt.WriteOptions{Sync: sync})
+	err := b.db.Db.Write(b.batch, &opt.WriteOptions{Sync: sync})
 	if err != nil {
 		return err
 	}

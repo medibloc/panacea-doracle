@@ -43,7 +43,7 @@ func init() {
 }
 
 type GoLevelDB struct {
-	db *leveldb.DB
+	Db *leveldb.DB
 }
 
 var _ tmdb.DB = (*GoLevelDB)(nil)
@@ -59,7 +59,7 @@ func NewGoLevelDBWithOpts(name string, dir string, o *opt.Options) (*GoLevelDB, 
 		return nil, err
 	}
 	database := &GoLevelDB{
-		db: db,
+		Db: db,
 	}
 	return database, nil
 }
@@ -69,7 +69,7 @@ func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, errKeyEmpty
 	}
-	res, err := db.db.Get(key, nil)
+	res, err := db.Db.Get(key, nil)
 	if err != nil {
 		if err == errors.ErrNotFound {
 			return nil, nil
@@ -107,7 +107,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 	if err != nil {
 		return err
 	}
-	if err := db.db.Put(key, sealValue, nil); err != nil {
+	if err := db.Db.Put(key, sealValue, nil); err != nil {
 		return err
 	}
 	return nil
@@ -126,7 +126,7 @@ func (db *GoLevelDB) SetSync(key []byte, value []byte) error {
 	if err != nil {
 		return err
 	}
-	if err := db.db.Put(key, sealValue, &opt.WriteOptions{Sync: true}); err != nil {
+	if err := db.Db.Put(key, sealValue, &opt.WriteOptions{Sync: true}); err != nil {
 		return err
 	}
 	return nil
@@ -137,7 +137,7 @@ func (db *GoLevelDB) Delete(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	if err := db.db.Delete(key, nil); err != nil {
+	if err := db.Db.Delete(key, nil); err != nil {
 		return err
 	}
 	return nil
@@ -148,7 +148,7 @@ func (db *GoLevelDB) DeleteSync(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	err := db.db.Delete(key, &opt.WriteOptions{Sync: true})
+	err := db.Db.Delete(key, &opt.WriteOptions{Sync: true})
 	if err != nil {
 		return err
 	}
@@ -156,12 +156,12 @@ func (db *GoLevelDB) DeleteSync(key []byte) error {
 }
 
 func (db *GoLevelDB) DB() *leveldb.DB {
-	return db.db
+	return db.Db
 }
 
 // Close implements DB.
 func (db *GoLevelDB) Close() error {
-	if err := db.db.Close(); err != nil {
+	if err := db.Db.Close(); err != nil {
 		return err
 	}
 	return nil
@@ -169,13 +169,13 @@ func (db *GoLevelDB) Close() error {
 
 // Print implements DB.
 func (db *GoLevelDB) Print() error {
-	str, err := db.db.GetProperty("leveldb.stats")
+	str, err := db.Db.GetProperty("leveldb.stats")
 	if err != nil {
 		return err
 	}
 	fmt.Printf("%v\n", str)
 
-	itr := db.db.NewIterator(nil, nil)
+	itr := db.Db.NewIterator(nil, nil)
 	for itr.Next() {
 		key := itr.Key()
 		value := itr.Value()
@@ -204,7 +204,7 @@ func (db *GoLevelDB) Stats() map[string]string {
 
 	stats := make(map[string]string)
 	for _, key := range keys {
-		str, err := db.db.GetProperty(key)
+		str, err := db.Db.GetProperty(key)
 		if err == nil {
 			stats[key] = str
 		}
@@ -213,7 +213,7 @@ func (db *GoLevelDB) Stats() map[string]string {
 }
 
 func (db *GoLevelDB) ForceCompact(start, limit []byte) error {
-	return db.db.CompactRange(util.Range{Start: start, Limit: limit})
+	return db.Db.CompactRange(util.Range{Start: start, Limit: limit})
 }
 
 // NewBatch implements DB.
@@ -226,7 +226,7 @@ func (db *GoLevelDB) Iterator(start, end []byte) (tmdb.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.Db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
 	return newGoLevelDBIterator(itr, start, end, false), nil
 }
 
@@ -235,6 +235,6 @@ func (db *GoLevelDB) ReverseIterator(start, end []byte) (tmdb.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.Db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
 	return newGoLevelDBIterator(itr, start, end, true), nil
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"io/ioutil"
-	"os"
 	"time"
 )
 
@@ -50,7 +49,6 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(dbDir)
 
 	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
 	store := dbs.New(db, chainID)

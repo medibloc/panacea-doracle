@@ -8,8 +8,6 @@ import (
 	"github.com/medibloc/panacea-doracle/sgx"
 	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 )
@@ -33,11 +31,7 @@ func TestSgxLevelDB(t *testing.T) {
 	fmt.Println(storedLightBlock)
 
 	// directly get data from DB
-	dbDir, err := ioutil.TempDir("", "light-client")
-	require.NoError(t, err)
-	defer os.RemoveAll(dbDir)
-
-	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "level_db")
 	require.NoError(t, err)
 	getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", height)), nil)
 	require.NoError(t, err)

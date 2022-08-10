@@ -5,6 +5,7 @@ import (
 	"fmt"
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -12,7 +13,8 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	dbm "github.com/tendermint/tm-db"
+	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -43,7 +45,15 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 		return nil, err
 	}
 	pvs := []provider.Provider{pv}
-	store := dbs.New(dbm.NewMemDB(), chainID)
+
+	dbDir, err := ioutil.TempDir("", "light-client")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dbDir)
+
+	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(
 		ctx,

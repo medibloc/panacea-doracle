@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/medibloc/panacea-doracle/panacea"
+	"github.com/medibloc/panacea-doracle/sgx"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -29,15 +31,15 @@ func TestSgxLevelDB(t *testing.T) {
 	fmt.Println(storedLightBlock)
 
 	// directly get data from DB
-	//db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/light_client")
-	//require.NoError(t, err)
-	//getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", height)), nil)
-	//require.NoError(t, err)
-	//
-	//fmt.Println(getFromLevelDB)
-	//
-	////unseal data from levelDB
-	//unsealedBlock, err := sgx.Unseal(getFromLevelDB, true)
-	//require.NoError(t, err)
-	//fmt.Println(unsealedBlock)
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "/home/myongsik/light_client")
+	require.NoError(t, err)
+	getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", height)), nil)
+	require.NoError(t, err)
+
+	fmt.Println(getFromLevelDB)
+
+	//unseal data from levelDB
+	unsealedBlock, err := sgx.Unseal(getFromLevelDB, true)
+	require.NoError(t, err)
+	fmt.Println(unsealedBlock)
 }

@@ -29,6 +29,7 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 
 [panacea]
 
+chain-id = "{{ .Panacea.ChainID }}"
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
 
 `

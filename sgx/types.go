@@ -1,9 +1,11 @@
 package sgx
 
 import (
+	"fmt"
 	"github.com/edgelesssys/ego/enclave"
-	log "github.com/sirupsen/logrus"
 )
+
+const dummyData = "dummy-data"
 
 type EnclaveInfo struct {
 	ProductID []byte
@@ -22,16 +24,14 @@ func NewEnclaveInfo(productID, signerID, uniqueID []byte) *EnclaveInfo {
 // GetSelfEnclaveInfo sets EnclaveInfo from self-generated remote report
 func GetSelfEnclaveInfo() (*EnclaveInfo, error) {
 	// generate self-remote-report and get product ID, signer ID, and unique ID
-	reportBz, err := GenerateRemoteReport([]byte(""))
+	reportBz, err := GenerateRemoteReport([]byte(dummyData))
 	if err != nil {
-		log.Errorf("failed to generate self-report: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to generate self-report: %w", err)
 	}
 
 	report, err := enclave.VerifyRemoteReport(reportBz)
 	if err != nil {
-		log.Errorf("failed to retrieve self-report: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve self-report: %w", err)
 	}
 
 	return NewEnclaveInfo(report.ProductID, report.SignerID, report.UniqueID), nil

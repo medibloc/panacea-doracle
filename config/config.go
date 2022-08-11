@@ -13,6 +13,7 @@ type BaseConfig struct {
 }
 
 type PanaceaConfig struct {
+	ChainID  string `mapstructure:"chain-id"`
 	GRPCAddr string `mapstructure:"grpc-addr"`
 }
 
@@ -24,6 +25,7 @@ func DefaultConfig() *Config {
 			ListenAddr:     "127.0.0.1:8080",
 		},
 		Panacea: PanaceaConfig{
+			ChainID:  "",
 			GRPCAddr: "127.0.0.1:9090",
 		},
 	}

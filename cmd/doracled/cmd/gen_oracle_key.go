@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/medibloc/panacea-doracle/crypto/secp256k1"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
 	"github.com/spf13/cobra"
@@ -47,7 +47,7 @@ So please be cautious in using this command.`,
 		}
 
 		// generate a new oracle key
-		oraclePrivKey, err := secp256k1.NewPrivKey()
+		oraclePrivKey, err := crypto.NewPrivKey()
 		if err != nil {
 			log.Errorf("failed to generate oracle key: %v", err)
 			return err

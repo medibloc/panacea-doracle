@@ -7,6 +7,10 @@ import (
 
 const dummyData = "dummy-data"
 
+	"github.com/edgelesssys/ego/enclave"
+	log "github.com/sirupsen/logrus"
+)
+
 type EnclaveInfo struct {
 	ProductID []byte
 	SignerID  []byte

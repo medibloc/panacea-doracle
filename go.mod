@@ -7,7 +7,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/edgelesssys/ego v1.0.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220801040745-dd105e8b9b32
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220811003849-6250c895fc4d
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0

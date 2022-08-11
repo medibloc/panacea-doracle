@@ -57,6 +57,7 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 			return nil, err
 		}
 	}
+
 	db, err := sgxdb.NewGoLevelDB("light-client-db", "data/local/tmp")
 
 	store := dbs.New(db, chainID)

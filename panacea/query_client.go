@@ -11,7 +11,7 @@ import (
 )
 
 type QueryClient struct {
-	rpcClient         *RpcClient
+	RpcClient         *RpcClient
 	interfaceRegistry codectypes.InterfaceRegistry
 }
 
@@ -24,7 +24,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 
 	return &QueryClient{
-		rpcClient:         rpcClient,
+		RpcClient:         rpcClient,
 		interfaceRegistry: makeInterfaceRegistry(),
 	}, nil
 }
@@ -40,7 +40,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	}
 
 	key := authtypes.AddressStoreKey(acc)
-	bz, err := c.rpcClient.GetStoreData(context.Background(), authtypes.StoreKey, key)
+	bz, err := c.RpcClient.GetStoreData(context.Background(), authtypes.StoreKey, key)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 	var denom = "umed"
 	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
 
-	bz, err := c.rpcClient.GetStoreData(context.Background(), banktypes.StoreKey, key)
+	bz, err := c.RpcClient.GetStoreData(context.Background(), banktypes.StoreKey, key)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
@@ -93,7 +93,7 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 
 	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
 	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
-	bz, err := c.rpcClient.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
+	bz, err := c.RpcClient.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
 
 	var topic aoltypes.Topic
 	err = topic.Unmarshal(bz)

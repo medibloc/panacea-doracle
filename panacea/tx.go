@@ -14,7 +14,6 @@ import (
 type TxBuilder struct {
 	client     GrpcClientI
 	marshaller *codec.ProtoCodec
-	chainID    string
 }
 
 func NewTxBuilder(client GrpcClientI) *TxBuilder {

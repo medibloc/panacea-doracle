@@ -51,13 +51,13 @@ func NewRpcClient(ctx context.Context, chainID, rpcAddr string, trustedHeight in
 	//}
 	//db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
 
-	if _, err := os.Stat("home/myongsik/light_client"); os.IsNotExist(err) {
-		err = os.MkdirAll("home/myongsik/light_client", 0700)
+	if _, err := os.Stat("/data/local/tmp"); os.IsNotExist(err) {
+		err = os.MkdirAll("/data/local/tmp", 0700)
 		if err != nil {
 			return nil, err
 		}
 	}
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "home/myongsik/light_client")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "data/local/tmp")
 
 	store := dbs.New(db, chainID)
 

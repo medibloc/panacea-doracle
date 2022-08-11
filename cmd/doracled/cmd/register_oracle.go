@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -13,8 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"path/filepath"
-
-	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 )
 
 const (
@@ -22,8 +22,6 @@ const (
 	FlagTrustedBlockHash   = "trusted-block-hash"
 	FlagAccNum             = "acc-num"
 	FlagIndex              = "index"
-
-	defaultGasLimit = 300000
 )
 
 type TrustedBlockInfo struct {
@@ -80,7 +78,9 @@ func RegisterOracleCmd() *cobra.Command {
 				return err
 			}
 
-			txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), defaultGasLimit, msgRegisterOracle)
+			defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+
+			txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgRegisterOracle)
 			if err != nil {
 				log.Errorf("failed to generate signed Tx bytes: %v", err)
 				return err
@@ -91,7 +91,6 @@ func RegisterOracleCmd() *cobra.Command {
 				return err
 			}
 
-			// TODO: add subscriber of MsgRegisterOracleCompleted event from Panacea (if Tx success)
 			return nil
 		},
 	}
@@ -100,8 +99,8 @@ func RegisterOracleCmd() *cobra.Command {
 	cmd.Flags().Uint32P(FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
 	cmd.Flags().Int64(FlagTrustedBlockHeight, 0, "Trusted block height")
 	cmd.Flags().String(FlagTrustedBlockHash, "", "Trusted block hash")
-	cmd.MarkFlagRequired(FlagTrustedBlockHeight)
-	cmd.MarkFlagRequired(FlagTrustedBlockHash)
+	_ = cmd.MarkFlagRequired(FlagTrustedBlockHeight)
+	_ = cmd.MarkFlagRequired(FlagTrustedBlockHash)
 
 	return cmd
 }

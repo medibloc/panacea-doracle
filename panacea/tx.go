@@ -29,11 +29,13 @@ func NewTxBuilder(client GrpcClientI) *TxBuilder {
 func (tb TxBuilder) GenerateSignedTxBytes(
 	privateKey cryptotypes.PrivKey,
 	gasLimit uint64,
+	feeAmount sdk.Coins,
 	msg ...sdk.Msg,
 ) ([]byte, error) {
 	txConfig := authtx.NewTxConfig(tb.marshaller, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
 	txBuilder := txConfig.NewTxBuilder()
 	txBuilder.SetGasLimit(gasLimit)
+	txBuilder.SetFeeAmount(feeAmount)
 
 	if err := txBuilder.SetMsgs(msg...); err != nil {
 		return nil, err
@@ -49,13 +51,26 @@ func (tb TxBuilder) GenerateSignedTxBytes(
 		return nil, err
 	}
 
+	sigV2 := signing.SignatureV2{
+		PubKey: privateKey.PubKey(),
+		Data: &signing.SingleSignatureData{
+			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+			Signature: nil,
+		},
+		Sequence: signerAccount.GetSequence(),
+	}
+
+	if err := txBuilder.SetSignatures(sigV2); err != nil {
+		return nil, err
+	}
+
 	signerData := authsigning.SignerData{
 		ChainID:       tb.client.GetChainID(),
 		AccountNumber: signerAccount.GetAccountNumber(),
 		Sequence:      signerAccount.GetSequence(),
 	}
 
-	sigV2, err := clienttx.SignWithPrivKey(
+	sigV2, err = clienttx.SignWithPrivKey(
 		signing.SignMode_SIGN_MODE_DIRECT,
 		signerData,
 		txBuilder,
@@ -67,8 +82,7 @@ func (tb TxBuilder) GenerateSignedTxBytes(
 		return nil, err
 	}
 
-	err = txBuilder.SetSignatures(sigV2)
-	if err != nil {
+	if err := txBuilder.SetSignatures(sigV2); err != nil {
 		return nil, err
 	}
 

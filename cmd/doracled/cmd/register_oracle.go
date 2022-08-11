@@ -24,21 +24,12 @@ const (
 	FlagIndex              = "index"
 )
 
-type TrustedBlockInfo struct {
-	Height int64
-	Hash   []byte
-}
-
-type NodeKeyInfo struct {
-	PubKey       []byte
-	RemoteReport []byte
-}
-
 func RegisterOracleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// get config
 			conf, err := config.ReadConfigTOML(getConfigPath())
 			if err != nil {
 				return err
@@ -48,18 +39,21 @@ func RegisterOracleCmd() *cobra.Command {
 				return fmt.Errorf("failed to init logger: %w", err)
 			}
 
+			// get trusted block information
 			height, hash, err := getTrustedBlockInfo(cmd)
 			if err != nil {
 				log.Errorf("failed to get trusted block info: %v", err)
 				return err
 			}
 
+			// get oracle account from mnemonic.
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
 			if err != nil {
 				log.Errorf("failed to get oracle account from mnemonic: %v", err)
 				return err
 			}
 
+			// generate node key and its remote report
 			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
 			if err != nil {
 				log.Errorf("failed to generate node key pair: %v", err)
@@ -105,6 +99,7 @@ func RegisterOracleCmd() *cobra.Command {
 	return cmd
 }
 
+// getTrustedBlockInfo gets trusted block height and hash from cmd flags
 func getTrustedBlockInfo(cmd *cobra.Command) (int64, []byte, error) {
 	trustedBlockHeight, err := cmd.Flags().GetInt64(FlagTrustedBlockHeight)
 	if err != nil {
@@ -130,6 +125,10 @@ func getTrustedBlockInfo(cmd *cobra.Command) (int64, []byte, error) {
 	return trustedBlockHeight, trustedBlockHash, nil
 }
 
+// getOracleAccount gets an oracle account from mnemonic.
+// The account is equal to one that is registered as validator.
+// You can set account number and index optionally.
+// The default value is 0 for both account number and index
 func getOracleAccount(cmd *cobra.Command, mnemonic string) (*panacea.OracleAccount, error) {
 	accNum, err := cmd.Flags().GetUint32(FlagAccNum)
 	if err != nil {
@@ -149,6 +148,8 @@ func getOracleAccount(cmd *cobra.Command, mnemonic string) (*panacea.OracleAccou
 	return oracleAccount, nil
 }
 
+// generateNodeKey generates random node key and its remote report
+// And the generated private key is sealed and stored
 func generateNodeKey() ([]byte, []byte, error) {
 	nodePrivKey, err := crypto.NewPrivKey()
 	if err != nil {
@@ -170,6 +171,7 @@ func generateNodeKey() ([]byte, []byte, error) {
 	return nodePubKey, nodeKeyRemoteReport, nil
 }
 
+// generateGrpcClientAndTxBuilder generates gRPC client and TxBuilder
 func generateGrpcClientAndTxBuilder(conf *config.Config) (panacea.GrpcClientI, *panacea.TxBuilder, error) {
 	cli, err := panacea.NewGrpcClient(conf)
 	if err != nil {

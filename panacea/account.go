@@ -15,6 +15,7 @@ type OracleAccount struct {
 	pubKey  cryptotypes.PubKey
 }
 
+// NewOracleAccount returns an oracle account from mnemonic, account number, and index
 func NewOracleAccount(mnemonic string, accNum, index uint32) (*OracleAccount, error) {
 	if len(mnemonic) == 0 {
 		return &OracleAccount{}, fmt.Errorf("mnemonic is empty")

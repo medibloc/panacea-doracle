@@ -26,6 +26,7 @@ func NewTxBuilder(client GrpcClientI) *TxBuilder {
 	}
 }
 
+// GenerateSignedTxBytes signs msgs using the private key and returns the signed Tx message in form of byte array.
 func (tb TxBuilder) GenerateSignedTxBytes(
 	privateKey cryptotypes.PrivKey,
 	gasLimit uint64,

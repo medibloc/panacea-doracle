@@ -670,6 +670,8 @@ github.com/medibloc/cosmos-sdk v0.45.4-panacea h1:j5IV+xx9S8obSFkqOQwGG3Lt6ErCKq
 github.com/medibloc/cosmos-sdk v0.45.4-panacea/go.mod h1:WOqtDxN3eCCmnYLVla10xG7lEXkFjpTaqm2a2WasgCc=
 github.com/medibloc/panacea-core/v2 v2.0.4 h1:BuM3H7Jpjl6mLyPCDoVwZv51u+haFylxDsc+KkC2dyQ=
 github.com/medibloc/panacea-core/v2 v2.0.4/go.mod h1:tDJ3xmbPeMZ3m31/fKNBrJEaWbCl7gktGC9ntTMTDYQ=
+github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220817080642-e573ad9e16e1 h1:AHz2xOnpIYcf6LNgpRfGKkxTfJVZoeBx5AdQVfv++vo=
+github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220817080642-e573ad9e16e1/go.mod h1:l9fOSt3J2e5jUKrMnd/wD6etXymvoKbByW5f2V4gZu4=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=

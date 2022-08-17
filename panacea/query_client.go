@@ -127,7 +127,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 
 // GetAccount returns account from address.
 func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
-	acc, err := sdk.GetFromBech32(address, "panacea")
+	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 
 // GetBalance returns balance from address.
 func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
-	acc, err := sdk.GetFromBech32(address, "panacea")
+	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
@@ -178,7 +178,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 
 // GetTopic returns topic from address and topicName.
 func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
-	acc, err := sdk.GetFromBech32(address, "panacea")
+	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return aoltypes.Topic{}, err
 	}
@@ -186,6 +186,9 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
 	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
 	bz, err := c.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
+	if err != nil {
+		return aoltypes.Topic{}, err
+	}
 
 	var topic aoltypes.Topic
 	err = topic.Unmarshal(bz)

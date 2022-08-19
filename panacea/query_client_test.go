@@ -3,8 +3,10 @@ package panacea_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/medibloc/panacea-doracle/panacea"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -28,6 +30,13 @@ func TestGetAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, mediblocLimitedAddress, address)
+
+	defer func(db *sgxdb.GoLevelDB) {
+		err := db.Close()
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+		}
+	}(queryClient.Db)
 }
 
 // Test for GetBalance function.

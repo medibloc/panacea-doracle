@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
@@ -47,4 +48,11 @@ func TestSgxLevelDB(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Println("GetFromLevelDB: ", lightBlock)
+
+	defer func(db *sgxdb.GoLevelDB) {
+		err := db.Close()
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+		}
+	}(queryClient.Db)
 }

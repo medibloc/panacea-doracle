@@ -67,13 +67,6 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		return nil, err
 	}
 
-	defer func(db *sgxdb.GoLevelDB) {
-		err := db.Close()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-		}
-	}(db)
-
 	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(

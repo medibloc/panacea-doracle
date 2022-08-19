@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
-	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
+	sgxdb "github.com/medibloc/panacea-doracle/store/sgxLevelDB"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -32,7 +32,6 @@ type QueryClient struct {
 	RpcClient         *rpchttp.HTTP
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
-	Db                *sgxdb.GoLevelDB
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -87,7 +86,6 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
-		Db:                db,
 	}, nil
 }
 

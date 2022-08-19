@@ -1,7 +1,6 @@
-package tm_db
+package sgxLevelDB
 
 import (
-	"fmt"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -24,7 +23,7 @@ func newGoLevelDBBatch(db *GoLevelDB) *goLevelDBBatch {
 
 // Set implements Batch.
 func (b *goLevelDBBatch) Set(key, value []byte) error {
-	fmt.Println("sgxLevelDB set")
+
 	if len(key) == 0 {
 		return errKeyEmpty
 	}

@@ -1,4 +1,7 @@
-package tm_db
+// Package sgxLevelDB implements a light client level db for panacea-doracle.
+// It does include Set & Get functions that are sealed & unsealed in the sgx environment.
+
+package sgxLevelDB
 
 import (
 	"fmt"

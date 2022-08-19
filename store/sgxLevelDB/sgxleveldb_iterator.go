@@ -1,4 +1,4 @@
-package tm_db
+package sgxLevelDB
 
 import (
 	"bytes"

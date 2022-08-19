@@ -32,6 +32,7 @@ type QueryClient struct {
 	RpcClient         *rpchttp.HTTP
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
+	Db                *sgxdb.GoLevelDB
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -54,20 +55,14 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 	pvs := []provider.Provider{pv}
 
-	//dbDir, err := ioutil.TempDir("", "light-client-example")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
-
 	if _, err := os.Stat("../data"); os.IsNotExist(err) {
-		err = os.MkdirAll("../data", 0700)
+		err = os.MkdirAll("../data", 0755)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "data/local/tmp")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "../data")
 
 	store := dbs.New(db, chainID)
 
@@ -89,6 +84,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
+		Db:                db,
 	}, nil
 }
 

@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/tendermint/tendermint/types"
 	"testing"
 	"time"
 )
@@ -18,7 +19,6 @@ func TestSgxLevelDB(t *testing.T) {
 	ctx := context.Background()
 
 	queryClient, err := panacea.NewQueryClient(ctx, "panacea-3", "https://rpc.gopanacea.org:443", 99, hash)
-
 	require.NoError(t, err)
 
 	lightClient := queryClient.LightClient
@@ -31,15 +31,20 @@ func TestSgxLevelDB(t *testing.T) {
 	fmt.Println(storedLightBlock)
 
 	// directly get data from DB
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "../data")
-	require.NoError(t, err)
-	getFromLevelDB, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%20d", "panacea-3", 1000)), nil)
+	db := queryClient.Db
+	bz, err := db.Get([]byte(fmt.Sprintf("lb/%s/%020d", "panacea-3", 1000)))
 	require.NoError(t, err)
 
-	fmt.Println(getFromLevelDB)
-
-	//unseal data from levelDB
-	unsealedBlock, err := sgx.Unseal(getFromLevelDB, true)
+	// unseal data
+	unsealedBz, err := sgx.Unseal(bz, true)
 	require.NoError(t, err)
-	fmt.Println(unsealedBlock)
+
+	var lbpb tmproto.LightBlock
+	err = lbpb.Unmarshal(unsealedBz)
+	require.NoError(t, err)
+
+	lightBlock, err := types.LightBlockFromProto(&lbpb)
+	require.NoError(t, err)
+
+	fmt.Println("GetFromLevelDB: ", lightBlock)
 }

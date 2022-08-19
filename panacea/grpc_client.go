@@ -31,7 +31,7 @@ func makeInterfaceRegistry() sdk.InterfaceRegistry {
 
 func NewGrpcClient(conf *config.Config) (GrpcClientI, error) {
 	log.Infof("dialing to Panacea gRPC endpoint: %s", conf.Panacea.GRPCAddr)
-	conn, err := grpc.Dial(conf.Panacea.GRPCAddr)
+	conn, err := grpc.Dial(conf.Panacea.GRPCAddr, grpc.WithInsecure())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Panacea: %w", err)
 	}

@@ -63,6 +63,16 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 
 	db, err := sgxdb.NewGoLevelDB("light-client-db", "../data")
+	if err != nil {
+		return nil, err
+	}
+
+	defer func(db *sgxdb.GoLevelDB) {
+		err := db.Close()
+		if err != nil {
+			return
+		}
+	}(db)
 
 	store := dbs.New(db, chainID)
 

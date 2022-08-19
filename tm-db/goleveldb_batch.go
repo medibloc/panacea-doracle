@@ -1,6 +1,8 @@
 package tm_db
 
 import (
+	"fmt"
+	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	tmdb "github.com/tendermint/tm-db"
@@ -22,6 +24,7 @@ func newGoLevelDBBatch(db *GoLevelDB) *goLevelDBBatch {
 
 // Set implements Batch.
 func (b *goLevelDBBatch) Set(key, value []byte) error {
+	fmt.Println("sgxLevelDB set")
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
@@ -32,12 +35,12 @@ func (b *goLevelDBBatch) Set(key, value []byte) error {
 		return errBatchClosed
 	}
 
-	//sealValue, err := sgx.Seal(value, true)
-	//if err != nil {
-	//	return err
-	//}
+	sealValue, err := sgx.Seal(value, true)
+	if err != nil {
+		return err
+	}
 
-	b.batch.Put(key, value)
+	b.batch.Put(key, sealValue)
 	return nil
 }
 

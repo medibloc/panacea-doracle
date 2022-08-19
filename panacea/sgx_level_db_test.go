@@ -28,11 +28,11 @@ func TestSgxLevelDB(t *testing.T) {
 	// get Block info using sgxLevelDB function
 	storedLightBlock, err := lightClient.TrustedLightBlock(1000)
 	require.NoError(t, err)
-	fmt.Println(storedLightBlock)
+	fmt.Println("storedLightBlock at ", storedLightBlock.Height, " : ", storedLightBlock.Hash())
 
 	// directly get data from DB
 	db := queryClient.Db
-	bz, err := db.Get([]byte(fmt.Sprintf("lb/%s/%020d", "panacea-3", 1000)))
+	bz, err := db.Db.Get([]byte(fmt.Sprintf("lb/%s/%020d", "panacea-3", 1000)), nil)
 	require.NoError(t, err)
 
 	// unseal data

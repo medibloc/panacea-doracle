@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	sgxdb "github.com/medibloc/panacea-doracle/tm-db"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -18,7 +19,7 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	dbm "github.com/tendermint/tm-db"
+	"os"
 	"time"
 )
 
@@ -52,7 +53,23 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		return nil, err
 	}
 	pvs := []provider.Provider{pv}
-	store := dbs.New(dbm.NewMemDB(), chainID)
+
+	//dbDir, err := ioutil.TempDir("", "light-client-example")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+
+	if _, err := os.Stat("../data"); os.IsNotExist(err) {
+		err = os.MkdirAll("../data", 0700)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	db, err := sgxdb.NewGoLevelDB("light-client-db", "data/local/tmp")
+
+	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(
 		ctx,

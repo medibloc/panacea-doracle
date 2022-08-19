@@ -21,8 +21,9 @@ func TestSgxLevelDB(t *testing.T) {
 
 	require.NoError(t, err)
 
-	lightClient := queryClient.RpcClient.LightClient
-	lightClient.VerifyLightBlockAtHeight(ctx, 1000, time.Now())
+	lightClient := queryClient.LightClient
+	_, err = lightClient.VerifyLightBlockAtHeight(ctx, 1000, time.Now())
+	require.NoError(t, err)
 
 	// get Block info using sgxLevelDB function
 	storedLightBlock, err := lightClient.TrustedLightBlock(1000)

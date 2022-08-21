@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	log "github.com/sirupsen/logrus"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	"github.com/tendermint/tendermint/types"
 	"time"
 )
 
@@ -42,18 +43,18 @@ func (s PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
+
 	for _, e := range event {
 		convertedEvent := convertEventStatusToEvent(e)
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
-		fmt.Println(query)
 		txs, err := client.Subscribe(ctx, s.Subscriber, query)
 		if err != nil {
 			return err
 		}
+
 		go func() {
-			select {
-			case <-txs:
-				fmt.Println(txs)
+			for t := range txs {
+				fmt.Println(t.Data.(types.EventDataTx))
 			}
 		}()
 	}
@@ -65,9 +66,9 @@ func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 	switch e {
 	case RegisterOracle:
 		return RegisterOracleEvent{
-			EventType:           "register",
-			EventAttributeKey:   "oracle",
-			EventAttributeValue: "RegisterOracleEvent",
+			EventType:           "message",
+			EventAttributeKey:   "action",
+			EventAttributeValue: "'RegisterOracle'",
 		}
 	default:
 		return nil

@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const prefix = "panacea"
+
 type OracleAccount struct {
 	privKey cryptotypes.PrivKey
 	pubKey  cryptotypes.PubKey
@@ -55,4 +57,8 @@ func (oa OracleAccount) GetPrivKey() cryptotypes.PrivKey {
 
 func (oa OracleAccount) GetPubKey() cryptotypes.PubKey {
 	return oa.pubKey
+}
+
+func GetAccAddressFromBech32(address string) (addr sdk.AccAddress, err error) {
+	return sdk.GetFromBech32(address, prefix)
 }

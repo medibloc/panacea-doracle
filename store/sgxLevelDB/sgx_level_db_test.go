@@ -1,4 +1,4 @@
-package panacea_test
+package sgxLevelDB_test
 
 // Test for sgxLevelDB function.
 // Comment out this test because it can only work in sgx environment.

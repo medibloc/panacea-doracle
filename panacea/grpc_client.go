@@ -94,7 +94,7 @@ func (c *GrpcClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 	}
 	response, err := client.OracleRegistration(ctx, reqMsg)
 	if err != nil {
-		return &oracletypes.OracleRegistration{}, err
+		return nil, err
 	}
 
 	return response.OracleRegistration, nil

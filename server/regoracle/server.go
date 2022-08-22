@@ -49,7 +49,10 @@ func (srv *Server) Close() error {
 // continueRegistration continues the oracle registration process using the existing node key
 func (srv *Server) continueRegistration() error {
 	// get existing node key
-	nodePrivKeyBz, _ := sgx.UnsealFromFile(nodePrivKeyPath)
+	nodePrivKeyBz, err := sgx.UnsealFromFile(nodePrivKeyPath)
+	if err != nil {
+		return err
+	}
 	_, nodePubKey := crypto.PrivKeyFromBytes(nodePrivKeyBz)
 
 	// get unique ID

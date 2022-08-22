@@ -41,7 +41,7 @@ func (tb TxBuilder) GenerateSignedTxBytes(
 		return nil, err
 	}
 
-	signerAddress, err := bech32.ConvertAndEncode(Hrp, privateKey.PubKey().Address().Bytes())
+	signerAddress, err := bech32.ConvertAndEncode(HRP, privateKey.PubKey().Address().Bytes())
 	if err != nil {
 		return nil, err
 	}

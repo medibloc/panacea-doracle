@@ -31,7 +31,7 @@ func DefaultConfig() *Config {
 		Panacea: PanaceaConfig{
 			ChainID:          "",
 			GRPCAddr:         "127.0.0.1:9090",
-			DefaultGasLimit:  300000,
+			DefaultGasLimit:  200000,
 			DefaultFeeAmount: "1000000umed",
 		},
 	}

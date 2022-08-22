@@ -39,7 +39,7 @@ func NewOracleAccount(mnemonic string, accNum, index uint32) (*OracleAccount, er
 }
 
 func (oa OracleAccount) GetAddress() string {
-	address, err := bech32.ConvertAndEncode(Hrp, oa.pubKey.Address().Bytes())
+	address, err := bech32.ConvertAndEncode(HRP, oa.pubKey.Address().Bytes())
 	if err != nil {
 		log.Panic(err)
 	}

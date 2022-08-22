@@ -36,7 +36,7 @@ func (b *goLevelDBBatch) Set(key, value []byte) error {
 	}
 
 	sealValue, err := sgx.Seal(value, true)
-	log.Debug("Seal value of key : %x\n", key)
+	log.Debug("Seal value of key : %X\n", key)
 	if err != nil {
 		return err
 	}

@@ -26,6 +26,7 @@ import (
 const (
 	denom       = "umed"
 	blockPeriod = 6 * time.Second
+	leveldbPath = "../data"
 )
 
 type QueryClient struct {
@@ -54,14 +55,14 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 	pvs := []provider.Provider{pv}
 
-	if _, err := os.Stat("../data"); os.IsNotExist(err) {
-		err = os.MkdirAll("../data", 0755)
+	if _, err := os.Stat(leveldbPath); os.IsNotExist(err) {
+		err = os.MkdirAll(leveldbPath, 0755)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	db, err := sgxdb.NewGoLevelDB("light-client-db", "../data")
+	db, err := sgxdb.NewGoLevelDB("light-client-db", leveldbPath)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package sgxLevelDB
 
 import (
 	"github.com/medibloc/panacea-doracle/sgx"
+	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	tmdb "github.com/tendermint/tm-db"
@@ -35,6 +36,7 @@ func (b *goLevelDBBatch) Set(key, value []byte) error {
 	}
 
 	sealValue, err := sgx.Seal(value, true)
+	log.Debug("Seal value of key : %x\n", key)
 	if err != nil {
 		return err
 	}

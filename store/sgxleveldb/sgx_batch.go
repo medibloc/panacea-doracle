@@ -1,4 +1,4 @@
-package sgxLevelDB
+package sgxleveldb
 
 import (
 	"github.com/medibloc/panacea-doracle/sgx"

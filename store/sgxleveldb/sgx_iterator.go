@@ -1,4 +1,4 @@
-package sgxLevelDB
+package sgxleveldb
 
 import (
 	"bytes"

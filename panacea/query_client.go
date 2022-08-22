@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
-	sgxdb "github.com/medibloc/panacea-doracle/store/sgxLevelDB"
+	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -20,13 +20,14 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 const (
 	denom       = "umed"
 	blockPeriod = 6 * time.Second
-	leveldbPath = "../data"
+	leveldbPath = "/data"
 )
 
 type QueryClient struct {
@@ -55,8 +56,13 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 	pvs := []provider.Provider{pv}
 
-	if _, err := os.Stat(leveldbPath); os.IsNotExist(err) {
-		err = os.MkdirAll(leveldbPath, 0755)
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	homeDir := filepath.Join(userHomeDir, ".doracle")
+	if _, err := os.Stat(homeDir + leveldbPath); os.IsNotExist(err) {
+		err = os.MkdirAll(homeDir+leveldbPath, 0755)
 		if err != nil {
 			return nil, err
 		}

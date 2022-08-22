@@ -108,7 +108,7 @@ func (srv *Server) createRegistration() error {
 	uniqueIDStr := base64.StdEncoding.EncodeToString(report.UniqueID)
 
 	// sign and broadcast to Panacea
-	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueIDStr, srv.OracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, srv.TrustedHeight, srv.TrustedHash)
+	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueIDStr, srv.OracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, srv.TrustedBlockInfo.TrustedBlockHeight, srv.TrustedBlockInfo.TrustedBlockHash)
 
 	txBuilder := panacea.NewTxBuilder(srv.PanaceaClient)
 

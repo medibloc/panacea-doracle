@@ -27,7 +27,7 @@ import (
 const (
 	denom       = "umed"
 	blockPeriod = 6 * time.Second
-	leveldbPath = "/data"
+	leveldbPath = "data"
 )
 
 type QueryClient struct {
@@ -60,15 +60,15 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	if err != nil {
 		panic(err)
 	}
-	homeDir := filepath.Join(userHomeDir, ".doracle")
-	if _, err := os.Stat(homeDir + leveldbPath); os.IsNotExist(err) {
-		err = os.MkdirAll(homeDir+leveldbPath, 0755)
+	dbDir := filepath.Join(userHomeDir, ".doracle", leveldbPath)
+	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+		err = os.MkdirAll(dbDir, 0755)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	db, err := sgxdb.NewGoLevelDB("light-client-db", leveldbPath)
+	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
 	if err != nil {
 		return nil, err
 	}

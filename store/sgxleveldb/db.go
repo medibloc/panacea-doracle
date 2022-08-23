@@ -82,7 +82,7 @@ func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
 	}
 	// unseal data
 	unsealedRes, err := sgx.Unseal(res, true)
-	log.Debugf("Unseal value from key : %X\n", key)
+	log.Debugf("Unseal value from key : %X", key)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 	}
 	// seal value
 	sealValue, err := sgx.Seal(value, true)
-	log.Debugf("Seal value of key: %X\n", key)
+	log.Debugf("Seal value of key: %X", key)
 
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (db *GoLevelDB) SetSync(key []byte, value []byte) error {
 	}
 	// seal value
 	sealValue, err := sgx.Seal(value, true)
-	log.Debugf("Seal value of key: %X\n", key)
+	log.Debugf("Seal value of key: %X", key)
 
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (db *GoLevelDB) Print() error {
 		value := itr.Value()
 		// unseal value
 		unsealValue, err := sgx.Unseal(value, true)
-		log.Debugf("Unseal value from key : %X\n", key)
+		log.Debugf("Unseal value from key : %X", key)
 
 		if err != nil {
 			return err

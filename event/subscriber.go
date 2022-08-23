@@ -63,7 +63,7 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 		}
 
 		go func() {
-			for _ = range txs {
+			for range txs {
 				convertedEvent.GetEventHandler()
 			}
 		}()

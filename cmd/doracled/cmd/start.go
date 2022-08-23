@@ -24,7 +24,7 @@ var startCmd = &cobra.Command{
 			return fmt.Errorf("failed to init logger: %w", err)
 		}
 
-		subscriber, err := event.NewSubscriber(conf, "")
+		subscriber, err := event.NewSubscriber(conf)
 		if err != nil {
 			return err
 		}

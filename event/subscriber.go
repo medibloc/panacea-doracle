@@ -6,7 +6,6 @@ import (
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/types"
 	"time"
 )
 
@@ -16,7 +15,7 @@ type PanaceaSubscriber struct {
 	Client     *rpchttp.HTTP
 }
 
-func NewSubscriber(conf *config.Config, subscriber string) (*PanaceaSubscriber, error) {
+func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	client, err := rpchttp.New(conf.Panacea.WSAddr, "/websocket")
 	if err != nil {
 		return nil, err
@@ -29,7 +28,7 @@ func NewSubscriber(conf *config.Config, subscriber string) (*PanaceaSubscriber, 
 
 	return &PanaceaSubscriber{
 		WSAddr:     conf.Panacea.WSAddr,
-		Subscriber: subscriber,
+		Subscriber: conf.BaseConfig.Subscriber,
 		Client:     client,
 	}, nil
 }
@@ -64,7 +63,7 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 
 		go func() {
 			for t := range txs {
-				fmt.Println(t.Data.(types.EventDataTx))
+				fmt.Println(t.Events)
 			}
 		}()
 	}

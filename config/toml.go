@@ -22,6 +22,7 @@ const DefaultConfigTemplate = `# This is a TOML config file.
 log-level = "{{ .BaseConfig.LogLevel }}"
 oracle-mnemonic = "{{ .BaseConfig.OracleMnemonic }}"
 listen_addr = "{{ .BaseConfig.ListenAddr }}"
+subscriber = "{{ .BaseConfig.Subscriber }}"
 
 ###############################################################################
 ###                         Panacea Configuration                           ###

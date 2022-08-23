@@ -62,8 +62,8 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 		}
 
 		go func() {
-			for t := range txs {
-				fmt.Println(t.Events)
+			for _ = range txs {
+				convertedEvent.GetEventHandler()
 			}
 		}()
 	}
@@ -78,6 +78,10 @@ func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 			EventType:           "message",
 			EventAttributeKey:   "action",
 			EventAttributeValue: "'RegisterOracle'",
+			EventHandler: func() error {
+				fmt.Println("RegisterOracle Event Handler")
+				return nil
+			},
 		}
 	default:
 		return nil

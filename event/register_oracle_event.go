@@ -6,7 +6,7 @@ type RegisterOracleEvent struct {
 	EventType           string
 	EventAttributeKey   string
 	EventAttributeValue string
-	EventHandler        func()
+	EventHandler        func() error
 }
 
 func (e RegisterOracleEvent) GetEventType() string {

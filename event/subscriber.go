@@ -41,7 +41,7 @@ const (
 )
 
 func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
-	log.Infof("Panacea Event Subscriber Start")
+	log.Infof("start panacea event subscriber")
 	client, err := rpchttp.New(s.WSAddr, "/websocket")
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 }
 
 func (s *PanaceaSubscriber) Close() error {
-	log.Infof("Panacea Subscriber Close")
+	log.Infof("closing panacea event subscriber")
 	if err := s.Client.Stop(); err != nil {
 		return err
 	}

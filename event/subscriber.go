@@ -13,12 +13,24 @@ import (
 type PanaceaSubscriber struct {
 	WSAddr     string
 	Subscriber string
+	Client     *rpchttp.HTTP
 }
 
-func NewSubscriber(conf *config.Config, subscriber string) (PanaceaSubscriber, error) {
-	return PanaceaSubscriber{
+func NewSubscriber(conf *config.Config, subscriber string) (*PanaceaSubscriber, error) {
+	client, err := rpchttp.New(conf.Panacea.WSAddr, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return &PanaceaSubscriber{
 		WSAddr:     conf.Panacea.WSAddr,
 		Subscriber: subscriber,
+		Client:     client,
 	}, nil
 }
 
@@ -28,8 +40,8 @@ const (
 	RegisterOracle PanaceaEventStatus = 1
 )
 
-func (s PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
-	log.Infof("Subscribe Panacea Event run")
+func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
+	log.Infof("Panacea Event Subscriber Start")
 	client, err := rpchttp.New(s.WSAddr, "/websocket")
 	if err != nil {
 		return err
@@ -39,10 +51,8 @@ func (s PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	if err != nil {
 		return err
 	}
-	defer client.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
 
 	for _, e := range event {
 		convertedEvent := convertEventStatusToEvent(e)
@@ -73,4 +83,12 @@ func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 	default:
 		return nil
 	}
+}
+
+func (s *PanaceaSubscriber) Close() error {
+	log.Infof("Panacea Subscriber Close")
+	if err := s.Client.Stop(); err != nil {
+		return err
+	}
+	return nil
 }

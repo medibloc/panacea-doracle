@@ -68,7 +68,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		}
 	}
 
-	db, err := sgxdb.NewGoLevelDB("light-client-db", dbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", dbDir)
 	if err != nil {
 		return nil, err
 	}

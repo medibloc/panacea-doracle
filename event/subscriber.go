@@ -15,6 +15,7 @@ type PanaceaSubscriber struct {
 	Client     *rpchttp.HTTP
 }
 
+// NewSubscriber generates a rpc http client with websocket address.
 func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	client, err := rpchttp.New(conf.Panacea.WSAddr, "/websocket")
 	if err != nil {
@@ -79,6 +80,7 @@ func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 			EventAttributeKey:   "action",
 			EventAttributeValue: "'RegisterOracle'",
 			EventHandler: func() error {
+				// TODO: Executing Voting Tx
 				fmt.Println("RegisterOracle Event Handler")
 				return nil
 			},

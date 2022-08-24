@@ -30,7 +30,10 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 [panacea]
 
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
-
+primary-addr = "{{ .Panacea.PrimaryAddr }}"
+witnesses-addr= "{{ .Panacea.WitnessesAddr }}"
+rpc-addr= "{{ .Panacea.RpcAddr }}"
+chain-id= "{{ .Panacea.ChainID }}"
 `
 
 var configTemplate *template.Template

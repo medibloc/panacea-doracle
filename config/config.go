@@ -13,7 +13,11 @@ type BaseConfig struct {
 }
 
 type PanaceaConfig struct {
-	GRPCAddr string `mapstructure:"grpc-addr"`
+	GRPCAddr      string   `mapstructure:"grpc-addr"`
+	PrimaryAddr   string   `mapstructure:"primary-addr"`
+	WitnessesAddr []string `mapstructure:"witnesses-addr"`
+	RpcAddr       string   `mapstructure:"rpc-addr"`
+	ChainID       string   `mapstructure:"chain-id"`
 }
 
 func DefaultConfig() *Config {
@@ -24,7 +28,11 @@ func DefaultConfig() *Config {
 			ListenAddr:     "127.0.0.1:8080",
 		},
 		Panacea: PanaceaConfig{
-			GRPCAddr: "127.0.0.1:9090",
+			GRPCAddr:      "127.0.0.1:9090",
+			PrimaryAddr:   "https://rpc.gopanacea.org:443",
+			WitnessesAddr: []string{"https://rpc.gopanacea.org:443"},
+			RpcAddr:       "https://rpc.gopanacea.org:443",
+			ChainID:       "panacea-3",
 		},
 	}
 }

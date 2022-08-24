@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
@@ -15,45 +16,48 @@ import (
 	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	tos "github.com/tendermint/tendermint/libs/os"
 	"path/filepath"
 )
+
+var nodePrivKeyPath string
 
 func RegisterOracleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// if node key exists, return error.
+			if tos.FileExists(nodePrivKeyPath) {
+				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
+			}
+
 			// get config
 			conf, err := config.ReadConfigTOML(getConfigPath())
 			if err != nil {
-				log.Errorf("failed to read config.toml: %v", err)
 				return fmt.Errorf("failed to read config.toml: %w", err)
 			}
 
 			if err := initLogger(conf); err != nil {
-				log.Errorf("failed to init logger: %v", err)
 				return fmt.Errorf("failed to init logger: %w", err)
 			}
 
 			// get trusted block information
 			trustedBlockInfo, err := getTrustedBlockInfo(cmd)
 			if err != nil {
-				log.Errorf("failed to get trusted block info: %v", err)
 				return fmt.Errorf("failed to get trusted block info: %w", err)
 			}
 
 			// get oracle account from mnemonic.
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
 			if err != nil {
-				log.Errorf("failed to get oracle account from mnemonic: %v", err)
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
 
 			// generate node key and its remote report
 			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
 			if err != nil {
-				log.Errorf("failed to generate node key pair: %v", err)
-				return err
+				return fmt.Errorf("failed to generate node key pair: %w", err)
 			}
 
 			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
@@ -64,22 +68,28 @@ func RegisterOracleCmd() *cobra.Command {
 
 			cli, txBuilder, err := generateGrpcClientAndTxBuilder(conf)
 			if err != nil {
-				log.Errorf("failed to generate gRPC client and/or Tx builder: %v", err)
-				return err
+				return fmt.Errorf("failed to generate gRPC client and/or Tx builder: %w", err)
 			}
+			defer func() {
+				_ = cli.Close()
+			}()
 
 			defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
-
 			txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgRegisterOracle)
 			if err != nil {
-				log.Errorf("failed to generate signed Tx bytes: %v", err)
-				return err
+				return fmt.Errorf("failed to generate signed Tx bytes: %w", err)
 			}
 
-			if _, err := cli.BroadcastTx(txBytes); err != nil {
-				log.Errorf("failed to broadcast transaction: %v", err)
-				return err
+			resp, err := cli.BroadcastTx(txBytes)
+			if err != nil {
+				return fmt.Errorf("failed to broadcast transaction: %w", err)
 			}
+
+			if resp.TxResponse.Code != 0 {
+				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.Logs)
+			}
+
+			log.Info("register-oracle transaction succeed")
 
 			return nil
 		},
@@ -155,7 +165,6 @@ func generateNodeKey() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	nodePrivKeyPath := filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 	if err := sgx.SealToFile(nodePrivKey.Serialize(), nodePrivKeyPath); err != nil {
 		return nil, nil, err
 	}
@@ -178,4 +187,8 @@ func generateGrpcClientAndTxBuilder(conf *config.Config) (panacea.GrpcClientI, *
 	}
 
 	return cli, panacea.NewTxBuilder(cli), nil
+}
+
+func init() {
+	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 }

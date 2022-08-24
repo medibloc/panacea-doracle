@@ -9,7 +9,7 @@ import (
 )
 
 type PanaceaSubscriber struct {
-	Client     *rpchttp.HTTP
+	Client *rpchttp.HTTP
 }
 
 // NewSubscriber generates a rpc http client with websocket address.
@@ -25,7 +25,7 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}
 
 	return &PanaceaSubscriber{
-		Client:     client,
+		Client: client,
 	}, nil
 }
 
@@ -41,21 +41,19 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	for _, e := range event {
 		convertedEvent := convertEventStatusToEvent(e)
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
+
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
+
 		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {
 			return err
 		}
 
-		go func() error {
+		go func() {
 			for range txs {
-				err := convertedEvent.EventHandler()
-				if err != nil {
-					return err
-				}
+				_ = convertedEvent.EventHandler()
 			}
-			return nil
 		}()
 	}
 

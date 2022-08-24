@@ -4,7 +4,7 @@ import "fmt"
 
 var _ Event = (*RegisterOracleEvent)(nil)
 
-type RegisterOracleEvent struct {}
+type RegisterOracleEvent struct{}
 
 func (e RegisterOracleEvent) GetEventType() string {
 	return "message"

@@ -17,8 +17,8 @@ type GrpcClientI interface {
 	Close() error
 	GetInterfaceRegistry() sdk.InterfaceRegistry
 	GetChainID() string
-	BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error)
-	GetAccount(panaceaAddr string) (authtypes.AccountI, error)
+	BroadcastTx([]byte) (*tx.BroadcastTxResponse, error)
+	GetAccount(string) (authtypes.AccountI, error)
 }
 
 var _ GrpcClientI = (*GrpcClient)(nil)

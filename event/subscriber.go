@@ -48,10 +48,14 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 			return err
 		}
 
-		go func() {
+		go func() error {
 			for range txs {
-				convertedEvent.EventHandler()
+				err := convertedEvent.EventHandler()
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		}()
 	}
 

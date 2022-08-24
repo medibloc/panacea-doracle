@@ -51,8 +51,7 @@ func Run(conf *config.Config, subscriber *event.PanaceaSubscriber) error {
 		log.Info("signal detected")
 	}
 
-	err = subscriber.Close()
-	if err != nil {
+	if err = subscriber.Close(); err != nil {
 		return err
 	}
 

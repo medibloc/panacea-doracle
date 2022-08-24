@@ -10,7 +10,6 @@ import (
 )
 
 type PanaceaSubscriber struct {
-	WSAddr     string
 	Subscriber string
 	Client     *rpchttp.HTTP
 }
@@ -28,7 +27,6 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}
 
 	return &PanaceaSubscriber{
-		WSAddr:     conf.Panacea.WSAddr,
 		Subscriber: conf.BaseConfig.Subscriber,
 		Client:     client,
 	}, nil
@@ -42,22 +40,14 @@ const (
 
 func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	log.Infof("start panacea event subscriber")
-	client, err := rpchttp.New(s.WSAddr, "/websocket")
-	if err != nil {
-		return err
-	}
 
-	err = client.Start()
-	if err != nil {
-		return err
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	for _, e := range event {
 		convertedEvent := convertEventStatusToEvent(e)
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
-		txs, err := client.Subscribe(ctx, s.Subscriber, query)
+		txs, err := s.Client.Subscribe(ctx, s.Subscriber, query)
 		if err != nil {
 			return err
 		}

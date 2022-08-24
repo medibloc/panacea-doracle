@@ -8,9 +8,9 @@ import (
 )
 
 type Service struct {
-	Conf             *config.Config
-	Store            store.Storage
-	PanaceaClient    panacea.GrpcClientI
+	Conf          *config.Config
+	Store         store.Storage
+	PanaceaClient panacea.GrpcClientI
 }
 
 func New(conf *config.Config) (*Service, error) {
@@ -20,8 +20,8 @@ func New(conf *config.Config) (*Service, error) {
 	}
 
 	return &Service{
-		Conf:             conf,
-		PanaceaClient:    panaceaClient,
+		Conf:          conf,
+		PanaceaClient: panaceaClient,
 	}, nil
 }
 

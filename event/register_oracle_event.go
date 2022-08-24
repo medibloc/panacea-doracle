@@ -21,6 +21,6 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 	return e.EventAttributeValue
 }
 
-func (e RegisterOracleEvent) GetEventHandler() {
-	panic("implement me")
+func (e RegisterOracleEvent) GetEventHandler() func() error {
+	return e.EventHandler
 }

@@ -29,6 +29,10 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
+		err = subscriber.Run(event.RegisterOracle)
+		if err != nil {
+			return err
+		}
 		defer subscriber.Close()
 
 		return server.Run(conf)

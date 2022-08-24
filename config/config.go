@@ -24,7 +24,6 @@ func DefaultConfig() *Config {
 			LogLevel:       "info",
 			OracleMnemonic: "",
 			ListenAddr:     "127.0.0.1:8080",
-			Subscriber:     "",
 		},
 		Panacea: PanaceaConfig{
 			GRPCAddr: "127.0.0.1:9090",

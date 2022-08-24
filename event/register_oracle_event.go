@@ -1,26 +1,25 @@
 package event
 
+import "fmt"
+
 var _ Event = (*RegisterOracleEvent)(nil)
 
-type RegisterOracleEvent struct {
-	EventType           string
-	EventAttributeKey   string
-	EventAttributeValue string
-	EventHandler        func() error
-}
+type RegisterOracleEvent struct {}
 
 func (e RegisterOracleEvent) GetEventType() string {
-	return e.EventType
+	return "message"
 }
 
 func (e RegisterOracleEvent) GetEventAttributeKey() string {
-	return e.EventAttributeKey
+	return "action"
 }
 
 func (e RegisterOracleEvent) GetEventAttributeValue() string {
-	return e.EventAttributeValue
+	return "'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) GetEventHandler() func() error {
-	return e.EventHandler
+func (e RegisterOracleEvent) EventHandler() error {
+	// TODO: Executing Voting Tx
+	fmt.Println("RegisterOracle Event Handler")
+	return nil
 }

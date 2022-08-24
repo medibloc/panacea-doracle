@@ -7,5 +7,5 @@ type Event interface {
 
 	GetEventAttributeValue() string
 
-	GetEventHandler() func() error
+	EventHandler() error
 }

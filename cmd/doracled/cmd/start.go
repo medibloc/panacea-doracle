@@ -34,7 +34,9 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		return server.Run(conf, subscriber)
+		defer subscriber.Close()
+
+		return server.Run(conf)
 	},
 }
 

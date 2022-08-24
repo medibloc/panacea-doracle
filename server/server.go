@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/server/service"
 	"net/http"
 	"os"
@@ -15,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Run(conf *config.Config, subscriber *event.PanaceaSubscriber) error {
+func Run(conf *config.Config) error {
 	svc, err := service.New(conf)
 	if err != nil {
 		return fmt.Errorf("failed to create service: %w", err)
@@ -49,10 +48,6 @@ func Run(conf *config.Config, subscriber *event.PanaceaSubscriber) error {
 		}
 	case <-signalCh:
 		log.Info("signal detected")
-	}
-
-	if err = subscriber.Close(); err != nil {
-		return err
 	}
 
 	log.Info("starting the graceful shutdown")

@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
@@ -10,7 +9,6 @@ import (
 )
 
 type PanaceaSubscriber struct {
-	Subscriber string
 	Client     *rpchttp.HTTP
 }
 
@@ -27,7 +25,6 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}
 
 	return &PanaceaSubscriber{
-		Subscriber: conf.BaseConfig.Subscriber,
 		Client:     client,
 	}, nil
 }
@@ -41,20 +38,19 @@ const (
 func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	log.Infof("start panacea event subscriber")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
 	for _, e := range event {
 		convertedEvent := convertEventStatusToEvent(e)
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
-		txs, err := s.Client.Subscribe(ctx, s.Subscriber, query)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {
 			return err
 		}
 
 		go func() {
 			for range txs {
-				convertedEvent.GetEventHandler()
+				convertedEvent.EventHandler()
 			}
 		}()
 	}
@@ -65,16 +61,7 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 func convertEventStatusToEvent(e PanaceaEventStatus) Event {
 	switch e {
 	case RegisterOracle:
-		return RegisterOracleEvent{
-			EventType:           "message",
-			EventAttributeKey:   "action",
-			EventAttributeValue: "'RegisterOracle'",
-			EventHandler: func() error {
-				// TODO: Executing Voting Tx
-				fmt.Println("RegisterOracle Event Handler")
-				return nil
-			},
-		}
+		return RegisterOracleEvent{}
 	default:
 		return nil
 	}

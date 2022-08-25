@@ -9,6 +9,11 @@ package panacea_test
 //	require.NoError(t, err)
 //	ctx := context.Background()
 //
+//	trustedBlockinfo := panacea.TrustedBlockInfo{
+//		TrustedBlockHeight: 99,
+//		TrustedBlockHash:   hash,
+//	}
+//
 //	userHomeDir, err := os.UserHomeDir()
 //	if err != nil {
 //		panic(err)
@@ -16,8 +21,7 @@ package panacea_test
 //	homeDir := filepath.Join(userHomeDir, ".doracle")
 //	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 //	require.NoError(t, err)
-//
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 //
 //	require.NoError(t, err)
 //
@@ -39,6 +43,11 @@ package panacea_test
 //	require.NoError(t, err)
 //	ctx := context.Background()
 //
+//	trustedBlockinfo := panacea.TrustedBlockInfo{
+//		TrustedBlockHeight: 99,
+//		TrustedBlockHash:   hash,
+//	}
+//
 //	userHomeDir, err := os.UserHomeDir()
 //	if err != nil {
 //		panic(err)
@@ -47,7 +56,7 @@ package panacea_test
 //	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 //	require.NoError(t, err)
 //
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 //
 //	require.NoError(t, err)
 //
@@ -66,6 +75,11 @@ package panacea_test
 //	require.NoError(t, err)
 //	ctx := context.Background()
 //
+//	trustedBlockinfo := panacea.TrustedBlockInfo{
+//		TrustedBlockHeight: 99,
+//		TrustedBlockHash:   hash,
+//	}
+//
 //	userHomeDir, err := os.UserHomeDir()
 //	if err != nil {
 //		panic(err)
@@ -74,7 +88,7 @@ package panacea_test
 //	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 //	require.NoError(t, err)
 //
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 //
 //	require.NoError(t, err)
 //

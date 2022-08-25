@@ -44,7 +44,7 @@ type QueryClient struct {
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
-func NewQueryClient(ctx context.Context, config *config.Config, trustedBlockHeight int, trustedBlockHash []byte) (*QueryClient, error) {
+func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
 	chainID := config.Panacea.ChainID
 	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
 	if err != nil {
@@ -53,8 +53,8 @@ func NewQueryClient(ctx context.Context, config *config.Config, trustedBlockHeig
 
 	trustOptions := light.TrustOptions{
 		Period: 2 * 365 * 24 * time.Hour,
-		Height: int64(trustedBlockHeight),
-		Hash:   trustedBlockHash,
+		Height: info.TrustedBlockHeight,
+		Hash:   info.TrustedBlockHash,
 	}
 
 	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)

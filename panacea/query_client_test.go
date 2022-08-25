@@ -4,6 +4,11 @@ package panacea_test
 
 // Test for GetAccount function.
 //func TestGetAccount(t *testing.T) {
+//
+//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+//	require.NoError(t, err)
+//	ctx := context.Background()
+//
 //	userHomeDir, err := os.UserHomeDir()
 //	if err != nil {
 //		panic(err)
@@ -11,10 +16,6 @@ package panacea_test
 //	homeDir := filepath.Join(userHomeDir, ".doracle")
 //	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 //	require.NoError(t, err)
-//
-//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-//	require.NoError(t, err)
-//	ctx := context.Background()
 //
 //	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
 //
@@ -38,7 +39,15 @@ package panacea_test
 //	require.NoError(t, err)
 //	ctx := context.Background()
 //
-//	queryClient, err := panacea.NewQueryClient(ctx, "panacea-3", "https://rpc.gopanacea.org:443", 99, hash)
+//	userHomeDir, err := os.UserHomeDir()
+//	if err != nil {
+//		panic(err)
+//	}
+//	homeDir := filepath.Join(userHomeDir, ".doracle")
+//	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+//	require.NoError(t, err)
+//
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
 //
 //	require.NoError(t, err)
 //
@@ -57,7 +66,15 @@ package panacea_test
 //	require.NoError(t, err)
 //	ctx := context.Background()
 //
-//	queryClient, err := panacea.NewQueryClient(ctx, "local", "http://127.0.0.1:26657", 99, hash)
+//	userHomeDir, err := os.UserHomeDir()
+//	if err != nil {
+//		panic(err)
+//	}
+//	homeDir := filepath.Join(userHomeDir, ".doracle")
+//	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+//	require.NoError(t, err)
+//
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, 99, hash)
 //
 //	require.NoError(t, err)
 //

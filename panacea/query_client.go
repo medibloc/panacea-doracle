@@ -30,6 +30,11 @@ const (
 	leveldbPath = "data"
 )
 
+type TrustedBlockInfo struct {
+	TrustedBlockHeight int64
+	TrustedBlockHash   []byte
+}
+
 type QueryClient struct {
 	RpcClient         *rpchttp.HTTP
 	LightClient       *light.Client

@@ -1,5 +1,7 @@
 package config
 
+import sdk "github.com/cosmos/cosmos-sdk/types"
+
 type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
@@ -14,8 +16,11 @@ type BaseConfig struct {
 }
 
 type PanaceaConfig struct {
-	GRPCAddr string `mapstructure:"grpc-addr"`
-	WSAddr   string `mapstructure:"websocket-addr"`
+	GRPCAddr         string `mapstructure:"grpc-addr"`
+	WSAddr           string `mapstructure:"websocket-addr"`
+	ChainID          string `mapstructure:"chain-id"`
+	DefaultGasLimit  uint64 `mapstructure:"default-gas-limit"`
+	DefaultFeeAmount string `mapstructure:"default-fee-amount"`
 }
 
 func DefaultConfig() *Config {
@@ -26,14 +31,20 @@ func DefaultConfig() *Config {
 			ListenAddr:     "127.0.0.1:8080",
 		},
 		Panacea: PanaceaConfig{
-			GRPCAddr: "127.0.0.1:9090",
-			WSAddr:   "tcp://127.0.0.1:26657",
+			GRPCAddr:         "127.0.0.1:9090",
+			WSAddr:           "tcp://127.0.0.1:26657",
+			ChainID:          "",
+			DefaultGasLimit:  200000,
+			DefaultFeeAmount: "1000000umed",
 		},
 	}
 }
 
 func (c *Config) validate() error {
-	//TODO: validate other configs
+	_, err := sdk.ParseCoinsNormalized(c.Panacea.DefaultFeeAmount)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

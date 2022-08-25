@@ -29,8 +29,11 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 
 [panacea]
 
+chain-id = "{{ .Panacea.ChainID }}"
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
 websocket-addr = "{{ .Panacea.WSAddr }}"
+default-gas-limit = "{{ .Panacea.DefaultGasLimit }}"
+default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 
 `
 

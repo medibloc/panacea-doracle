@@ -29,9 +29,9 @@ func DefaultConfig() *Config {
 		},
 		Panacea: PanaceaConfig{
 			GRPCAddr:      "127.0.0.1:9090",
-			PrimaryAddr:   "rpc.gopanacea.org:443",
-			WitnessesAddr: "rpc.gopanacea.org:443",
-			RpcAddr:       "rpc.gopanacea.org:443",
+			PrimaryAddr:   "https://rpc.gopanacea.org:443",
+			WitnessesAddr: "https://rpc.gopanacea.org:443",
+			RpcAddr:       "https://rpc.gopanacea.org:443",
 			ChainID:       "panacea-3",
 		},
 	}

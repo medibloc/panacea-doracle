@@ -1,6 +1,9 @@
 package event
 
-import "fmt"
+import (
+	"fmt"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+)
 
 var _ Event = (*RegisterOracleEvent)(nil)
 
@@ -18,8 +21,8 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 	return "'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) EventHandler() error {
+func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	// TODO: Executing Voting Tx
-	fmt.Println("RegisterOracle Event Handler")
+	fmt.Println("RegisterOracle Event Handler", event)
 	return nil
 }

@@ -1,5 +1,7 @@
 package event
 
+import ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 type Event interface {
 	GetEventType() string
 
@@ -7,5 +9,5 @@ type Event interface {
 
 	GetEventAttributeValue() string
 
-	EventHandler() error
+	EventHandler(event ctypes.ResultEvent) error
 }

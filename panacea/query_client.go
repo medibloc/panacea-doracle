@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
@@ -21,13 +22,13 @@ import (
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 const (
 	denom       = "umed"
 	blockPeriod = 6 * time.Second
-	leveldbPath = "data"
 )
 
 type TrustedBlockInfo struct {
@@ -43,8 +44,9 @@ type QueryClient struct {
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
-func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHeight int, trustedBlockHash []byte) (*QueryClient, error) {
-	rpcClient, err := rpchttp.New(rpcAddr, "/websocket")
+func NewQueryClient(ctx context.Context, config *config.Config, trustedBlockHeight int, trustedBlockHash []byte) (*QueryClient, error) {
+	chainID := config.Panacea.ChainID
+	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -55,23 +57,26 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		Hash:   trustedBlockHash,
 	}
 
-	pv, err := tmhttp.New(chainID, rpcAddr)
+	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)
 	if err != nil {
 		return nil, err
 	}
-	pvs := []provider.Provider{pv}
+
+	var pvs []provider.Provider
+	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, " ")
+	for _, witnessAddr := range witnessAddrs {
+		witness, err := tmhttp.New(chainID, witnessAddr)
+		if err != nil {
+			return nil, err
+		}
+		pvs = append(pvs, witness)
+	}
 
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	dbDir := filepath.Join(userHomeDir, ".doracle", leveldbPath)
-	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
-		err = os.MkdirAll(dbDir, 0755)
-		if err != nil {
-			return nil, err
-		}
-	}
+	dbDir := filepath.Join(userHomeDir, ".doracle", "data")
 
 	db, err := sgxdb.NewSgxLevelDB("light-client-db", dbDir)
 	if err != nil {

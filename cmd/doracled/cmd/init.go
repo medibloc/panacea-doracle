@@ -26,6 +26,14 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to create config dir: %w", err)
 		}
 
+		dbDir := filepath.Join(homeDir, "data")
+		if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+			err = os.MkdirAll(dbDir, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create db dir: %w", err)
+			}
+		}
+
 		return config.WriteConfigTOML(getConfigPath(), config.DefaultConfig())
 	},
 }

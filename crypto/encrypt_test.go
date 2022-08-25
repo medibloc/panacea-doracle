@@ -19,6 +19,7 @@ func TestEncryptData(t *testing.T) {
 	require.NoError(t, err)
 
 	plainText, err := btcec.Decrypt(privKey, cipherText)
+	require.NoError(t, err)
 
 	if !bytes.Equal(origData, plainText) {
 		t.Errorf("decrypted data doesn't match original data")

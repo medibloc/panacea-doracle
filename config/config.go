@@ -33,7 +33,7 @@ func DefaultConfig() *Config {
 		},
 		Panacea: PanaceaConfig{
 			ChainID:          "panacea-3",
-			GRPCAddr:         "127.0.0.1:9090",
+			GRPCAddr:         "https://grpc.gopanacea.org:443",
 			DefaultGasLimit:  200000,
 			DefaultFeeAmount: "1000000umed",
 			PrimaryAddr:   "https://rpc.gopanacea.org:443",

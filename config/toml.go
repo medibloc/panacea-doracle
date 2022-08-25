@@ -37,7 +37,6 @@ default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 primary-addr = "{{ .Panacea.PrimaryAddr }}"
 witnesses-addr= "{{ .Panacea.WitnessesAddr }}"
 rpc-addr= "{{ .Panacea.RpcAddr }}"
-chain-id= "{{ .Panacea.ChainID }}"
 `
 
 var configTemplate *template.Template

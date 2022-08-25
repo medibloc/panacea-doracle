@@ -63,7 +63,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, trustedBlockHeig
 	}
 
 	var pvs []provider.Provider
-	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, " ")
+	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, ",")
 	for _, witnessAddr := range witnessAddrs {
 		witness, err := tmhttp.New(chainID, witnessAddr)
 		if err != nil {

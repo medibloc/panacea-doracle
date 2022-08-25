@@ -22,6 +22,7 @@ import (
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -57,7 +58,8 @@ func NewQueryClient(ctx context.Context, config *config.Config, trustedBlockHeig
 	}
 
 	var pvs []provider.Provider
-	for _, witnessAddr := range config.Panacea.WitnessesAddr {
+	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, " ")
+	for _, witnessAddr := range witnessAddrs {
 		witness, err := tmhttp.New(chainID, witnessAddr)
 		if err != nil {
 			return nil, err

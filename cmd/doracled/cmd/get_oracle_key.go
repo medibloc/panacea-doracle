@@ -57,6 +57,7 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 			return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 		}
 
+		// TODO: replace to use query client
 		// get OracleRegistration from Panacea
 		cli, err := panacea.NewGrpcClient(conf)
 		if err != nil {

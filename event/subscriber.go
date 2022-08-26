@@ -46,9 +46,10 @@ func (s *PanaceaSubscriber) Run(eventType ...string) error {
 		}
 
 		go func() {
-			for range txs {
-				t := <-txs
-				_ = convertedEvent.EventHandler(t)
+			for tx := range txs {
+				if err := convertedEvent.EventHandler(tx); err != nil {
+					log.Errorf("failed to handle event '%s': %v", query, err)
+				}
 			}
 		}()
 	}

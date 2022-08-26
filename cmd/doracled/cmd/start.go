@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
-	"github.com/medibloc/panacea-doracle/server"
 	"github.com/spf13/cobra"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -29,14 +30,19 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		err = subscriber.Run(types.EventTypeRegistrationVote)
-		if err != nil {
-			return err
-		}
 		defer subscriber.Close()
 
-		return server.Run(conf)
+		if err := subscriber.Run(types.EventTypeRegistrationVote); err != nil {
+			log.Errorf("error occured: %v", err)
+		}
+
+		sigChan := make(chan os.Signal, 1)
+
+		signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+		<-sigChan
+		log.Infof("signal detected")
+
+		return nil
 	},
 }
 

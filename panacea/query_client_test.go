@@ -52,6 +52,9 @@ func TestGetAccount(t *testing.T) {
 
 	require.Equal(t, mediblocLimitedAddress, address)
 
+	err = queryClient.Close()
+	require.NoError(t, err)
+
 }
 
 func TestLightClientConnection(t *testing.T) {

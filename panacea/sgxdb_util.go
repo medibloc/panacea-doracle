@@ -72,7 +72,12 @@ func GetTrustedBlockInfo() (TrustedBlockInfo, error) {
 		return TrustedBlockInfo{}, err
 	}
 
-	log.Info("Save trusted block info to levelDB")
+	err = db.Close()
+	if err != nil {
+		return TrustedBlockInfo{}, err
+	}
+
+	log.Info("Get trusted block info to levelDB")
 
 	return info, nil
 }

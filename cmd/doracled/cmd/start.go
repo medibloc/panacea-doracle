@@ -48,7 +48,6 @@ func startCmd() *cobra.Command {
 			defer subscriber.Close()
 
 			if err := subscriber.Run(types.EventTypeRegistrationVote); err != nil {
-				log.Errorf("error occured: %v", err)
 				return fmt.Errorf("failed to subscribe events: %w", err)
 			}
 

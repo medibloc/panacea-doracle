@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
-	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
@@ -27,26 +26,18 @@ func TestGetAccount(t *testing.T) {
 		TrustedBlockHash:   hash,
 	}
 
+	err = panacea.SaveTrustedBlockInfo(trustedBlockinfo)
+	require.NoError(t, err)
+
 	userHomeDir, err := os.UserHomeDir()
 	require.NoError(t, err)
-	dbDir := filepath.Join(userHomeDir, ".doracle", "data")
-
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", dbDir)
-	require.NoError(t, err)
-
-	_ = db.Set([]byte("trustedBlockHash"), trustedBlockinfo.TrustedBlockHash)
 
 	homeDir := filepath.Join(userHomeDir, ".doracle")
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	getTrustedBlockHash, err := db.Get([]byte("trustedBlockInfo"))
+	gettrustedBlockinfo, err := panacea.GetTrustedBlockInfo()
 	require.NoError(t, err)
-
-	gettrustedBlockinfo := panacea.TrustedBlockInfo{
-		TrustedBlockHeight: 99,
-		TrustedBlockHash:   getTrustedBlockHash,
-	}
 
 	queryClient, err := panacea.NewQueryClient(ctx, conf, gettrustedBlockinfo)
 
@@ -62,6 +53,31 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, mediblocLimitedAddress, address)
 
 }
+
+//func TestGobBuffer(t *testing.T) {
+//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+//	require.NoError(t, err)
+//	fmt.Println(hash)
+//	trustedBlockinfo := panacea.TrustedBlockInfo{
+//		TrustedBlockHeight: 99,
+//		TrustedBlockHash:   hash,
+//	}
+//	var buffer bytes.Buffer
+//	//var buffer2 bytes.Buffer
+//	enc := gob.NewEncoder(&buffer)
+//	dec := gob.NewDecoder(&buffer)
+//	err = enc.Encode(trustedBlockinfo)
+//	require.NoError(t, err)
+//
+//	//fmt.Println(buffer.Bytes())
+//
+//	var getBlockinfo panacea.TrustedBlockInfo
+//
+//	err = dec.Decode(&getBlockinfo)
+//	require.NoError(t, err)
+//	fmt.Println(getBlockinfo.TrustedBlockHash)
+//	fmt.Println(getBlockinfo.TrustedBlockHeight)
+//}
 
 // Test for GetBalance function.
 // The test fails due to a version problem of the current panacea mainNet.

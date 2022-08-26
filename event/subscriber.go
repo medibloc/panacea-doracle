@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
@@ -29,16 +30,10 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}, nil
 }
 
-type PanaceaEventStatus int32
-
-const (
-	RegisterOracle PanaceaEventStatus = 1
-)
-
-func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
+func (s *PanaceaSubscriber) Run(eventType ...string) error {
 	log.Infof("start panacea event subscriber")
 
-	for _, e := range event {
+	for _, e := range eventType {
 		convertedEvent := convertEventStatusToEvent(e)
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
 
@@ -52,7 +47,8 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 
 		go func() {
 			for range txs {
-				_ = convertedEvent.EventHandler(<-txs)
+				t := <-txs
+				_ = convertedEvent.EventHandler(t)
 			}
 		}()
 	}
@@ -60,9 +56,9 @@ func (s *PanaceaSubscriber) Run(event ...PanaceaEventStatus) error {
 	return nil
 }
 
-func convertEventStatusToEvent(e PanaceaEventStatus) Event {
-	switch e {
-	case RegisterOracle:
+func convertEventStatusToEvent(eventType string) Event {
+	switch eventType {
+	case types.EventTypeRegistrationVote:
 		return RegisterOracleEvent{}
 	default:
 		return nil

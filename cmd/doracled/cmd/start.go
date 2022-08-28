@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/server"
@@ -30,7 +29,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		err = subscriber.Run(types.EventTypeRegistrationVote)
+		err = subscriber.Run(event.RegisterOracleEvent{})
 		if err != nil {
 			return err
 		}

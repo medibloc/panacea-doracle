@@ -29,7 +29,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		err = subscriber.Run(&event.RegisterOracleEvent{})
+		err = subscriber.Run(event.RegisterOracleEvent{})
 		if err != nil {
 			return err
 		}

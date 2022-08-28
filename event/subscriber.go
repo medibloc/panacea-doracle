@@ -2,8 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
@@ -35,23 +33,21 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	log.Infof("start panacea event subscriber")
 
 	for _, e := range events {
-		convertedEvent := convertEventStatusToEvent(e.GetEventType())
-		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
+		query := e.GetEventType() + "." + e.GetEventAttributeKey() + "=" + e.GetEventAttributeValue()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-
-		fmt.Println(query)
 
 		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {
 			return err
 		}
 
+		e := e
 		go func() {
 			for range txs {
 				t := <-txs
-				_ = convertedEvent.EventHandler(t)
+				_ = e.EventHandler(t)
 			}
 		}()
 	}
@@ -59,14 +55,14 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	return nil
 }
 
-func convertEventStatusToEvent(eventType string) Event {
-	switch eventType {
-	case types.EventTypeRegistrationVote:
-		return RegisterOracleEvent{}
-	default:
-		return nil
-	}
-}
+//func convertEventTypeToEvent(eventType string) Event {
+//	switch eventType {
+//	case types.EventTypeRegistrationVote:
+//		return RegisterOracleEvent{}
+//	default:
+//		return nil
+//	}
+//}
 
 func (s *PanaceaSubscriber) Close() error {
 	log.Infof("closing panacea event subscriber")

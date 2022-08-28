@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
@@ -38,6 +39,8 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
+		fmt.Println(query)
+
 		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {
 			return err
@@ -47,6 +50,7 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 		go func() {
 			for range txs {
 				t := <-txs
+				fmt.Println("got ", t.Events)
 				_ = e.EventHandler(t)
 			}
 		}()

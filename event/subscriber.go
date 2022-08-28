@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
@@ -30,15 +31,17 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}, nil
 }
 
-func (s *PanaceaSubscriber) Run(eventType ...string) error {
+func (s *PanaceaSubscriber) Run(events ...Event) error {
 	log.Infof("start panacea event subscriber")
 
-	for _, e := range eventType {
-		convertedEvent := convertEventStatusToEvent(e)
+	for _, e := range events {
+		convertedEvent := convertEventStatusToEvent(e.GetEventType())
 		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
+
+		fmt.Println(query)
 
 		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {

@@ -20,8 +20,6 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -72,12 +70,6 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		}
 		pvs = append(pvs, witness)
 	}
-
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	dbDir := filepath.Join(userHomeDir, ".doracle", "data")
 
 	db, err := sgxdb.NewSgxLevelDB("light-client-db", dbDir)
 	if err != nil {

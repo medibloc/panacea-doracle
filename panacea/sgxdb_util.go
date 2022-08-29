@@ -9,6 +9,16 @@ import (
 	"path/filepath"
 )
 
+var dbDir string
+
+func init() {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	dbDir = filepath.Join(userHomeDir, ".doracle", "data")
+}
+
 func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
 	var buffer bytes.Buffer
 
@@ -19,22 +29,14 @@ func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
 		return err
 	}
 
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	dbDir := filepath.Join(userHomeDir, ".doracle", "data")
-
 	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", dbDir)
 	if err != nil {
 		return err
 	}
-	err = db.Set([]byte("trustedBlockInfo"), buffer.Bytes())
-	if err != nil {
-		return err
-	}
 
-	err = db.Close()
+	defer db.Close()
+
+	err = db.Set([]byte("trustedBlockInfo"), buffer.Bytes())
 	if err != nil {
 		return err
 	}
@@ -46,16 +48,12 @@ func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
 
 func GetTrustedBlockInfo() (TrustedBlockInfo, error) {
 
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		return TrustedBlockInfo{}, err
-	}
-	dbDir := filepath.Join(userHomeDir, ".doracle", "data")
-
 	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", dbDir)
 	if err != nil {
 		return TrustedBlockInfo{}, err
 	}
+
+	defer db.Close()
 
 	infoBuf, err := db.Get([]byte("trustedBlockInfo"))
 	if err != nil {
@@ -68,11 +66,6 @@ func GetTrustedBlockInfo() (TrustedBlockInfo, error) {
 	var info TrustedBlockInfo
 
 	err = dec.Decode(&info)
-	if err != nil {
-		return TrustedBlockInfo{}, err
-	}
-
-	err = db.Close()
 	if err != nil {
 		return TrustedBlockInfo{}, err
 	}

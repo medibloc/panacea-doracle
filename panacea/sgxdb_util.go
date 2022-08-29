@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 )
 
-var dbDir string
+var DbDir string
 
 func init() {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	dbDir = filepath.Join(userHomeDir, ".doracle", "data")
+	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
 }
 
 func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
@@ -29,7 +29,7 @@ func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
 		return err
 	}
 
-	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", dbDir)
+	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func SaveTrustedBlockInfo(info TrustedBlockInfo) error {
 
 func GetTrustedBlockInfo() (TrustedBlockInfo, error) {
 
-	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", dbDir)
+	db, err := sgxleveldb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return TrustedBlockInfo{}, err
 	}

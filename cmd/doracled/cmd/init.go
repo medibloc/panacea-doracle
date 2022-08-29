@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -26,7 +27,7 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to create config dir: %w", err)
 		}
 
-		dbDir := filepath.Join(homeDir, "data")
+		dbDir := panacea.DbDir
 		if _, err := os.Stat(dbDir); os.IsNotExist(err) {
 			err = os.MkdirAll(dbDir, 0755)
 			if err != nil {

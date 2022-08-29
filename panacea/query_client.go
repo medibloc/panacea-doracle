@@ -71,7 +71,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs = append(pvs, witness)
 	}
 
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", dbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return nil, err
 	}

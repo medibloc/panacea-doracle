@@ -47,7 +47,7 @@ func startCmd() *cobra.Command {
 			}
 			defer subscriber.Close()
 
-			if err := subscriber.Run(types.EventTypeRegistrationVote); err != nil {
+			if err := subscriber.Run(event.RegisterOracleEvent{}); err != nil {
 				return fmt.Errorf("failed to subscribe events: %w", err)
 			}
 

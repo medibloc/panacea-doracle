@@ -32,12 +32,11 @@ func NewSubscriber(svc *service.Service) (*PanaceaSubscriber, error) {
 	}, nil
 }
 
-func (s *PanaceaSubscriber) Run(eventType ...string) error {
+func (s *PanaceaSubscriber) Run(events ...Event) error {
 	log.Infof("start panacea event subscriber")
 
-	for _, e := range eventType {
-		convertedEvent := convertEventStatusToEvent(e)
-		query := convertedEvent.GetEventType() + "." + convertedEvent.GetEventAttributeKey() + "=" + convertedEvent.GetEventAttributeValue()
+	for _, e := range events {
+		query := e.GetEventType() + "." + e.GetEventAttributeKey() + "=" + e.GetEventAttributeValue()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
@@ -49,7 +48,7 @@ func (s *PanaceaSubscriber) Run(eventType ...string) error {
 
 		go func() {
 			for tx := range txs {
-				if err := convertedEvent.EventHandler(tx); err != nil {
+				if err := e.EventHandler(tx); err != nil {
 					log.Errorf("failed to handle event '%s': %v", query, err)
 				}
 			}
@@ -57,15 +56,6 @@ func (s *PanaceaSubscriber) Run(eventType ...string) error {
 	}
 
 	return nil
-}
-
-func convertEventStatusToEvent(eventType string) Event {
-	switch eventType {
-	case types.EventTypeRegistrationVote:
-		return RegisterOracleEvent{}
-	default:
-		return nil
-	}
 }
 
 func (s *PanaceaSubscriber) Close() error {

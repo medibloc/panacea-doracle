@@ -44,6 +44,7 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 			return err
 		}
 
+		e := e
 		go func() {
 			for t := range txs {
 				fmt.Println("got ", t.Events)

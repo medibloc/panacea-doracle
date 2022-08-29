@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -131,14 +132,14 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 // Need to set storeKey and key inside the query function, and change type to expected type.
 
 // GetAccount returns account from address.
-func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
+func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return nil, err
 	}
 
 	key := authtypes.AddressStoreKey(acc)
-	bz, err := c.GetStoreData(context.Background(), authtypes.StoreKey, key)
+	bz, err := q.GetStoreData(context.Background(), authtypes.StoreKey, key)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	}
 
 	var account authtypes.AccountI
-	err = c.interfaceRegistry.UnpackAny(&accountAny, &account)
+	err = q.interfaceRegistry.UnpackAny(&accountAny, &account)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 }
 
 // GetBalance returns balance from address.
-func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
+func (q QueryClient) GetBalance(address string) (sdk.Coin, error) {
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return sdk.Coin{}, err
@@ -167,7 +168,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 
 	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
 
-	bz, err := c.GetStoreData(context.Background(), banktypes.StoreKey, key)
+	bz, err := q.GetStoreData(context.Background(), banktypes.StoreKey, key)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
@@ -182,7 +183,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 }
 
 // GetTopic returns topic from address and topicName.
-func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
+func (q QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return aoltypes.Topic{}, err
@@ -190,7 +191,7 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 
 	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
 	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
-	bz, err := c.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
+	bz, err := q.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
 	if err != nil {
 		return aoltypes.Topic{}, err
 	}
@@ -202,4 +203,26 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 	}
 
 	return topic, nil
+}
+
+func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracletypes.OracleRegistration, error) {
+
+	acc, err := GetAccAddressFromBech32(oracleAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	key := oracletypes.GetOracleRegistrationKey(acc)
+
+	bz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, key)
+	if err != nil {
+		return nil, err
+	}
+	var oracleRegistration oracletypes.OracleRegistration
+	err = oracleRegistration.Unmarshal(bz)
+	if err != nil {
+		return nil, err
+	}
+
+	return &oracleRegistration, nil
 }

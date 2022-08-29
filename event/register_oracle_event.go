@@ -22,7 +22,6 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 }
 
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
-	// TODO: Executing Voting Tx
-	fmt.Println("RegisterOracle Event Handler", event)
+	fmt.Println("RegisterOracle Event Handler")
 	return nil
 }

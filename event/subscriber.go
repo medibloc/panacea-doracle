@@ -39,17 +39,13 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		fmt.Println(query)
-
 		txs, err := s.Client.Subscribe(ctx, "", query)
 		if err != nil {
 			return err
 		}
 
-		e := e
 		go func() {
-			for range txs {
-				t := <-txs
+			for t := range txs {
 				fmt.Println("got ", t.Events)
 				_ = e.EventHandler(t)
 			}
@@ -59,19 +55,7 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	return nil
 }
 
-//func convertEventTypeToEvent(eventType string) Event {
-//	switch eventType {
-//	case types.EventTypeRegistrationVote:
-//		return RegisterOracleEvent{}
-//	default:
-//		return nil
-//	}
-//}
-
 func (s *PanaceaSubscriber) Close() error {
 	log.Infof("closing panacea event subscriber")
-	if err := s.Client.Stop(); err != nil {
-		return err
-	}
-	return nil
+	return s.Client.Stop()
 }

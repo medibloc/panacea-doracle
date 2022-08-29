@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"github.com/medibloc/panacea-doracle/service"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"time"
@@ -47,9 +46,10 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 		}
 
 		go func(e Event) {
-			for t := range txs {
-				fmt.Println("got ", t.Events)
-				_ = e.EventHandler(t)
+			for tx := range txs {
+				if err := e.EventHandler(tx); err != nil {
+					log.Errorf("failed to handle event '%s': %v", query, err)
+				}
 			}
 		}(e)
 	}

@@ -46,13 +46,12 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 			return err
 		}
 
-		go func() {
-			for tx := range txs {
-				if err := e.EventHandler(tx); err != nil {
-					log.Errorf("failed to handle event '%s': %v", query, err)
-				}
+		go func(e Event) {
+			for t := range txs {
+				fmt.Println("got ", t.Events)
+				_ = e.EventHandler(t)
 			}
-		}()
+		}(e)
 	}
 
 	return nil
@@ -60,8 +59,5 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 
 func (s *PanaceaSubscriber) Close() error {
 	log.Infof("closing Panacea event subscriber")
-	if err := s.Client.Stop(); err != nil {
-		return err
-	}
-	return nil
+	return s.Client.Stop()
 }

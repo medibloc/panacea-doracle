@@ -44,13 +44,12 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 			return err
 		}
 
-		e := e
-		go func() {
+		go func(e Event) {
 			for t := range txs {
 				fmt.Println("got ", t.Events)
 				_ = e.EventHandler(t)
 			}
-		}()
+		}(e)
 	}
 
 	return nil

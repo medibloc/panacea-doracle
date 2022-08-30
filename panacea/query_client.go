@@ -75,7 +75,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	}
 	// call refresh every minute
 	go func() {
-		for true {
+		for {
 			time.Sleep(1 * time.Minute)
 			err = refresh(ctx, lc, trustOptions.Period)
 			logrus.Info("light client refresh error: ", err)

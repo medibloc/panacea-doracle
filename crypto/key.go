@@ -27,7 +27,3 @@ func GeneratePrivateKeyFromMnemonic(mnemonic string, coinType, accNum, index uin
 
 	return hd.DerivePrivateKeyForPath(master, ch, hdPath)
 }
-
-func PrivKeyFromBytes(privKeyBz []byte) (*btcec.PrivateKey, *btcec.PublicKey) {
-	return btcec.PrivKeyFromBytes(btcec.S256(), privKeyBz)
-}

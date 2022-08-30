@@ -6,5 +6,5 @@ var (
 
 	DefaultOraclePubKeyName = "oracle_pub_key.json"
 
-	DefaultTrustedBlockInfoName = "trusted_block_info.json"
+	DefaultTrustedBlockInfoName = "trusted_block_info.sealed"
 )

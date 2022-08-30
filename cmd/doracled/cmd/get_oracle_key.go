@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -17,75 +18,82 @@ import (
 	tos "github.com/tendermint/tendermint/libs/os"
 )
 
-var getOracleKeyCmd = &cobra.Command{
-	Use:   "get-oracle-key",
-	Short: "Get a shared oracle private key",
-	Long: `Get a shared oracle private key from Panacea.
+func getOracleKeyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get-oracle-key",
+		Short: "Get a shared oracle private key",
+		Long: `Get a shared oracle private key from Panacea.
 The encrypted oracle private key can only be decrypted using the node key, which is generated in SGX-enabled environment.
 The node key must be the same with the one stored in OracleRegistration KV store in Panacea.
 After decrypted, the oracle private key is sealed and stored as a file named oracle_priv_key.sealed securely.
 This oracle private key can also be accessed in SGX-enabled environment using the promised binary.
 `,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// if there is a node key already, return error
-		if !tos.FileExists(nodePrivKeyPath) {
-			return errors.New("no node_priv_key.sealed file")
-		}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// if there is a node key already, return error
+			if !tos.FileExists(nodePrivKeyPath) {
+				return errors.New("no node_priv_key.sealed file")
+			}
 
-		// get config
-		conf, err := config.ReadConfigTOML(getConfigPath())
-		if err != nil {
-			return fmt.Errorf("failed to read config.toml: %w", err)
-		}
+			// get config
+			conf, err := config.ReadConfigTOML(getConfigPath())
+			if err != nil {
+				return fmt.Errorf("failed to read config.toml: %w", err)
+			}
 
-		// get existing node key
-		nodePrivKeyBz, err := sgx.UnsealFromFile(nodePrivKeyPath)
-		if err != nil {
-			return fmt.Errorf("failed to unseal node_priv_key.sealed file: %w", err)
-		}
-		nodePrivKey, nodePubKey := crypto.PrivKeyFromBytes(nodePrivKeyBz)
+			// get existing node key
+			nodePrivKeyBz, err := sgx.UnsealFromFile(nodePrivKeyPath)
+			if err != nil {
+				return fmt.Errorf("failed to unseal node_priv_key.sealed file: %w", err)
+			}
+			nodePrivKey, nodePubKey := crypto.PrivKeyFromBytes(nodePrivKeyBz)
 
-		// get unique ID
-		selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-		if err != nil {
-			return fmt.Errorf("failed to get self enclave info: %w", err)
-		}
-		uniqueID := base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID)
+			// get unique ID
+			selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
+			if err != nil {
+				return fmt.Errorf("failed to get self enclave info: %w", err)
+			}
+			uniqueID := base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID)
 
-		// get oracle account from mnemonic.
-		oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
-		if err != nil {
-			return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
-		}
+			// get oracle account from mnemonic.
+			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
+			if err != nil {
+				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
+			}
 
-		trustedBlockInfo, err := readTrustedBlockInfoFile()
-		if err != nil {
-			return fmt.Errorf("failed to read trusted block info file: %w", err)
-		}
-		fmt.Printf("%v will be used in query client", trustedBlockInfo)
+			trustedBlockInfo, err := readTrustedBlockInfoFile()
+			if err != nil {
+				return fmt.Errorf("failed to read trusted block info file: %w", err)
+			}
+			fmt.Printf("%v will be used in query client", trustedBlockInfo)
 
-		// TODO: replace to use query client
-		// get OracleRegistration from Panacea
-		cli, err := panacea.NewGrpcClient(conf)
-		if err != nil {
-			return fmt.Errorf("failed to create gRPC client: %w", err)
-		}
-		defer func() {
-			_ = cli.Close()
-		}()
+			// TODO: replace to use query client
+			// get OracleRegistration from Panacea
+			cli, err := panacea.NewGrpcClient(conf)
+			if err != nil {
+				return fmt.Errorf("failed to create gRPC client: %w", err)
+			}
+			defer func() {
+				_ = cli.Close()
+			}()
 
-		oracleRegistration, err := cli.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
-		if err != nil {
-			return fmt.Errorf("failed to get oracle registration from Panacea: %w", err)
-		}
+			oracleRegistration, err := cli.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
+			if err != nil {
+				return fmt.Errorf("failed to get oracle registration from Panacea: %w", err)
+			}
 
-		// check if the same node key is used for oracle registration
-		if !bytes.Equal(oracleRegistration.NodePubKey, nodePubKey.SerializeCompressed()) {
-			return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
-		}
+			// check if the same node key is used for oracle registration
+			if !bytes.Equal(oracleRegistration.NodePubKey, nodePubKey.SerializeCompressed()) {
+				return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
+			}
 
-		return getOraclePrivKey(oracleRegistration, nodePrivKey)
-	},
+			return getOraclePrivKey(oracleRegistration, nodePrivKey)
+		},
+	}
+
+	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
+	cmd.Flags().Uint32P(flags.FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
+
+	return cmd
 }
 
 func readTrustedBlockInfoFile() (*panacea.TrustedBlockInfo, error) {

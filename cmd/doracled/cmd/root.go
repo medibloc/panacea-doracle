@@ -33,17 +33,17 @@ func init() {
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
+	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
+
 	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 	oraclePubKeyPath = filepath.Join(homeDir, types.DefaultOraclePubKeyName)
 	trustedBlockInfoFilePath = filepath.Join(homeDir, types.DefaultTrustedBlockInfoName)
-
-	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(genOracleKeyCmd)
 	rootCmd.AddCommand(verifyReport)
 	rootCmd.AddCommand(registerOracleCmd())
-	rootCmd.AddCommand(getOracleKeyCmd)
+	rootCmd.AddCommand(getOracleKeyCmd())
 }

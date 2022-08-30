@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This scripts:
+# This script:
 #   - compiles a test binary for each Go package that has `*_test.go` files.
 #     - because Go doesn't allow us to build a single test binary for all packages.
 #   - signs the test binary with EGo.
@@ -25,7 +25,7 @@ for PKG in ${PKGS_WITH_TESTS}; do
 	
 	rm -f ${GARBAGES}
 
-	ego-go test -mod=readonly -c -o ${TEST_BIN} ${PKG}  # build a test binary (without running tests)
+	ego-go test -mod=readonly -c -o ${TEST_BIN} ${PKG}  # builds a test binary (without running tests)
 	ego sign ${TEST_BIN}  # generates private/public.pem and enclave.json automatically
 	ego run ${TEST_BIN} -test.v
 done

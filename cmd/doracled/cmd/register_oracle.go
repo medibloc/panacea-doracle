@@ -13,16 +13,12 @@ import (
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
-	"path/filepath"
 )
 
-var nodePrivKeyPath string
-
-func RegisterOracleCmd() *cobra.Command {
+func registerOracleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-oracle",
 		Short: "Register an oracle",
@@ -187,8 +183,4 @@ func generateGrpcClientAndTxBuilder(conf *config.Config) (panacea.GrpcClientI, *
 	}
 
 	return cli, panacea.NewTxBuilder(cli), nil
-}
-
-func init() {
-	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 }

@@ -43,6 +43,7 @@ type QueryClient struct {
 	RpcClient         *rpchttp.HTTP
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
+	sgxLevelDB        *sgxdb.SgxLevelDB
 }
 
 func init() {
@@ -118,6 +119,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
+		sgxLevelDB:        db,
 	}, nil
 }
 
@@ -201,6 +203,17 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 	}
 
 	return result.Response.Value, nil
+}
+
+func (q QueryClient) Close() error {
+	err := q.sgxLevelDB.Close()
+	if err != nil {
+		return err
+	}
+
+	q.RpcClient.OnStop()
+
+	return nil
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.

@@ -7,7 +7,7 @@ BUILD_FLAGS := -tags "$(build_tags)"
 
 OUT_DIR = ./build
 
-.PHONY: all build test install clean
+.PHONY: all build ego-sign test install clean
 
 all: build test install
 
@@ -18,7 +18,11 @@ ego-sign:
 	ego sign enclave.json
 
 test:
+ifeq ($(GO),ego-go)
+	./scripts/run-tests-with-ego.sh
+else
 	$(GO) test -v ./...
+endif
 
 install: go.sum
 	$(GO) install -mod=readonly $(BUILD_FLAGS) ./cmd/doracled

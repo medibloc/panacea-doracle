@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build & Test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Set up Go 1.x
@@ -23,12 +23,12 @@ jobs:
 
       - name: Build
         env:
-          GO: go
+          GO: ego-go
         run: make build
 
       - name: Run unit tests
         env:
-          GO: go
+          GO: ego-go
         run: make test
 
       - name: Lint

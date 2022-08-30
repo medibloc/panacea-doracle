@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/medibloc/panacea-doracle/types"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,6 +18,9 @@ var (
 		Use:   "doracled",
 		Short: "doracle daemon",
 	}
+
+	nodePrivKeyPath   string
+	oraclePrivKeyPath string
 )
 
 func Execute() error {
@@ -46,11 +50,15 @@ func init() {
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
+	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
+	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+
 	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd())
 	rootCmd.AddCommand(genOracleKeyCmd)
 	rootCmd.AddCommand(verifyReport)
-	rootCmd.AddCommand(RegisterOracleCmd())
+	rootCmd.AddCommand(registerOracleCmd())
+	rootCmd.AddCommand(getOracleKeyCmd)
 }

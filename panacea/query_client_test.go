@@ -13,10 +13,6 @@ package panacea_test
 //		TrustedBlockHeight: 99,
 //		TrustedBlockHash:   hash,
 //	}
-//
-//	err = panacea.SaveTrustedBlockInfo(trustedBlockinfo)
-//	require.NoError(t, err)
-//
 //	userHomeDir, err := os.UserHomeDir()
 //	require.NoError(t, err)
 //
@@ -24,10 +20,7 @@ package panacea_test
 //	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 //	require.NoError(t, err)
 //
-//	gettrustedBlockinfo, err := panacea.GetTrustedBlockInfo()
-//	require.NoError(t, err)
-//
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, gettrustedBlockinfo)
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 //
 //	require.NoError(t, err)
 //

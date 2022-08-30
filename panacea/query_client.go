@@ -20,9 +20,13 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
+
+var DbDir string
 
 const (
 	denom       = "umed"
@@ -39,6 +43,14 @@ type QueryClient struct {
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
+}
+
+func init() {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,

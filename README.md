@@ -141,6 +141,11 @@ Run the binary using `ego` so that it can be run in the secure enclave.
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled gen-oracle-key
 ```
 
+Then, two files are generated under `~/.doracle/`
+- `oracle_priv_key.sealed` : sealed oracle private key
+- `oracle_pub_key.json` : oracle public key & its remote report
+
+
 ### verify remote report
 
 You can verify that key is generated in SGX using the promised binary.
@@ -159,6 +164,28 @@ Then, you can verify the remote report.
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled verify-report <remote-report-path>
 ```
 
-Then, two files are generated under `~/.doracle/`
-- `oracle_priv_key.sealed` : sealed oracle private key
-- `oracle_pub_key.json` : oracle public key & its remote report
+### register oracle
+
+Request to register an oracle.
+
+The trusted block information is required which would be used for light client verification.
+The account number and index are optional with the default value of 0.
+
+```bash
+AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled register-oracle \
+--trusted-block-height <block-height> \
+--trusted-block-hash <base64-encoded-block-hash> \
+--acc-num <account-number> \
+--index <account-index>
+```
+
+### get oracle key
+
+If an oracle registered successfully (vote for oracle registration is passed), the oracle can be shared the oracle private key.
+The oracle private key is encrypted and shared, and it can only be decrypted using the node private key (which is used when registering oracle) 
+
+```bash
+AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled get-oracle-key
+```
+
+The oracle private key is sealed and stored in a file named `oracle_priv_key.sealed` under `~/.doracle/`

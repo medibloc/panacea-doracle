@@ -77,8 +77,9 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	go func() {
 		for {
 			time.Sleep(1 * time.Minute)
-			err = refresh(ctx, lc, trustOptions.Period)
-			logrus.Info("light client refresh error: ", err)
+			if err := refresh(ctx, lc, trustOptions.Period); err != nil {
+			    logrus.Errorf("light client refresh error: %v", err)
+			}
 		}
 	}()
 

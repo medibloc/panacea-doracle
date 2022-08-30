@@ -132,7 +132,8 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 
-	// get nextTrustedBlock from LightClient Primary
+	// get nextTrustedBlock from LightClient Primary.
+	// It returns a new light block on a successful update. Otherwise, it returns nil
 	nextTrustedBlock, err := q.LightClient.Update(ctx, time.Now())
 	if err != nil {
 		return nil, err
@@ -140,7 +141,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 
 	// if nextTrustedBlock is not a new block, wait until the next block is confirmed
 	// AppHash for query is in the next block, so have to get nextTrustedBlock to verify query
-	if nextTrustedBlock.Height == trustedBlock.Height {
+	if nextTrustedBlock == nil {
 		// wait a creation of the next block
 		time.Sleep(blockPeriod)
 

@@ -23,6 +23,20 @@ func SealToFile(data []byte, filePath string) error {
 	return nil
 }
 
+func UnsealFromFile(filePath string) ([]byte, error) {
+	sealed, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", filePath, err)
+	}
+
+	key, err := ecrypto.Unseal(sealed, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unseal oracle key: %w", err)
+	}
+
+	return key, nil
+}
+
 // Seal returns data sealed with unique ID in SGX-enabled environments
 // If SGX is disabled, it returns the data as is.
 func Seal(data []byte, enclaveEnabled bool) ([]byte, error) {

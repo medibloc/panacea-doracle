@@ -72,12 +72,44 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	if err != nil {
 		return nil, err
 	}
+	// call refresh every minute
+	go func() {
+		for true {
+			time.Sleep(1 * time.Minute)
+			err = refresh(ctx, lc, trustOptions.Period)
+			fmt.Println("refresh error: ", err)
+		}
+	}()
 
 	return &QueryClient{
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
 	}, nil
+}
+
+// refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
+func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) error {
+	fmt.Println("check latest light block")
+	lastBlockHeight, err := lc.LastTrustedHeight()
+	if err != nil {
+		return err
+	}
+	lastBlock, err := lc.TrustedLightBlock(lastBlockHeight)
+	if err != nil {
+		return err
+	}
+	lastBlockTime := lastBlock.Time
+	currentTime := time.Now()
+	timeDiff := currentTime.Sub(lastBlockTime)
+	if timeDiff > trustPeriod*2/3 {
+		fmt.Println("update latest light block")
+		_, err = lc.Update(ctx, time.Now())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetStoreData get data from panacea with storeKey and key, then verify queried data with light client and merkle proof.
@@ -99,13 +131,23 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 
-	// get trustedBlock at blockHeight+1
-	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until the next block is confirmed
-
-	// wait a creation of the next block
-	nextTrustedBlock, err := q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
+	// get nextTrustedBlock from LightClient Primary
+	nextTrustedBlock, err := q.LightClient.Update(ctx, time.Now())
 	if err != nil {
 		return nil, err
+	}
+
+	// if nextTrustedBlock is not a new block, wait until the next block is confirmed
+	// AppHash for query is in the next block, so have to get nextTrustedBlock to verify query
+	if nextTrustedBlock.Height == trustedBlock.Height {
+		// wait a creation of the next block
+		time.Sleep(blockPeriod)
+
+		// get trustedBlock at blockHeight+1
+		nextTrustedBlock, err = q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// verify query result with merkle proof & trusted block info

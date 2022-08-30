@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	"github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -77,7 +78,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 		for true {
 			time.Sleep(1 * time.Minute)
 			err = refresh(ctx, lc, trustOptions.Period)
-			fmt.Println("refresh error: ", err)
+			logrus.Info("light client refresh error: ", err)
 		}
 	}()
 
@@ -90,7 +91,7 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 
 // refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
 func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) error {
-	fmt.Println("check latest light block")
+	logrus.Info("check latest light block")
 	lastBlockHeight, err := lc.LastTrustedHeight()
 	if err != nil {
 		return err
@@ -103,7 +104,7 @@ func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) e
 	currentTime := time.Now()
 	timeDiff := currentTime.Sub(lastBlockTime)
 	if timeDiff > trustPeriod*2/3 {
-		fmt.Println("update latest light block")
+		logrus.Info("update latest light block")
 		_, err = lc.Update(ctx, time.Now())
 		if err != nil {
 			return err

@@ -10,7 +10,6 @@ import (
 
 var (
 	homeDir string
-	DbDir   string
 	rootCmd = &cobra.Command{
 		Use:   "doracled",
 		Short: "doracle daemon",
@@ -31,7 +30,6 @@ func init() {
 		panic(err)
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
-	DbDir = filepath.Join(defaultAppHomeDir, "data")
 	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 

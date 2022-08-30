@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	"github.com/medibloc/panacea-doracle/cmd/doracled/cmd"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/tendermint/tendermint/libs/log"
@@ -71,7 +72,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs = append(pvs, witness)
 	}
 
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", cmd.DbDir)
 	if err != nil {
 		return nil, err
 	}

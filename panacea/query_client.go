@@ -11,7 +11,8 @@ import (
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	"github.com/medibloc/panacea-core/v2/types/compkey"
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
-	"github.com/sirupsen/logrus"
+	"github.com/medibloc/panacea-doracle/config"
+	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -19,9 +20,13 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	dbm "github.com/tendermint/tm-db"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
+
+var DbDir string
 
 const (
 	denom       = "umed"
@@ -39,26 +44,50 @@ type QueryClient struct {
 	interfaceRegistry codectypes.InterfaceRegistry
 }
 
+func init() {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
+}
+
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
-func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHeight int, trustedBlockHash []byte) (*QueryClient, error) {
-	rpcClient, err := rpchttp.New(rpcAddr, "/websocket")
+func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
+	chainID := config.Panacea.ChainID
+	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}
 
 	trustOptions := light.TrustOptions{
 		Period: 2 * 365 * 24 * time.Hour,
-		Height: int64(trustedBlockHeight),
-		Hash:   trustedBlockHash,
+		Height: info.TrustedBlockHeight,
+		Hash:   info.TrustedBlockHash,
 	}
 
-	pv, err := tmhttp.New(chainID, rpcAddr)
+	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)
 	if err != nil {
 		return nil, err
 	}
-	pvs := []provider.Provider{pv}
-	store := dbs.New(dbm.NewMemDB(), chainID)
+
+	var pvs []provider.Provider
+	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, ",")
+	for _, witnessAddr := range witnessAddrs {
+		witness, err := tmhttp.New(chainID, witnessAddr)
+		if err != nil {
+			return nil, err
+		}
+		pvs = append(pvs, witness)
+	}
+
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	if err != nil {
+		return nil, err
+	}
+
+	store := dbs.New(db, chainID)
 
 	lc, err := light.NewClient(
 		ctx,
@@ -73,45 +102,12 @@ func NewQueryClient(ctx context.Context, chainID, rpcAddr string, trustedBlockHe
 	if err != nil {
 		return nil, err
 	}
-	// call refresh every minute
-	go func() {
-		for {
-			time.Sleep(1 * time.Minute)
-			if err := refresh(ctx, lc, trustOptions.Period); err != nil {
-			    logrus.Errorf("light client refresh error: %v", err)
-			}
-		}
-	}()
 
 	return &QueryClient{
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
 	}, nil
-}
-
-// refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
-func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) error {
-	logrus.Info("check latest light block")
-	lastBlockHeight, err := lc.LastTrustedHeight()
-	if err != nil {
-		return err
-	}
-	lastBlock, err := lc.TrustedLightBlock(lastBlockHeight)
-	if err != nil {
-		return err
-	}
-	lastBlockTime := lastBlock.Time
-	currentTime := time.Now()
-	timeDiff := currentTime.Sub(lastBlockTime)
-	if timeDiff > trustPeriod*2/3 {
-		logrus.Info("update latest light block")
-		_, err = lc.Update(ctx, time.Now())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // GetStoreData get data from panacea with storeKey and key, then verify queried data with light client and merkle proof.
@@ -133,24 +129,13 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 
-	// get nextTrustedBlock from LightClient Primary.
-	// It returns a new light block on a successful update. Otherwise, it returns nil
-	nextTrustedBlock, err := q.LightClient.Update(ctx, time.Now())
+	// get trustedBlock at blockHeight+1
+	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until the next block is confirmed
+
+	// wait a creation of the next block
+	nextTrustedBlock, err := q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
 	if err != nil {
 		return nil, err
-	}
-
-	// if nextTrustedBlock is not a new block, wait until the next block is confirmed
-	// AppHash for query is in the next block, so have to get nextTrustedBlock to verify query
-	if nextTrustedBlock == nil {
-		// wait a creation of the next block
-		time.Sleep(blockPeriod)
-
-		// get trustedBlock at blockHeight+1
-		nextTrustedBlock, err = q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// verify query result with merkle proof & trusted block info

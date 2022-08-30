@@ -34,6 +34,9 @@ grpc-addr = "{{ .Panacea.GRPCAddr }}"
 default-gas-limit = "{{ .Panacea.DefaultGasLimit }}"
 default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 
+primary-addr = "{{ .Panacea.PrimaryAddr }}"
+witnesses-addr= "{{ .Panacea.WitnessesAddr }}"
+rpc-addr= "{{ .Panacea.RpcAddr }}"
 `
 
 var configTemplate *template.Template

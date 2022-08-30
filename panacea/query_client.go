@@ -5,12 +5,8 @@ import (
 	"fmt"
 	ics23 "github.com/confio/ics23/go"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
-	"github.com/medibloc/panacea-core/v2/types/compkey"
-	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
@@ -24,7 +20,6 @@ import (
 )
 
 const (
-	denom       = "umed"
 	blockPeriod = 6 * time.Second
 )
 
@@ -159,52 +154,6 @@ func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	return account, nil
 }
 
-// GetBalance returns balance from address.
-func (q QueryClient) GetBalance(address string) (sdk.Coin, error) {
-	acc, err := GetAccAddressFromBech32(address)
-	if err != nil {
-		return sdk.Coin{}, err
-	}
-
-	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
-
-	bz, err := q.GetStoreData(context.Background(), banktypes.StoreKey, key)
-	if err != nil {
-		return sdk.Coin{}, err
-	}
-
-	var balance sdk.Coin
-	err = balance.Unmarshal(bz)
-	if err != nil {
-		return sdk.Coin{}, err
-	}
-
-	return balance, nil
-}
-
-// GetTopic returns topic from address and topicName.
-func (q QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
-	acc, err := GetAccAddressFromBech32(address)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
-	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
-	bz, err := q.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	var topic aoltypes.Topic
-	err = topic.Unmarshal(bz)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	return topic, nil
-}
-
 func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracletypes.OracleRegistration, error) {
 
 	acc, err := GetAccAddressFromBech32(oracleAddr)
@@ -212,7 +161,7 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 		return nil, err
 	}
 
-	key := oracletypes.GetOracleRegistrationKey(acc)
+	key := oracletypes.GetOracleRegistrationKey(uniqueID, acc)
 
 	bz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, key)
 	if err != nil {

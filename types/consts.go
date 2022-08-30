@@ -5,4 +5,6 @@ var (
 	DefaultNodePrivKeyName   = "node_priv_key.sealed"
 
 	DefaultOraclePubKeyName = "oracle_pub_key.json"
+
+	DefaultTrustedBlockInfoName = "trusted_block_info.json"
 )

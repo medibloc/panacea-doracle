@@ -8,14 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	tos "github.com/tendermint/tendermint/libs/os"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-
-	log "github.com/sirupsen/logrus"
-	tos "github.com/tendermint/tendermint/libs/os"
 )
 
 // OraclePubKeyInfo is a struct to store oracle public key and its remote report
@@ -31,10 +28,6 @@ var genOracleKeyCmd = &cobra.Command{
 If the sealed oracle private key exist already, this command will replace the existing one.
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// get path for oracle key
-		oraclePrivKeyPath := filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
-		oraclePubKeyPath := filepath.Join(homeDir, types.DefaultOraclePubKeyName)
-
 		// If there is the existing oracle key, double-check for generating a new oracle key
 		if tos.FileExists(oraclePrivKeyPath) {
 			buf := bufio.NewReader(os.Stdin)

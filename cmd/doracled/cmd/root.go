@@ -15,8 +15,10 @@ var (
 		Short: "doracle daemon",
 	}
 
-	nodePrivKeyPath   string
-	oraclePrivKeyPath string
+	nodePrivKeyPath          string
+	oraclePrivKeyPath        string
+	oraclePubKeyPath         string
+	trustedBlockInfoFilePath string
 )
 
 func Execute() error {
@@ -33,6 +35,8 @@ func init() {
 
 	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+	oraclePubKeyPath = filepath.Join(homeDir, types.DefaultOraclePubKeyName)
+	trustedBlockInfoFilePath = filepath.Join(homeDir, types.DefaultTrustedBlockInfoName)
 
 	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -42,6 +43,11 @@ func registerOracleCmd() *cobra.Command {
 			trustedBlockInfo, err := getTrustedBlockInfo(cmd)
 			if err != nil {
 				return fmt.Errorf("failed to get trusted block info: %w", err)
+			}
+
+			// seal and store the trusted block info.
+			if err := storeTrustedBlockInfo(trustedBlockInfo); err != nil {
+				return fmt.Errorf("failed to store the trusted block info: %w", err)
 			}
 
 			// get oracle account from mnemonic.
@@ -183,4 +189,13 @@ func generateGrpcClientAndTxBuilder(conf *config.Config) (panacea.GrpcClientI, *
 	}
 
 	return cli, panacea.NewTxBuilder(cli), nil
+}
+
+func storeTrustedBlockInfo(trustedBlockInfo *panacea.TrustedBlockInfo) error {
+	trustedBLockInfoBz, err := json.Marshal(trustedBlockInfo)
+	if err != nil {
+		return err
+	}
+
+	return sgx.SealToFile(trustedBLockInfoBz, trustedBlockInfoFilePath)
 }

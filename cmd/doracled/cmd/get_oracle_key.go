@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
@@ -57,6 +58,12 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 			return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 		}
 
+		trustedBlockInfo, err := readTrustedBlockInfoFile()
+		if err != nil {
+			return fmt.Errorf("failed to read trusted block info file: %w", err)
+		}
+		fmt.Printf("%v will be used in query client", trustedBlockInfo)
+
 		// TODO: replace to use query client
 		// get OracleRegistration from Panacea
 		cli, err := panacea.NewGrpcClient(conf)
@@ -79,6 +86,20 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 
 		return getOraclePrivKey(oracleRegistration, nodePrivKey)
 	},
+}
+
+func readTrustedBlockInfoFile() (*panacea.TrustedBlockInfo, error) {
+	trustedBlockInfoBz, err := sgx.UnsealFromFile(trustedBlockInfoFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var trustedBlockInfo *panacea.TrustedBlockInfo
+	if err := json.Unmarshal(trustedBlockInfoBz, &trustedBlockInfo); err != nil {
+		return nil, err
+	}
+
+	return trustedBlockInfo, nil
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration

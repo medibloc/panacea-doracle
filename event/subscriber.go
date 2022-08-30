@@ -2,20 +2,20 @@ package event
 
 import (
 	"context"
-	"fmt"
-	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	"time"
 )
 
 type PanaceaSubscriber struct {
-	Client *rpchttp.HTTP
+	Service *service.Service
+	Client  *rpchttp.HTTP
 }
 
 // NewSubscriber generates a rpc http client with websocket address.
-func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
-	client, err := rpchttp.New(conf.Panacea.WSAddr, "/websocket")
+func NewSubscriber(svc *service.Service) (*PanaceaSubscriber, error) {
+	client, err := rpchttp.New(svc.Conf.Panacea.WSAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,8 @@ func NewSubscriber(conf *config.Config) (*PanaceaSubscriber, error) {
 	}
 
 	return &PanaceaSubscriber{
-		Client: client,
+		Service: svc,
+		Client:  client,
 	}, nil
 }
 
@@ -45,9 +46,10 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 		}
 
 		go func(e Event) {
-			for t := range txs {
-				fmt.Println("got ", t.Events)
-				_ = e.EventHandler(t)
+			for tx := range txs {
+				if err := e.EventHandler(tx); err != nil {
+					log.Errorf("failed to handle event '%s': %v", query, err)
+				}
 			}
 		}(e)
 	}
@@ -56,6 +58,6 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 }
 
 func (s *PanaceaSubscriber) Close() error {
-	log.Infof("closing panacea event subscriber")
+	log.Infof("closing Panacea event subscriber")
 	return s.Client.Stop()
 }

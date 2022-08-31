@@ -49,7 +49,6 @@ func init() {
 		panic(err)
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
-
 	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
 	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 

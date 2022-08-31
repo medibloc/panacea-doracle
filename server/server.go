@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/server/service"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,12 +14,6 @@ import (
 )
 
 func Run(conf *config.Config) error {
-	svc, err := service.New(conf)
-	if err != nil {
-		return fmt.Errorf("failed to create service: %w", err)
-	}
-	defer svc.Close()
-
 	server := &http.Server{
 		Addr:         conf.ListenAddr,
 		WriteTimeout: 15 * time.Second,
@@ -49,6 +42,7 @@ func Run(conf *config.Config) error {
 	case <-signalCh:
 		log.Info("signal detected")
 	}
+
 	log.Info("starting the graceful shutdown")
 
 	log.Info("terminating HTTP server")

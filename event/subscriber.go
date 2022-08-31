@@ -35,9 +35,7 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	log.Infof("start panacea event subscriber")
 
 	for _, e := range events {
-		query := e.GetEventType() + "." + e.GetEventAttributeKey() + "=" + e.GetEventAttributeValue()
-
-		err := s.subscribe(query, e)
+		err := s.subscribe(e)
 		if err != nil {
 			return err
 		}
@@ -46,9 +44,11 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	return nil
 }
 
-func (s *PanaceaSubscriber) subscribe(query string, event Event) error {
+func (s *PanaceaSubscriber) subscribe(event Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
+
+	query := event.GetEventType() + "." + event.GetEventAttributeKey() + "=" + event.GetEventAttributeValue()
 
 	txs, err := s.Client.Subscribe(ctx, "", query)
 	if err != nil {

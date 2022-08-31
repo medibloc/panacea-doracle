@@ -56,7 +56,7 @@ GO=go make test
 
 To run the binary in the enclave, the binary must be signed with EGo.
 
-### In development
+### For development
 
 First of all, prepare a RSA private key of the signer.
 
@@ -110,7 +110,7 @@ ego sign ./enclave.json
 
 If the binary is signed successfully, you can move the binary to where you want.
 
-### In production
+### For production
 
 A configuration for production is already prepared in the [`scripts/enclave-prod.json`](scripts/enclave-prod.json).
 

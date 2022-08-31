@@ -82,7 +82,7 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			if resp.TxResponse.Code != 0 {
-				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.Logs)
+				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.RawLog)
 			}
 
 			log.Info("register-oracle transaction succeed")

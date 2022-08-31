@@ -19,9 +19,9 @@ type PanaceaConfig struct {
 	GRPCAddr         string `mapstructure:"grpc-addr"`
 	DefaultGasLimit  uint64 `mapstructure:"default-gas-limit"`
 	DefaultFeeAmount string `mapstructure:"default-fee-amount"`
-	PrimaryAddr   string `mapstructure:"primary-addr"`
-	WitnessesAddr string `mapstructure:"witnesses-addr"`
-	RpcAddr       string `mapstructure:"rpc-addr"`
+	PrimaryAddr      string `mapstructure:"primary-addr"`
+	WitnessesAddr    string `mapstructure:"witnesses-addr"`
+	RpcAddr          string `mapstructure:"rpc-addr"`
 }
 
 func DefaultConfig() *Config {
@@ -34,11 +34,11 @@ func DefaultConfig() *Config {
 		Panacea: PanaceaConfig{
 			ChainID:          "panacea-3",
 			GRPCAddr:         "https://grpc.gopanacea.org:443",
-			DefaultGasLimit:  200000,
-			DefaultFeeAmount: "1000000umed",
-			PrimaryAddr:   "https://rpc.gopanacea.org:443",
-			WitnessesAddr: "https://rpc.gopanacea.org:443",
-			RpcAddr:       "https://rpc.gopanacea.org:443",
+			DefaultGasLimit:  300000,
+			DefaultFeeAmount: "1500000umed",
+			PrimaryAddr:      "https://rpc.gopanacea.org:443",
+			WitnessesAddr:    "https://rpc.gopanacea.org:443",
+			RpcAddr:          "https://rpc.gopanacea.org:443",
 		},
 	}
 }

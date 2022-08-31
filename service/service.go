@@ -29,7 +29,7 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, err
 	}
 
-	oraclePrivKeyPath := filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+	oraclePrivKeyPath := filepath.Join(homeDir, ".doracle", types.DefaultOraclePrivKeyName)
 	oraclePrivKeyBz, err := sgx.UnsealFromFile(oraclePrivKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)

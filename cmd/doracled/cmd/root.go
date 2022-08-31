@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
-	log "github.com/sirupsen/logrus"
 	"github.com/medibloc/panacea-doracle/types"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,10 +49,11 @@ func init() {
 		panic(err)
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
-	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
-	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 
 	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
+
+	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
+	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd())

@@ -1,5 +1,5 @@
 {
-  "exe": "/usr/local/bin/doracled",
+  "exe": "../build/doracled",
   "key": "private.pem",
   "debug": false,
   "heapSize": 512,
@@ -9,7 +9,7 @@
   "mounts": [
     {
       "source": "/doracle",
-      "target": "/data",
+      "target": "/home_mnt",
       "type": "hostfs",
       "readOnly": false
     },
@@ -21,7 +21,7 @@
   "env": [
     {
       "name": "HOME",
-      "value": "/data"
+      "value": "/home_mnt"
     }
   ],
   "files": null

@@ -18,7 +18,7 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homeDir, err := cmd.Flags().GetString(flagHome)
+			homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 			if err != nil {
 				return err
 			}

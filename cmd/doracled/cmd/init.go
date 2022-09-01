@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize configs in home dir",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		homeDir, err := cmd.Flags().GetString(flagHome)
+		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 		if err != nil {
 			return err
 		}

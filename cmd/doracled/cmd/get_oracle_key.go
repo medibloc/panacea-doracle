@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -27,7 +28,7 @@ After decrypted, the oracle private key is sealed and stored as a file named ora
 This oracle private key can also be accessed in SGX-enabled environment using the promised binary.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		homeDir, err := cmd.Flags().GetString(flagHome)
+		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 		if err != nil {
 			return err
 		}

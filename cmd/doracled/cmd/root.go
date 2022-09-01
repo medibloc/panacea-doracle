@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -9,10 +10,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-)
-
-const (
-	flagHome = "home"
 )
 
 var (
@@ -49,7 +46,7 @@ func init() {
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
-	rootCmd.PersistentFlags().String(flagHome, defaultAppHomeDir, "application home directory")
+	rootCmd.PersistentFlags().String(flags.FlagHome, defaultAppHomeDir, "application home directory")
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd())

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/input"
+	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
@@ -30,7 +31,7 @@ If the sealed oracle private key exist already, this command will replace the ex
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// get path for oracle key
-		homeDir, err := cmd.Flags().GetString(flagHome)
+		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 		if err != nil {
 			return err
 		}

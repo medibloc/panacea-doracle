@@ -25,7 +25,7 @@ func registerOracleCmd() *cobra.Command {
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homeDir, err := cmd.Flags().GetString(flagHome)
+			homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 			if err != nil {
 				return err
 			}

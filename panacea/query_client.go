@@ -16,6 +16,7 @@ import (
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	"github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/libs/log"
+	"github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
 	tmhttp "github.com/tendermint/tendermint/light/provider/http"
@@ -23,7 +24,6 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,6 +46,7 @@ type QueryClient struct {
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
+	mutex             *sync.Mutex
 }
 
 func init() {
@@ -59,6 +60,7 @@ func init() {
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
+	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
 	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
 	if err != nil {
@@ -86,8 +88,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs = append(pvs, witness)
 	}
 
-	//db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
-	db := dbm.NewMemDB()
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +112,8 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	// call refresh every minute
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
-			if err := refresh(ctx, lc, 15*time.Second); err != nil {
+			time.Sleep(1 * time.Minute)
+			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
 				logrus.Errorf("light client refresh error: %v", err)
 			}
 		}
@@ -122,12 +123,13 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
-		//sgxLevelDB:        db,
+		sgxLevelDB:        db,
+		mutex:             &lcMutex,
 	}, nil
 }
 
 // refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
-func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) error {
+func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m *sync.Mutex) error {
 	logrus.Info("check latest light block")
 	lastBlockHeight, err := lc.LastTrustedHeight()
 	if err != nil {
@@ -142,7 +144,9 @@ func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) e
 	timeDiff := currentTime.Sub(lastBlockTime)
 	if timeDiff > trustPeriod*2/3 {
 		logrus.Info("update latest light block")
+		m.Lock()
 		_, err = lc.Update(ctx, time.Now())
+		m.Unlock()
 		if err != nil {
 			return err
 		}
@@ -155,7 +159,11 @@ func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration) e
 func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []byte) ([]byte, error) {
 	var queryHeight int64
 
+	// get recent light block
+	// if the latest block has already been updated, get LastTrustedHeight
+	q.mutex.Lock()
 	trustedBlock, err := q.LightClient.Update(ctx, time.Now())
+	q.mutex.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -179,17 +187,18 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 
+	// for merkle proof, the apphash of the next block is needed.
+	// requests the next block every second, and generates an error after more than 12sec
 	var nextTrustedBlock *tmtypes.LightBlock
 	i := 0
 	for {
-		// get nextTrustedBlock from LightClient Primary.
-		// It returns a new light block on a successful update. Otherwise, it returns nil
+		q.mutex.Lock()
 		nextTrustedBlock, err = q.LightClient.VerifyLightBlockAtHeight(ctx, queryHeight+1, time.Now())
+		q.mutex.Unlock()
 		if errors.Is(err, provider.ErrHeightTooHigh) {
 			time.Sleep(1 * time.Second)
 			i++
 		} else if err != nil {
-			fmt.Println("nextTrustedBlock err")
 			return nil, err
 		} else {
 			break

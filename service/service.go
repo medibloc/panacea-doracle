@@ -1,7 +1,7 @@
 package service
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
@@ -49,7 +49,7 @@ func New(conf *config.Config) (*Service, error) {
 	return &Service{
 		Conf:          conf,
 		OraclePrivKey: oraclePrivKey,
-		UniqueID:      base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID),
+		UniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
 		GrpcClient:    grpcClient.(*panacea.GrpcClient),
 	}, nil
 }

@@ -16,7 +16,6 @@ import (
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	log "github.com/sirupsen/logrus"
 	tmlog "github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
 	tmhttp "github.com/tendermint/tendermint/light/provider/http"
@@ -27,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -87,7 +87,6 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		}
 		pvs = append(pvs, witness)
 	}
-
 	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return nil, err
@@ -128,6 +127,20 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	}, nil
 }
 
+func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightBlock, error) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	return q.LightClient.Update(ctx, time.Now())
+}
+
+func (q QueryClient) safeVerifyLightBlockAtHeight(ctx context.Context, height int64) (*tmtypes.LightBlock, error) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	return q.LightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
+}
+
 // refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
 func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m *sync.Mutex) error {
 	log.Info("check latest light block")
@@ -145,11 +158,12 @@ func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m
 	if timeDiff > trustPeriod*2/3 {
 		log.Info("update latest light block")
 		m.Lock()
+		defer m.Unlock()
 		if _, err := lc.Update(ctx, time.Now()); err != nil {
 			return err
 		}
-		m.Unlock()
 	}
+
 	return nil
 }
 
@@ -160,9 +174,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 
 	// get recent light block
 	// if the latest block has already been updated, get LastTrustedHeight
-	q.mutex.Lock()
-	trustedBlock, err := q.LightClient.Update(ctx, time.Now())
-	q.mutex.Unlock()
+	trustedBlock, err := q.safeUpdateLightClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 	var nextTrustedBlock *tmtypes.LightBlock
 	i := 0
 	for {
-		q.mutex.Lock()
-		nextTrustedBlock, err = q.LightClient.VerifyLightBlockAtHeight(ctx, queryHeight+1, time.Now())
-		q.mutex.Unlock()
+		nextTrustedBlock, err = q.safeVerifyLightBlockAtHeight(ctx, queryHeight+1)
 		if errors.Is(err, provider.ErrHeightTooHigh) {
 			time.Sleep(1 * time.Second)
 			i++

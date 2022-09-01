@@ -13,6 +13,10 @@ func NewPrivKey() (*btcec.PrivateKey, error) {
 	return btcec.NewPrivateKey(btcec.S256())
 }
 
+func PrivKeyFromBytes(privKeyBz []byte) (*btcec.PrivateKey, *btcec.PublicKey) {
+	return btcec.PrivKeyFromBytes(btcec.S256(), privKeyBz)
+}
+
 func GeneratePrivateKeyFromMnemonic(mnemonic string, coinType, accNum, index uint32) (secp256k1.PrivKey, error) {
 	if !bip39.IsMnemonicValid(mnemonic) {
 		return nil, fmt.Errorf("invalid mnemonic")
@@ -22,8 +26,4 @@ func GeneratePrivateKeyFromMnemonic(mnemonic string, coinType, accNum, index uin
 	master, ch := hd.ComputeMastersFromSeed(bip39.NewSeed(mnemonic, ""))
 
 	return hd.DerivePrivateKeyForPath(master, ch, hdPath)
-}
-
-func PrivKeyFromBytes(privKeyBz []byte) (*btcec.PrivateKey, *btcec.PublicKey) {
-	return btcec.PrivKeyFromBytes(btcec.S256(), privKeyBz)
 }

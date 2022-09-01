@@ -14,8 +14,8 @@ import (
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
-	"github.com/sirupsen/logrus"
-	"github.com/tendermint/tendermint/libs/log"
+	log "github.com/sirupsen/logrus"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -103,7 +103,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs,
 		store,
 		light.SkippingVerification(light.DefaultTrustLevel),
-		light.Logger(log.TestingLogger()),
+		light.Logger(tmlog.TestingLogger()),
 	)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		for {
 			time.Sleep(1 * time.Minute)
 			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
-				logrus.Errorf("light client refresh error: %v", err)
+				log.Errorf("light client refresh error: %v", err)
 			}
 		}
 	}()
@@ -130,7 +130,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 
 // refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
 func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m *sync.Mutex) error {
-	logrus.Info("check latest light block")
+	log.Info("check latest light block")
 	lastBlockHeight, err := lc.LastTrustedHeight()
 	if err != nil {
 		return err
@@ -143,13 +143,12 @@ func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m
 	currentTime := time.Now()
 	timeDiff := currentTime.Sub(lastBlockTime)
 	if timeDiff > trustPeriod*2/3 {
-		logrus.Info("update latest light block")
+		log.Info("update latest light block")
 		m.Lock()
-		_, err = lc.Update(ctx, time.Now())
-		m.Unlock()
-		if err != nil {
+		if _, err := lc.Update(ctx, time.Now()); err != nil {
 			return err
 		}
+		m.Unlock()
 	}
 	return nil
 }

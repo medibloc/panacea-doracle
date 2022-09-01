@@ -95,7 +95,8 @@ func getOraclePrivKey(homeDir string, oracleRegistration *oracletypes.OracleRegi
 
 	case oracletypes.ORACLE_REGISTRATION_STATUS_PASSED:
 		// if exists, no need to do get-oracle-key cmd.
-		if tos.FileExists(types.GetOraclePrivKeyPath(homeDir)) {
+		oraclePrivKeyPath := types.GetOraclePrivKeyPath(homeDir)
+		if tos.FileExists(oraclePrivKeyPath) {
 			return errors.New("the oracle private key already exists")
 		}
 
@@ -105,7 +106,7 @@ func getOraclePrivKey(homeDir string, oracleRegistration *oracletypes.OracleRegi
 			return fmt.Errorf("failed to decrypt the EncryptedOraclePrivKey: %w", err)
 		}
 
-		if err := sgx.SealToFile(oraclePrivKey, types.GetOraclePrivKeyPath(homeDir)); err != nil {
+		if err := sgx.SealToFile(oraclePrivKey, oraclePrivKeyPath); err != nil {
 			return fmt.Errorf("failed to seal to file: %w", err)
 		}
 

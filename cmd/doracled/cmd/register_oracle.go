@@ -13,6 +13,7 @@ import (
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -23,13 +24,19 @@ func registerOracleCmd() *cobra.Command {
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			homeDir, err := cmd.Flags().GetString(flagHome)
+			if err != nil {
+				return err
+			}
 			// if node key exists, return error.
+
+			nodePrivKeyPath := types.GetNodePrivKeyPath(homeDir)
 			if tos.FileExists(nodePrivKeyPath) {
 				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
 			}
 
 			// get config
-			conf, err := config.ReadConfigTOML(getConfigPath())
+			conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
 			if err != nil {
 				return fmt.Errorf("failed to read config.toml: %w", err)
 			}
@@ -51,7 +58,7 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			// generate node key and its remote report
-			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
+			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey(nodePrivKeyPath)
 			if err != nil {
 				return fmt.Errorf("failed to generate node key pair: %w", err)
 			}
@@ -155,7 +162,7 @@ func getOracleAccount(cmd *cobra.Command, mnemonic string) (*panacea.OracleAccou
 
 // generateNodeKey generates random node key and its remote report
 // And the generated private key is sealed and stored
-func generateNodeKey() ([]byte, []byte, error) {
+func generateNodeKey(nodePrivKeyPath string) ([]byte, []byte, error) {
 	nodePrivKey, err := crypto.NewPrivKey()
 	if err != nil {
 		return nil, nil, err

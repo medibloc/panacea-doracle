@@ -18,7 +18,11 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf, err := config.ReadConfigTOML(getConfigPath())
+			homeDir, err := cmd.Flags().GetString(flagHome)
+			if err != nil {
+				return err
+			}
+			conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
 			if err != nil {
 				return fmt.Errorf("failed to read config from file: %w", err)
 			}
@@ -32,7 +36,7 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account: %w", err)
 			}
 
-			svc, err := service.New(conf)
+			svc, err := service.New(conf, homeDir)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}

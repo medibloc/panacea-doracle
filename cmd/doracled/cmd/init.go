@@ -17,6 +17,10 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize configs in home dir",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		homeDir, err := cmd.Flags().GetString(flagHome)
+		if err != nil {
+			return err
+		}
 		if _, err := os.Stat(homeDir); err == nil {
 			return fmt.Errorf("home dir(%v) already exists", homeDir)
 		} else if !os.IsNotExist(err) {
@@ -34,10 +38,10 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		return config.WriteConfigTOML(getConfigPath(), config.DefaultConfig())
+		return config.WriteConfigTOML(getConfigPath(homeDir), config.DefaultConfig())
 	},
 }
 
-func getConfigPath() string {
+func getConfigPath(homeDir string) string {
 	return filepath.Join(homeDir, configFileName)
 }

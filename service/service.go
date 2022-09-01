@@ -9,8 +9,6 @@ import (
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
-	"os"
-	"path/filepath"
 )
 
 type Service struct {
@@ -18,18 +16,14 @@ type Service struct {
 	OracleAccount *panacea.OracleAccount
 	OraclePrivKey *btcec.PrivateKey
 	UniqueID      string
+	HomeDir       string
 
 	QueryClient *panacea.QueryClient
 	GrpcClient  *panacea.GrpcClient
 }
 
-func New(conf *config.Config) (*Service, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	oraclePrivKeyPath := filepath.Join(homeDir, ".doracle", types.DefaultOraclePrivKeyName)
+func New(conf *config.Config, homeDir string) (*Service, error) {
+	oraclePrivKeyPath := types.GetOraclePrivKeyPath(homeDir)
 	oraclePrivKeyBz, err := sgx.UnsealFromFile(oraclePrivKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
@@ -51,6 +45,7 @@ func New(conf *config.Config) (*Service, error) {
 		OraclePrivKey: oraclePrivKey,
 		UniqueID:      base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID),
 		GrpcClient:    grpcClient.(*panacea.GrpcClient),
+		HomeDir:       homeDir,
 	}, nil
 }
 

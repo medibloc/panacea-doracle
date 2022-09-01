@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -12,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	flagHome = "home"
+)
+
 var (
-	homeDir string
 	rootCmd = &cobra.Command{
 		Use:   "doracled",
 		Short: "doracle daemon",
 	}
-
-	nodePrivKeyPath   string
-	oraclePrivKeyPath string
 )
 
 func Execute() error {
@@ -50,10 +49,7 @@ func init() {
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
-	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
-
-	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
-	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+	rootCmd.PersistentFlags().String(flagHome, defaultAppHomeDir, "application home directory")
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd())

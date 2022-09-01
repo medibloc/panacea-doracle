@@ -11,6 +11,7 @@ import (
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -26,13 +27,18 @@ After decrypted, the oracle private key is sealed and stored as a file named ora
 This oracle private key can also be accessed in SGX-enabled environment using the promised binary.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		homeDir, err := cmd.Flags().GetString(flagHome)
+		if err != nil {
+			return err
+		}
 		// if there is a node key already, return error
+		nodePrivKeyPath := types.GetNodePrivKeyPath(homeDir)
 		if !tos.FileExists(nodePrivKeyPath) {
 			return errors.New("no node_priv_key.sealed file")
 		}
 
 		// get config
-		conf, err := config.ReadConfigTOML(getConfigPath())
+		conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
 		if err != nil {
 			return fmt.Errorf("failed to read config.toml: %w", err)
 		}
@@ -77,19 +83,19 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 			return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 		}
 
-		return getOraclePrivKey(oracleRegistration, nodePrivKey)
+		return getOraclePrivKey(homeDir, oracleRegistration, nodePrivKey)
 	},
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration
-func getOraclePrivKey(oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey) error {
+func getOraclePrivKey(homeDir string, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey) error {
 	switch oracleRegistration.Status {
 	case oracletypes.ORACLE_REGISTRATION_STATUS_VOTING_PERIOD:
 		return errors.New("voting is currently in progress")
 
 	case oracletypes.ORACLE_REGISTRATION_STATUS_PASSED:
 		// if exists, no need to do get-oracle-key cmd.
-		if tos.FileExists(oraclePrivKeyPath) {
+		if tos.FileExists(types.GetOraclePrivKeyPath(homeDir)) {
 			return errors.New("the oracle private key already exists")
 		}
 
@@ -99,7 +105,7 @@ func getOraclePrivKey(oracleRegistration *oracletypes.OracleRegistration, nodePr
 			return fmt.Errorf("failed to decrypt the EncryptedOraclePrivKey: %w", err)
 		}
 
-		if err := sgx.SealToFile(oraclePrivKey, oraclePrivKeyPath); err != nil {
+		if err := sgx.SealToFile(oraclePrivKey, types.GetOraclePrivKeyPath(homeDir)); err != nil {
 			return fmt.Errorf("failed to seal to file: %w", err)
 		}
 

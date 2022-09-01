@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
@@ -55,7 +55,7 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 		if err != nil {
 			return fmt.Errorf("failed to get self enclave info: %w", err)
 		}
-		uniqueID := base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID)
+		uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
 
 		// get oracle account from mnemonic.
 		oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)

@@ -128,7 +128,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	}, nil
 }
 
-// refresh update light block, when the last light block has been updated more than trustPeriod * 2/3.
+// refresh update light block, if the last light block has been updated more than trustPeriod * 2/3 ago.
 func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m *sync.Mutex) error {
 	log.Info("check latest light block")
 	lastBlockHeight, err := lc.LastTrustedHeight()

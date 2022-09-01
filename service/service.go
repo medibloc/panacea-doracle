@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 )
 
 type Service struct {
@@ -22,9 +22,8 @@ type Service struct {
 	GrpcClient  *panacea.GrpcClient
 }
 
-func New(conf *config.Config, homeDir string) (*Service, error) {
-	oraclePrivKeyPath := types.GetOraclePrivKeyPath(homeDir)
-	oraclePrivKeyBz, err := sgx.UnsealFromFile(oraclePrivKeyPath)
+func New(ctx client.Context, conf *config.Config) (*Service, error) {
+	oraclePrivKeyBz, err := sgx.UnsealFromFile(ctx.OraclePrivKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
 	}
@@ -45,7 +44,7 @@ func New(conf *config.Config, homeDir string) (*Service, error) {
 		OraclePrivKey: oraclePrivKey,
 		UniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
 		GrpcClient:    grpcClient.(*panacea.GrpcClient),
-		HomeDir:       homeDir,
+		HomeDir:       ctx.HomeDir,
 	}, nil
 }
 

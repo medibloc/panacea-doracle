@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
@@ -18,11 +19,12 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homeDir, err := cmd.Flags().GetString(flags.FlagHome)
+			ctx, err := client.GetContext(cmd)
 			if err != nil {
 				return err
 			}
-			conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
+
+			conf, err := config.ReadConfigTOML(getConfigPath(ctx.HomeDir))
 			if err != nil {
 				return fmt.Errorf("failed to read config from file: %w", err)
 			}
@@ -36,7 +38,7 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account: %w", err)
 			}
 
-			svc, err := service.New(conf, homeDir)
+			svc, err := service.New(ctx, conf)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}

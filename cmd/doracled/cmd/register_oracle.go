@@ -9,12 +9,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -25,19 +25,19 @@ func registerOracleCmd() *cobra.Command {
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homeDir, err := cmd.Flags().GetString(flags.FlagHome)
+			ctx, err := client.GetContext(cmd)
 			if err != nil {
 				return err
 			}
-			// if node key exists, return error.
 
-			nodePrivKeyPath := types.GetNodePrivKeyPath(homeDir)
+			// if node key exists, return error.
+			nodePrivKeyPath := ctx.NodePrivKeyPath
 			if tos.FileExists(nodePrivKeyPath) {
 				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
 			}
 
 			// get config
-			conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
+			conf, err := config.ReadConfigTOML(getConfigPath(ctx.HomeDir))
 			if err != nil {
 				return fmt.Errorf("failed to read config.toml: %w", err)
 			}

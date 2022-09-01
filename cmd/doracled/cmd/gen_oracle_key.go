@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -31,14 +30,13 @@ If the sealed oracle private key exist already, this command will replace the ex
 So please be cautious in using this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// get path for oracle key
-		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
+		ctx, err := client.GetContext(cmd)
 		if err != nil {
 			return err
 		}
-		oraclePrivKeyPath := types.GetOraclePrivKeyPath(homeDir)
-		oraclePubKeyPath := types.GetOraclePubKeyPath(homeDir)
 
 		// If there is the existing oracle key, double-check for generating a new oracle key
+		oraclePrivKeyPath := ctx.OraclePrivKeyPath
 		if tos.FileExists(oraclePrivKeyPath) {
 			buf := bufio.NewReader(os.Stdin)
 			ok, err := input.GetConfirmation("This can replace the existing oracle-key.sealed file.\nAre you sure to make a new oracle key?", buf, os.Stderr)
@@ -71,7 +69,7 @@ So please be cautious in using this command.`,
 		}
 
 		// store oracle pub key and its remote report to a file
-		if err = storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport, oraclePubKeyPath); err != nil {
+		if err = storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport, ctx.OraclePubKeyPath); err != nil {
 			log.Errorf("failed to save oracle pub key and its remote report: %v", err)
 			return err
 		}
@@ -81,7 +79,7 @@ So please be cautious in using this command.`,
 }
 
 // storeOraclePubKey stores base64-encoded oracle public key and its remote report
-func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) error {
+func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, oraclePubKeyPath string) error {
 	oraclePubKeyData := OraclePubKeyInfo{
 		PublicKeyBase64:    base64.StdEncoding.EncodeToString(oraclePubKey),
 		RemoteReportBase64: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),
@@ -92,7 +90,7 @@ func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, path string) 
 		return fmt.Errorf("failed to marshal oracle pub key data: %w", err)
 	}
 
-	err = ioutil.WriteFile(path, oraclePubKeyFile, 0644)
+	err = ioutil.WriteFile(oraclePubKeyPath, oraclePubKeyFile, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write oracle pub key file: %w", err)
 	}

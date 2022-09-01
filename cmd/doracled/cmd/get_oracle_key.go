@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	tos "github.com/tendermint/tendermint/libs/os"
@@ -28,18 +27,18 @@ After decrypted, the oracle private key is sealed and stored as a file named ora
 This oracle private key can also be accessed in SGX-enabled environment using the promised binary.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
+		ctx, err := client.GetContext(cmd)
 		if err != nil {
 			return err
 		}
 		// if there is a node key already, return error
-		nodePrivKeyPath := types.GetNodePrivKeyPath(homeDir)
+		nodePrivKeyPath := ctx.NodePrivKeyPath
 		if !tos.FileExists(nodePrivKeyPath) {
 			return errors.New("no node_priv_key.sealed file")
 		}
 
 		// get config
-		conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
+		conf, err := config.ReadConfigTOML(getConfigPath(ctx.HomeDir))
 		if err != nil {
 			return fmt.Errorf("failed to read config.toml: %w", err)
 		}
@@ -84,19 +83,19 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 			return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 		}
 
-		return getOraclePrivKey(homeDir, oracleRegistration, nodePrivKey)
+		return getOraclePrivKey(ctx, oracleRegistration, nodePrivKey)
 	},
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration
-func getOraclePrivKey(homeDir string, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey) error {
+func getOraclePrivKey(ctx client.Context, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey) error {
 	switch oracleRegistration.Status {
 	case oracletypes.ORACLE_REGISTRATION_STATUS_VOTING_PERIOD:
 		return errors.New("voting is currently in progress")
 
 	case oracletypes.ORACLE_REGISTRATION_STATUS_PASSED:
 		// if exists, no need to do get-oracle-key cmd.
-		oraclePrivKeyPath := types.GetOraclePrivKeyPath(homeDir)
+		oraclePrivKeyPath := ctx.OraclePrivKeyPath
 		if tos.FileExists(oraclePrivKeyPath) {
 			return errors.New("the oracle private key already exists")
 		}

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
@@ -40,6 +42,7 @@ func initLogger(conf *config.Config) error {
 
 // init is run automatically when the package is loaded.
 func init() {
+
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
@@ -47,6 +50,12 @@ func init() {
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
 	rootCmd.PersistentFlags().String(flags.FlagHome, defaultAppHomeDir, "application home directory")
+
+	ctx := client.Context{}
+	ctx = ctx.WithHomeDir(defaultAppHomeDir)
+	if err := rootCmd.ExecuteContext(context.WithValue(context.Background(), client.ContextKey, &ctx)); err != nil {
+		panic(err)
+	}
 
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(startCmd())

@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -57,10 +58,10 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
-			uniqueIDStr := base64.StdEncoding.EncodeToString(report.UniqueID)
+			uniqueID := hex.EncodeToString(report.UniqueID)
 
 			// sign and broadcast to Panacea
-			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueIDStr, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash)
+			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash)
 
 			cli, txBuilder, err := generateGrpcClientAndTxBuilder(conf)
 			if err != nil {
@@ -82,7 +83,7 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			if resp.TxResponse.Code != 0 {
-				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.Logs)
+				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.RawLog)
 			}
 
 			log.Info("register-oracle transaction succeed")

@@ -17,8 +17,6 @@ You can check if your hardware supports SGX and it is enabled in the BIOS by fol
 
 ## Prerequisites
 
-### Install prerequisites
-
 ```bash
 sudo apt update
 sudo apt install build-essential libssl-dev
@@ -28,21 +26,50 @@ sudo snap install ego-dev --classic
 sudo ego install az-dcap-client
 
 sudo usermod -a -G sgx_prv $USER
+# After this, reopen the shell so that the updated Linux group info can be loaded.
 ```
 
-### Setting signing key
 
-To make ego-sign, you have to prepare a signing key.  
+## Build a `doracled` binary
+
+```bash
+# in SGX-enabled environment,
+make build
+
+# in SGX-disabled environment,
+GO=go make build
+```
+
+
+## Run unit tests
+
+```bash
+# in SGX-enabled environment,
+make test
+
+# in SGX-disabled environment,
+GO=go make test
+```
+
+
+## Sign the `doracled` with Ego
+
+To run the binary in the enclave, the binary must be signed with EGo.
+
+### For development
+
+First of all, prepare a RSA private key of the signer.
 
 ```bash
 openssl genrsa -out private.pem -3 3072
 openssl rsa -in private.pem -pubout -out public.pem
 ```
 
-### Setting `enclave.json`
+After that, prepare a `enclave.json` file that will be applied when signing the binary with EGo.
 
-An example of `enclave.json`.
-A source directory is mounted as `/data` in SGX.
+In the following example, please replace the `<a-directory-you-want>` with a directory in your local.
+This will be mounted as `/home_mnt` to the file system presented to the enclave.
+And, the `HOME` environment variable will indicate the `/home_mnt`.
 
 ```json
 {
@@ -56,7 +83,7 @@ A source directory is mounted as `/data` in SGX.
   "mounts": [
     {
       "source": "<a-directory-you-want>",
-      "target": "/data",
+      "target": "/home_mnt",
       "type": "hostfs",
       "readOnly": false
     },
@@ -68,58 +95,45 @@ A source directory is mounted as `/data` in SGX.
   "env": [
     {
       "name": "HOME",
-      "value": "/data"
+      "value": "/home_mnt"
     }
   ],
   "files": null
 }
 ```
 
-## Build
+Finally, you can sign the binary with EGo.
 
 ```bash
-# in SGX-enabled environment,
-make build
-
-# in SGX-disabled environment,
-GO=go make build
+ego sign ./enclave.json
 ```
 
-## EGo Sign
+If the binary is signed successfully, you can move the binary to where you want.
 
-EGo sign is executable only in SGX-enabled environments.
+### For production
+
+A configuration for production is already prepared in the [`scripts/enclave-prod.json`](scripts/enclave-prod.json).
+
+So, you can just put your RSA private key (`private.pem`) into the `scripts/`, and run the following command to sign the binary.
 
 ```bash
-make ego-sign
+ego sign ./scripts/enclave-prod.json
 ```
 
-## Test
+If the binary is signed successfully, you can move the binary to where you want, or publish the binary to GitHub or so.
 
-```bash
-# in SGX-enabled environment,
-make test
+Note that a `/doracle` directory must be created and its permissions must be set properly before running the binary,
+because the `/doracle` directory will be mounted as a `HOME` directory to the enclave.
+For more details, please see the [`scripts/enclave-prod.json`](scripts/enclave-prod.json).
 
-# in SGX-disabled environment,
-GO=go make test
-```
 
-## Installation
-
-```bash
-# in SGX-enabled environment,
-make install
-
-# in SGX-disabled environment,
-GO=go make install
-```
-
-## Initialize
+## Initialize directories for the `doracled`
 
 ```bash
 doracled init
 ```
 
-## Run
+## Run the `doracled`
 
 Before running the binary, the environment variable `SGX_AESM_ADDR` must be unset.
 If not, the Azure DCAP client won't be used automatically.
@@ -134,7 +148,7 @@ unset SGX_AESM_ADDR
 
 Run the binary using `ego` so that it can be run in the secure enclave.
 
-### generate oracle key
+### Generate an oracle key
 
 ```bash
 # For the first oracle that generates an oracle key,
@@ -146,7 +160,7 @@ Then, two files are generated under `~/.doracle/`
 - `oracle_pub_key.json` : oracle public key & its remote report
 
 
-### verify remote report
+### Verify the remote report
 
 You can verify that key is generated in SGX using the promised binary.
 For that, the public key and its remote report are required.
@@ -164,7 +178,7 @@ Then, you can verify the remote report.
 AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled verify-report <remote-report-path>
 ```
 
-### register oracle
+### Register an oracle to the Panacea
 
 Request to register an oracle.
 
@@ -179,7 +193,7 @@ AZDCAP_DEBUG_LOG_LEVEL=INFO ego run doracled register-oracle \
 --index <account-index>
 ```
 
-### get oracle key
+### Get the oracle key registered in the Panacea
 
 If an oracle registered successfully (vote for oracle registration is passed), the oracle can be shared the oracle private key.
 The oracle private key is encrypted and shared, and it can only be decrypted using the node private key (which is used when registering oracle) 

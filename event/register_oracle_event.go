@@ -23,12 +23,8 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	// TODO: Verifying Remote Attestation and Executing Vote Txs
-	for _, e := range event.Events {
-		for _, k := range e {
-			fmt.Println(k)
-		}
-	}
-
+	s := event.Events[e.GetEventType()][0]
+	fmt.Println(s)
 	fmt.Println("RegisterOracle Event Handler")
 	return nil
 }

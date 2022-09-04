@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"github.com/medibloc/panacea-doracle/service"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -21,10 +22,18 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 	return "'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service.Service) error {
 	// TODO: Verifying Remote Attestation and Executing Vote Txs
-	s := event.Events[e.GetEventType()][0]
-	fmt.Println(s)
+	addressValue := event.Events[e.GetEventType()][0]
+	fmt.Println(addressValue)
+
+	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(svc.UniqueID, addressValue)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(oracleRegistration)
+
 	fmt.Println("RegisterOracle Event Handler")
 	return nil
 }

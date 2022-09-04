@@ -57,7 +57,7 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 
 	go func(event Event) {
 		for tx := range txs {
-			if err := event.EventHandler(tx); err != nil {
+			if err := event.EventHandler(tx, s.Service); err != nil {
 				log.Errorf("failed to handle event '%s': %v", query, err)
 			}
 		}

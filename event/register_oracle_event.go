@@ -24,7 +24,7 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service.Service) error {
 	// TODO: Verifying Remote Attestation and Executing Vote Txs
-	addressValue := event.Events[e.GetEventType()][0]
+	addressValue := event.Events[e.GetEventType()+"."+e.GetEventAttributeKey()]
 	fmt.Println(addressValue)
 
 	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(svc.UniqueID, addressValue)

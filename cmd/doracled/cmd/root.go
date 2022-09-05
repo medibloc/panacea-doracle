@@ -69,7 +69,7 @@ func loadConfigFromHome(cmd *cobra.Command) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config from file: %w", err)
 	}
-	conf.HomeDir = homeDir
+	conf.SetHomeDir(homeDir)
 
 	if err := initLogger(conf); err != nil {
 		return nil, fmt.Errorf("failed to init logger: %w", err)

@@ -34,7 +34,7 @@ var initCmd = &cobra.Command{
 		}
 
 		defaultConfig := config.DefaultConfig()
-		defaultConfig.HomeDir = homeDir
+		defaultConfig.SetHomeDir(homeDir)
 
 		if err = os.MkdirAll(defaultConfig.AbsDataDirPath(), 0755); err != nil {
 			return fmt.Errorf("failed to create db dir: %w", err)

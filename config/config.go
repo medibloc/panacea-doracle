@@ -13,7 +13,8 @@ type Config struct {
 }
 
 type BaseConfig struct {
-	HomeDir        string // not read from toml file
+	homeDir string // not read from toml file
+
 	LogLevel       string `mapstructure:"log-level"`
 	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
 	ListenAddr     string `mapstructure:"listen_addr"`
@@ -39,6 +40,8 @@ type PanaceaConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig: BaseConfig{
+			homeDir: "",
+
 			LogLevel:       "info",
 			OracleMnemonic: "",
 			ListenAddr:     "127.0.0.1:8080",
@@ -70,20 +73,24 @@ func (c *Config) validate() error {
 	return nil
 }
 
+func (c *Config) SetHomeDir(dir string) {
+	c.homeDir = dir
+}
+
 func (c *Config) AbsDataDirPath() string {
-	return rootify(c.DataDir, c.HomeDir)
+	return rootify(c.DataDir, c.homeDir)
 }
 
 func (c *Config) AbsOraclePrivKeyPath() string {
-	return rootify(c.OraclePrivKeyFile, c.HomeDir)
+	return rootify(c.OraclePrivKeyFile, c.homeDir)
 }
 
 func (c *Config) AbsOraclePubKeyPath() string {
-	return rootify(c.OraclePubKeyFile, c.HomeDir)
+	return rootify(c.OraclePubKeyFile, c.homeDir)
 }
 
 func (c *Config) AbsNodePrivKeyPath() string {
-	return rootify(c.NodePrivKeyFile, c.HomeDir)
+	return rootify(c.NodePrivKeyFile, c.homeDir)
 }
 
 func rootify(path, root string) string {

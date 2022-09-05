@@ -3,27 +3,31 @@ package service
 import (
 	"encoding/hex"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
-	"os"
-	"path/filepath"
+	log "github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	Conf          *config.Config
-	OracleAccount *panacea.OracleAccount
-	OraclePrivKey *btcec.PrivateKey
-	UniqueID      string
+	conf          *config.Config
+	oracleAccount *panacea.OracleAccount
+	oraclePrivKey *btcec.PrivateKey
+	uniqueID      string
 
-	QueryClient *panacea.QueryClient
-	GrpcClient  *panacea.GrpcClient
+	queryClient *panacea.QueryClient
+	grpcClient  *panacea.GrpcClient
+	subscriber  *event.PanaceaSubscriber
 }
 
-func New(conf *config.Config) (*Service, error) {
+func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -46,19 +50,50 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
-	return &Service{
-		Conf:          conf,
-		OraclePrivKey: oraclePrivKey,
-		UniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
-		GrpcClient:    grpcClient.(*panacea.GrpcClient),
-	}, nil
+	subscriber, err := event.NewSubscriber(conf.Panacea.WSAddr)
+	if err != nil {
+		// TODO: close grpcClient
+		return nil, fmt.Errorf("failed to init subscriber: %w", err)
+	}
+
+	svc := &Service{
+		conf:          conf,
+		oracleAccount: oracleAccount,
+		oraclePrivKey: oraclePrivKey,
+		uniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
+		grpcClient:    grpcClient.(*panacea.GrpcClient),
+		subscriber:    subscriber,
+	}
+
+	if err := svc.startSubscriptions(); err != nil {
+		return nil, fmt.Errorf("failed to start subscriptions: %w", err)
+	}
+
+	return svc, nil
 }
 
-func (s Service) Close() error {
+func (s *Service) startSubscriptions() error {
+	return s.subscriber.Run(
+		event.NewRegisterOracleEvent(s),
+	)
+}
+
+func (s *Service) Close() error {
 	// TODO close query client
-	if err := s.GrpcClient.Close(); err != nil {
-		return err
+	if err := s.grpcClient.Close(); err != nil {
+		log.Warn(err)
+	}
+	if err := s.subscriber.Close(); err != nil {
+		log.Warn(err)
 	}
 
 	return nil
+}
+
+func (s *Service) GRPCClient() *panacea.GrpcClient {
+	return s.grpcClient
+}
+
+func (s *Service) UniqueID() string {
+	return s.uniqueID
 }

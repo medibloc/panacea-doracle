@@ -2,14 +2,26 @@ package event
 
 import (
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/service"
+	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var _ Event = (*RegisterOracleEvent)(nil)
 
-type RegisterOracleEvent struct{}
+type RegisterOracleEvent struct {
+	reactor reactor
+}
+
+// reactor contains all ingredients needed for handling this type of event
+type reactor interface {
+	GRPCClient() *panacea.GrpcClient
+	UniqueID() string
+}
+
+func NewRegisterOracleEvent(r reactor) RegisterOracleEvent {
+	return RegisterOracleEvent{r}
+}
 
 func (e RegisterOracleEvent) GetEventType() string {
 	return "message"
@@ -23,10 +35,10 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 	return "'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service.Service) error {
+func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 
-	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(addressValue, svc.UniqueID)
+	oracleRegistration, err := e.reactor.GRPCClient().GetOracleRegistration(addressValue, e.reactor.UniqueID())
 	if err != nil {
 		return err
 	}

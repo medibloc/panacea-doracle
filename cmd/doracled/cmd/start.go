@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-doracle/client/flags"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/event"
-	"github.com/medibloc/panacea-doracle/service"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/service"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 func startCmd() *cobra.Command {
@@ -32,23 +32,11 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account: %w", err)
 			}
 
-			svc, err := service.New(conf)
+			svc, err := service.New(conf, oracleAccount)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}
 			defer svc.Close()
-
-			svc.OracleAccount = oracleAccount
-
-			subscriber, err := event.NewSubscriber(svc)
-			if err != nil {
-				return err
-			}
-			defer subscriber.Close()
-
-			if err := subscriber.Run(event.RegisterOracleEvent{}); err != nil {
-				return fmt.Errorf("failed to subscribe events: %w", err)
-			}
 
 			sigChan := make(chan os.Signal, 1)
 

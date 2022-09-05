@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-doracle/client"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/panacea"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -18,12 +18,11 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize configs in home dir",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, err := client.GetContext(cmd)
+		homeDir, err := cmd.Flags().GetString(flags.FlagHome)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read a home flag: %w", err)
 		}
 
-		homeDir := ctx.HomeDir
 		if _, err := os.Stat(homeDir); err == nil {
 			return fmt.Errorf("home dir(%v) already exists", homeDir)
 		} else if !os.IsNotExist(err) {
@@ -34,14 +33,14 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to create config dir: %w", err)
 		}
 
-		if _, err := os.Stat(panacea.DbDir); os.IsNotExist(err) {
-			err = os.MkdirAll(panacea.DbDir, 0755)
-			if err != nil {
-				return fmt.Errorf("failed to create db dir: %w", err)
-			}
+		defaultConfig := config.DefaultConfig()
+		defaultConfig.HomeDir = homeDir
+
+		if err = os.MkdirAll(defaultConfig.AbsDataDirPath(), 0755); err != nil {
+			return fmt.Errorf("failed to create db dir: %w", err)
 		}
 
-		return config.WriteConfigTOML(getConfigPath(homeDir), config.DefaultConfig())
+		return config.WriteConfigTOML(getConfigPath(homeDir), defaultConfig)
 	},
 }
 

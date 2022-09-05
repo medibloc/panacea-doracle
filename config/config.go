@@ -1,6 +1,10 @@
 package config
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	"path/filepath"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 type Config struct {
 	BaseConfig `mapstructure:",squash"`
@@ -9,10 +13,16 @@ type Config struct {
 }
 
 type BaseConfig struct {
+	HomeDir        string // not read from toml file
 	LogLevel       string `mapstructure:"log-level"`
 	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
 	ListenAddr     string `mapstructure:"listen_addr"`
 	Subscriber     string `mapstructure:"subscriber"`
+	DataDir        string `mapstructure:"data_dir"`
+
+	OraclePrivKeyFile string `mapstructure:"oracle_priv_key_file"`
+	OraclePubKeyFile  string `mapstructure:"oracle_pub_key_file"`
+	NodePrivKeyFile   string `mapstructure:"node_priv_key_file"`
 }
 
 type PanaceaConfig struct {
@@ -32,6 +42,11 @@ func DefaultConfig() *Config {
 			LogLevel:       "info",
 			OracleMnemonic: "",
 			ListenAddr:     "127.0.0.1:8080",
+			DataDir:        "data",
+
+			OraclePrivKeyFile: "oracle_priv_key.sealed",
+			OraclePubKeyFile:  "oracle_pub_key.json",
+			NodePrivKeyFile:   "node_priv_key.sealed",
 		},
 		Panacea: PanaceaConfig{
 			GRPCAddr:         "127.0.0.1:9090",
@@ -53,4 +68,27 @@ func (c *Config) validate() error {
 	}
 
 	return nil
+}
+
+func (c *Config) AbsDataDirPath() string {
+	return rootify(c.DataDir, c.HomeDir)
+}
+
+func (c *Config) AbsOraclePrivKeyPath() string {
+	return rootify(c.OraclePrivKeyFile, c.HomeDir)
+}
+
+func (c *Config) AbsOraclePubKeyPath() string {
+	return rootify(c.OraclePubKeyFile, c.HomeDir)
+}
+
+func (c *Config) AbsNodePrivKeyPath() string {
+	return rootify(c.NodePrivKeyFile, c.HomeDir)
+}
+
+func rootify(path, root string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(root, path)
 }

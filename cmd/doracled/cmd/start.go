@@ -2,16 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-doracle/client"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/medibloc/panacea-doracle/client/flags"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func startCmd() *cobra.Command {
@@ -19,18 +18,9 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, err := client.GetContext(cmd)
+			conf, err := loadConfigFromHome(cmd)
 			if err != nil {
 				return err
-			}
-
-			conf, err := config.ReadConfigTOML(getConfigPath(ctx.HomeDir))
-			if err != nil {
-				return fmt.Errorf("failed to read config from file: %w", err)
-			}
-
-			if err := initLogger(conf); err != nil {
-				return fmt.Errorf("failed to init logger: %w", err)
 			}
 
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
@@ -38,7 +28,7 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account: %w", err)
 			}
 
-			svc, err := service.New(ctx, conf)
+			svc, err := service.New(conf)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}

@@ -154,7 +154,7 @@ import (
 //}
 
 func TestGetOracleRegistration(t *testing.T) {
-	hash, err := hex.DecodeString("2D83F26DB2E2997659E88ECDE968DCF85EA1F581B5032D770FECC4A44CA5C102")
+	hash, err := hex.DecodeString("C8A1861E907BA84E04C15E7C737ADBE6D01F29E967CF39A7F33C6073C180C898")
 	require.NoError(t, err)
 	ctx := context.Background()
 

@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"github.com/edgelesssys/ego/enclave"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/service"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -24,17 +25,32 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 }
 
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service.Service) error {
-	// TODO: Verifying Remote Attestation and Executing Vote Txs
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
-	fmt.Println(addressValue)
 
 	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(addressValue, svc.UniqueID)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(oracleRegistration)
+	err = verifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("RegisterOracle Event Handler")
+	// TODO: Executing Vote Txs
+
+	return nil
+}
+
+func verifyRemoteReport(nodePubKeyRemoteReport []byte) error {
+	report, err := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("securityVersion: ", report.SecurityVersion)
+	fmt.Println("productID: ", report.ProductID)
+	fmt.Println("productID: ", report.UniqueID)
+
 	return nil
 }

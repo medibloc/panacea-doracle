@@ -35,7 +35,9 @@ rpc-addr = "{{ .Panacea.RPCAddr }}"
 default-gas-limit = "{{ .Panacea.DefaultGasLimit }}"
 default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 
+# A primary RPC address for light client verification
 light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
+# Witness addresses (comma-separated) for light client verification
 light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
 `
 

@@ -1,10 +1,9 @@
 package event
 
 import (
-	"fmt"
-	"github.com/edgelesssys/ego/enclave"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/service"
+	"github.com/medibloc/panacea-doracle/sgx"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -32,25 +31,24 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service
 		return err
 	}
 
-	err = verifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport)
+	err = verifyRemoteReport(oracleRegistration)
 	if err != nil {
 		return err
 	}
 
 	// TODO: Executing Vote Txs
-
 	return nil
 }
 
-func verifyRemoteReport(nodePubKeyRemoteReport []byte) error {
-	report, err := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
+func verifyRemoteReport(oracleRegistration *types.OracleRegistration) error {
+	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("securityVersion: ", report.SecurityVersion)
-	fmt.Println("productID: ", report.ProductID)
-	fmt.Println("productID: ", report.UniqueID)
-
+	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *selfEnclaveInfo)
+	if err != nil {
+		return err
+	}
 	return nil
 }

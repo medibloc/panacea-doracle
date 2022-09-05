@@ -22,9 +22,9 @@ type Service struct {
 	oraclePrivKey *btcec.PrivateKey
 	uniqueID      string
 
-	queryClient *panacea.QueryClient
-	grpcClient  *panacea.GrpcClient
-	subscriber  *event.PanaceaSubscriber
+	// queryClient *panacea.QueryClient //TODO: uncomment this
+	grpcClient *panacea.GrpcClient
+	subscriber *event.PanaceaSubscriber
 }
 
 func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {

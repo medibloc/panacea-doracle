@@ -33,7 +33,8 @@ import (
 var DbDir string
 
 const (
-	denom = "umed"
+	denom         = "umed"
+	trustedPeriod = 2 * 365 * 24 * time.Hour
 )
 
 type TrustedBlockInfo struct {
@@ -68,7 +69,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	}
 
 	trustOptions := light.TrustOptions{
-		Period: 2 * 365 * 24 * time.Hour,
+		Period: trustedPeriod,
 		Height: info.TrustedBlockHeight,
 		Hash:   info.TrustedBlockHash,
 	}
@@ -112,7 +113,68 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	go func() {
 		for {
 			time.Sleep(1 * time.Minute)
-			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
+			if err := refresh(ctx, lc, trustedPeriod, &lcMutex); err != nil {
+				log.Errorf("light client refresh error: %v", err)
+			}
+		}
+	}()
+
+	return &QueryClient{
+		RpcClient:         rpcClient,
+		LightClient:       lc,
+		interfaceRegistry: makeInterfaceRegistry(),
+		sgxLevelDB:        db,
+		mutex:             &lcMutex,
+	}, nil
+}
+
+func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, error) {
+	lcMutex := sync.Mutex{}
+	chainID := config.Panacea.ChainID
+	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
+	if err != nil {
+		return nil, err
+	}
+
+	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	var pvs []provider.Provider
+	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, ",")
+	for _, witnessAddr := range witnessAddrs {
+		witness, err := tmhttp.New(chainID, witnessAddr)
+		if err != nil {
+			return nil, err
+		}
+		pvs = append(pvs, witness)
+	}
+	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	if err != nil {
+		return nil, err
+	}
+
+	store := dbs.New(db, chainID)
+
+	lc, err := light.NewClientFromTrustedStore(
+		chainID,
+		trustedPeriod,
+		pv,
+		pvs,
+		store,
+		light.SkippingVerification(light.DefaultTrustLevel),
+		light.Logger(tmlog.TestingLogger()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// call refresh every minute
+	go func() {
+		for {
+			time.Sleep(1 * time.Minute)
+			if err := refresh(ctx, lc, trustedPeriod, &lcMutex); err != nil {
 				log.Errorf("light client refresh error: %v", err)
 			}
 		}

@@ -28,7 +28,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 	fmt.Println(addressValue)
 
-	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(svc.UniqueID, addressValue)
+	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(addressValue, svc.UniqueID)
 	if err != nil {
 		return err
 	}

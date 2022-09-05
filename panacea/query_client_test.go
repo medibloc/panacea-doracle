@@ -46,6 +46,9 @@ func TestGetAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, mediblocLimitedAddress, address)
+
+	err = queryClient.Close()
+	require.NoError(t, err)
 }
 
 func TestMultiGetAddress(t *testing.T) {
@@ -115,6 +118,9 @@ func TestMultiGetAddress(t *testing.T) {
 	}()
 	wg.Wait()
 
+	err = queryClient.Close()
+	require.NoError(t, err)
+
 }
 
 func TestLoadQueryClient(t *testing.T) {
@@ -146,10 +152,13 @@ func TestLoadQueryClient(t *testing.T) {
 	err = queryClient.Close()
 	require.NoError(t, err)
 
-	queryClient2, err := panacea.LoadQueryClient(ctx, conf)
+	queryClient, err = panacea.LoadQueryClient(ctx, conf)
 	require.NoError(t, err)
 
-	_, err = queryClient2.LightClient.LastTrustedHeight()
+	_, err = queryClient.LightClient.LastTrustedHeight()
+	require.NoError(t, err)
+
+	err = queryClient.Close()
 	require.NoError(t, err)
 
 }

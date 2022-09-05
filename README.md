@@ -167,8 +167,8 @@ For that, the public key and its remote report are required.
 
 ```json
 {
-  "public_key_base_64" : "<base64-encoded-public-key>",
-  "remote_report_base_64": "<base64-encoded-remote-report>"
+  "public_key_base64" : "<base64-encoded-public-key>",
+  "remote_report_base64": "<base64-encoded-remote-report>"
 }
 ```
 

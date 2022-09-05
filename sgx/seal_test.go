@@ -11,11 +11,12 @@ import (
 func TestSealAndUnsealFile(t *testing.T) {
 	data := []byte("hello world")
 
-	dir, err := os.MkdirTemp("", "test")
+	testDir := "/test"
+	err := os.MkdirAll(testDir, os.ModePerm)
 	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(testDir)
 
-	dataPath := filepath.Join(dir, "temp.sealed")
+	dataPath := filepath.Join(testDir, "temp.sealed")
 
 	err = sgx.SealToFile(data, dataPath)
 	require.NoError(t, err)

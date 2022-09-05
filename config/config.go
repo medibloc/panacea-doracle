@@ -13,15 +13,16 @@ type BaseConfig struct {
 	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
 	ListenAddr     string `mapstructure:"listen_addr"`
 	Subscriber     string `mapstructure:"subscriber"`
+	DataDir        string `mapstructure:"data_dir"`
 }
 
 type PanaceaConfig struct {
-	GRPCAddr                string `mapstructure:"grpc-addr"`
-	RPCAddr                 string `mapstructure:"rpc-addr"`
-	ChainID                 string `mapstructure:"chain-id"`
-	DefaultGasLimit         uint64 `mapstructure:"default-gas-limit"`
-	DefaultFeeAmount        string `mapstructure:"default-fee-amount"`
-	LightClientPrimaryAddr  string `mapstructure:"light-client-primary-addr"`
+	GRPCAddr                string   `mapstructure:"grpc-addr"`
+	RPCAddr                 string   `mapstructure:"rpc-addr"`
+	ChainID                 string   `mapstructure:"chain-id"`
+	DefaultGasLimit         uint64   `mapstructure:"default-gas-limit"`
+	DefaultFeeAmount        string   `mapstructure:"default-fee-amount"`
+	LightClientPrimaryAddr  string   `mapstructure:"light-client-primary-addr"`
 	LightClientWitnessAddrs []string `mapstructure:"light-client-witness-addrs"`
 }
 
@@ -31,6 +32,7 @@ func DefaultConfig() *Config {
 			LogLevel:       "info",
 			OracleMnemonic: "",
 			ListenAddr:     "127.0.0.1:8080",
+			DataDir:        "data",
 		},
 		Panacea: PanaceaConfig{
 			GRPCAddr:                "127.0.0.1:9090",

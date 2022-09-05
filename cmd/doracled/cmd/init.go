@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/panacea"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -27,14 +27,16 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to create config dir: %w", err)
 		}
 
-		if _, err := os.Stat(panacea.DbDir); os.IsNotExist(err) {
-			err = os.MkdirAll(panacea.DbDir, 0755)
+		defaultConfig := config.DefaultConfig()
+
+		if _, err := os.Stat(defaultConfig.DataDir); os.IsNotExist(err) {
+			err = os.MkdirAll(defaultConfig.DataDir, 0755)
 			if err != nil {
 				return fmt.Errorf("failed to create db dir: %w", err)
 			}
 		}
 
-		return config.WriteConfigTOML(getConfigPath(), config.DefaultConfig())
+		return config.WriteConfigTOML(getConfigPath(), defaultConfig)
 	},
 }
 

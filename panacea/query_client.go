@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -30,8 +28,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-var DbDir string
-
 const (
 	denom = "umed"
 )
@@ -47,14 +43,6 @@ type QueryClient struct {
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
 	mutex             *sync.Mutex
-}
-
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -86,7 +74,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		}
 		pvs = append(pvs, witness)
 	}
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client", config.DataDir)
 	if err != nil {
 		return nil, err
 	}

@@ -18,12 +18,13 @@ type Service struct {
 	conf        *config.Config
 	enclaveInfo *sgx.EnclaveInfo
 
-	OracleAccount *panacea.OracleAccount
-	OraclePrivKey []byte
+	oracleAccount *panacea.OracleAccount
+	oraclePrivKey []byte
 
 	// queryClient *panacea.QueryClient //TODO: uncomment this
 	grpcClient *panacea.GrpcClient
 	subscriber *event.PanaceaSubscriber
+	txBuilder  *panacea.TxBuilder
 }
 
 func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
@@ -54,6 +55,8 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 
+	txBuilder := panacea.NewTxBuilder(grpcClient)
+
 	return &Service{
 		conf:          conf,
 		oracleAccount: oracleAccount,
@@ -61,6 +64,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		enclaveInfo:   selfEnclaveInfo,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
+		txBuilder:     txBuilder,
 	}, nil
 }
 
@@ -80,10 +84,26 @@ func (s *Service) Close() error {
 	return nil
 }
 
-func (s *Service) GRPCClient() *panacea.GrpcClient {
-	return s.grpcClient
+func (s *Service) Config() *config.Config {
+	return s.conf
+}
+
+func (s *Service) OracleAcc() *panacea.OracleAccount {
+	return s.oracleAccount
+}
+
+func (s *Service) OraclePrivKey() []byte {
+	return s.oraclePrivKey
 }
 
 func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
 	return s.enclaveInfo
+}
+
+func (s *Service) GRPCClient() *panacea.GrpcClient {
+	return s.grpcClient
+}
+
+func (s *Service) TxBuilder() *panacea.TxBuilder {
+	return s.txBuilder
 }

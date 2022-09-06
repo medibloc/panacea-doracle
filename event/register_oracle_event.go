@@ -2,9 +2,12 @@ package event
 
 import (
 	"encoding/hex"
-	"github.com/medibloc/panacea-doracle/service"
-
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -20,6 +23,10 @@ type RegisterOracleEvent struct {
 type reactor interface {
 	GRPCClient() *panacea.GrpcClient
 	EnclaveInfo() *sgx.EnclaveInfo
+	OracleAcc() *panacea.OracleAccount
+	OraclePrivKey() []byte
+	TxBuilder() *panacea.TxBuilder
+	Config() *config.Config
 }
 
 func NewRegisterOracleEvent(r reactor) RegisterOracleEvent {
@@ -49,34 +56,83 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *e.reactor.EnclaveInfo())
 	if err != nil {
+		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())
+		if err != nil {
+			return err
+		}
+
+		txBytes, err := generateTxBytes(msgVoteOracleRegistrationNo, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
+		if err != nil {
+			return err
+		}
+
+		err = broadCastTx(e.reactor.GRPCClient(), txBytes)
+		if err != nil {
+			return err
+		}
 		return err
 	}
 
-	// TODO: Executing Vote Txs
+	msgVoteOracleRegistrationYes, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_YES, e.reactor.OraclePrivKey())
+	txBytes, err := generateTxBytes(msgVoteOracleRegistrationYes, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
+	if err != nil {
+		return err
+	}
+
+	err = broadCastTx(e.reactor.GRPCClient(), txBytes)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func yesVote(selfEnclave *sgx.EnclaveInfo, svc *service.Service, address string) types.OracleRegistrationVote {
-	registrationVoteYes := types.OracleRegistrationVote{
-		UniqueId:               hex.EncodeToString(selfEnclave.UniqueID),
-		VoterAddress:           svc.OracleAccount.GetAddress(),
-		VotingTargetAddress:    address,
-		VoteOption:             types.VOTE_OPTION_YES,
-		EncryptedOraclePrivKey: svc.OraclePrivKey,
+func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte) (*types.MsgVoteOracleRegistration, error) {
+	registrationVote := &types.OracleRegistrationVote{
+		UniqueId:               uniqueID,
+		VoterAddress:           voterAddr,
+		VotingTargetAddress:    votingTargetAddr,
+		VoteOption:             voteOption,
+		EncryptedOraclePrivKey: oraclePrivKey,
 	}
 
-	return registrationVoteYes
+	key := secp256k1.PrivKey{
+		Key: oraclePrivKey,
+	}
+
+	bytes, err := registrationVote.Marshal()
+
+	sign, err := key.Sign(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	msgVoteOracleRegistrationNo := &types.MsgVoteOracleRegistration{
+		OracleRegistrationVote: registrationVote,
+		Signature:              sign,
+	}
+
+	return msgVoteOracleRegistrationNo, nil
 }
 
-func noVote(selfEnclave *sgx.EnclaveInfo, svc *service.Service, address string) types.OracleRegistrationVote {
-	registrationVoteNo := types.OracleRegistrationVote{
-		UniqueId:               hex.EncodeToString(selfEnclave.UniqueID),
-		VoterAddress:           svc.OracleAccount.GetAddress(),
-		VotingTargetAddress:    address,
-		VoteOption:             types.VOTE_OPTION_NO,
-		EncryptedOraclePrivKey: svc.OraclePrivKey,
+func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
+	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
+	if err != nil {
+		return nil, err
 	}
 
-	return registrationVoteNo
+	return txBytes, nil
+}
+
+func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
+	resp, err := grpcClient.BroadcastTx(txBytes)
+	if err != nil {
+		return err
+	}
+
+	if resp.TxResponse.Code != 0 {
+		return fmt.Errorf("register oracle vote failed: %v", resp.TxResponse.RawLog)
+	}
+	return nil
 }

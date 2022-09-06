@@ -15,7 +15,7 @@ type PanaceaSubscriber struct {
 
 // NewSubscriber generates a rpc http client with websocket address.
 func NewSubscriber(svc *service.Service) (*PanaceaSubscriber, error) {
-	client, err := rpchttp.New(svc.Conf.Panacea.WSAddr, "/websocket")
+	client, err := rpchttp.New(svc.Conf.Panacea.RPCAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}

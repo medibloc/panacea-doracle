@@ -1,7 +1,6 @@
 package event
 
 import (
-	"github.com/medibloc/panacea-doracle/service"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -12,5 +11,5 @@ type Event interface {
 
 	GetEventAttributeValue() string
 
-	EventHandler(event ctypes.ResultEvent, svc *service.Service) error
+	EventHandler(event ctypes.ResultEvent) error
 }

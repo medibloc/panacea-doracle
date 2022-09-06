@@ -3,7 +3,6 @@ package panacea_test
 // All the tests can only work in sgx environment, so the tests are commented out.
 import (
 	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
@@ -170,17 +169,23 @@ func TestGetOracleRegistration(t *testing.T) {
 		},
 	}
 
+	grpcClient, err := panacea.NewGrpcClient(conf)
+	require.NoError(t, err)
 	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
-
 	require.NoError(t, err)
 
-	mediblocLimitedAddress := "panacea1tt4r6p63jlc20rfj4nxgyk6mjyrgps9t829ghk"
+	Address := "panacea1tt4r6p63jlc20rfj4nxgyk6mjyrgps9t829ghk"
 	// get unique ID
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	require.NoError(t, err)
-	uniqueID := base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID)
+	uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(mediblocLimitedAddress, uniqueID)
+	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(Address, uniqueID)
+	require.NoError(t, err)
+
+	fmt.Println(oracleRegistrationFromGrpc)
+
+	oracleRegistration, err := queryClient.GetOracleRegistration(Address, uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistration)

@@ -2,15 +2,10 @@ package service
 
 import (
 	"fmt"
-
-	"os"
-	"path/filepath"
-
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,13 +23,7 @@ type Service struct {
 }
 
 func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	oraclePrivKeyPath := filepath.Join(homeDir, ".doracle", types.DefaultOraclePrivKeyName)
-	oraclePrivKey, err := sgx.UnsealFromFile(oraclePrivKeyPath)
+	oraclePrivKeyBz, err := sgx.UnsealFromFile(conf.AbsOraclePrivKeyPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
 	}
@@ -60,7 +49,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 	return &Service{
 		conf:          conf,
 		oracleAccount: oracleAccount,
-		oraclePrivKey: oraclePrivKey,
+		oraclePrivKey: oraclePrivKeyBz,
 		enclaveInfo:   selfEnclaveInfo,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,

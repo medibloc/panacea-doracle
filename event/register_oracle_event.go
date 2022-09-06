@@ -55,6 +55,8 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
+	fmt.Println(oracleRegistration)
+
 	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *e.reactor.EnclaveInfo())
 	if err != nil {
 		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())

@@ -167,11 +167,11 @@ func TestGetOracleRegistration(t *testing.T) {
 
 	conf := &config.Config{
 		Panacea: config.PanaceaConfig{
-			ChainID:       "local",
-			RpcAddr:       "tcp://127.0.0.1:26657",
-			PrimaryAddr:   "tcp://127.0.0.1:26657",
-			WitnessesAddr: "tcp://127.0.0.1:26657",
-			GRPCAddr:      "127.0.0.1:9090",
+			ChainID:                 "local",
+			RPCAddr:                 "tcp://127.0.0.1:26657",
+			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
+			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
+			GRPCAddr:                "127.0.0.1:9090",
 		},
 	}
 

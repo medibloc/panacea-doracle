@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/medibloc/panacea-doracle/client/flags"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func startCmd() *cobra.Command {
@@ -18,13 +18,9 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf, err := config.ReadConfigTOML(getConfigPath())
+			conf, err := loadConfigFromHome(cmd)
 			if err != nil {
-				return fmt.Errorf("failed to read config from file: %w", err)
-			}
-
-			if err := initLogger(conf); err != nil {
-				return fmt.Errorf("failed to init logger: %w", err)
+				return err
 			}
 
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)

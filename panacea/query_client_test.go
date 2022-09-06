@@ -166,6 +166,7 @@ func TestGetOracleRegistration(t *testing.T) {
 			RpcAddr:       "tcp://127.0.0.1:26657",
 			PrimaryAddr:   "tcp://127.0.0.1:26657",
 			WitnessesAddr: "tcp://127.0.0.1:26657",
+			GRPCAddr:      "tcp://127.0.0.1:26657",
 		},
 	}
 

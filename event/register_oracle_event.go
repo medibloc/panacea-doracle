@@ -87,6 +87,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
+// makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
 func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte) (*types.MsgVoteOracleRegistration, error) {
 	registrationVote := &types.OracleRegistrationVote{
 		UniqueId:               uniqueID,
@@ -115,6 +116,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 	return msgVoteOracleRegistrationNo, nil
 }
 
+// generateTxBytes
 func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
@@ -125,6 +127,7 @@ func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration,
 	return txBytes, nil
 }
 
+// broadCastTx
 func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {

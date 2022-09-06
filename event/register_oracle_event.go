@@ -124,6 +124,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
+	fmt.Printf("Generate Tx Error, %v", err)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +138,7 @@ func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Broadcast Tx Error, %v", err)
 
 	if resp.TxResponse.Code != 0 {
 		return fmt.Errorf("register oracle vote failed: %v", resp.TxResponse.RawLog)

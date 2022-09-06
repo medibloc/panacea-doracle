@@ -32,19 +32,11 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service
 		return err
 	}
 
-	err = verifyRemoteReport(oracleRegistration, svc.EnclaveInfo)
+	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *svc.EnclaveInfo)
 	if err != nil {
 		return err
 	}
 
 	// TODO: Executing Vote Txs
-	return nil
-}
-
-func verifyRemoteReport(oracleRegistration *types.OracleRegistration, selfEnclaveInfo *sgx.EnclaveInfo) error {
-	err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *selfEnclaveInfo)
-	if err != nil {
-		return err
-	}
 	return nil
 }

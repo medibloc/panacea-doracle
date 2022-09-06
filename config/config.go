@@ -16,12 +16,12 @@ type BaseConfig struct {
 }
 
 type PanaceaConfig struct {
-	GRPCAddr                string `mapstructure:"grpc-addr"`
-	RPCAddr                 string `mapstructure:"rpc-addr"`
-	ChainID                 string `mapstructure:"chain-id"`
-	DefaultGasLimit         uint64 `mapstructure:"default-gas-limit"`
-	DefaultFeeAmount        string `mapstructure:"default-fee-amount"`
-	LightClientPrimaryAddr  string `mapstructure:"light-client-primary-addr"`
+	GRPCAddr                string   `mapstructure:"grpc-addr"`
+	RPCAddr                 string   `mapstructure:"rpc-addr"`
+	ChainID                 string   `mapstructure:"chain-id"`
+	DefaultGasLimit         uint64   `mapstructure:"default-gas-limit"`
+	DefaultFeeAmount        string   `mapstructure:"default-fee-amount"`
+	LightClientPrimaryAddr  string   `mapstructure:"light-client-primary-addr"`
 	LightClientWitnessAddrs []string `mapstructure:"light-client-witness-addrs"`
 }
 

@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/client"
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
@@ -25,25 +25,15 @@ func registerOracleCmd() *cobra.Command {
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, err := client.GetContext(cmd)
+			conf, err := loadConfigFromHome(cmd)
 			if err != nil {
 				return err
 			}
 
 			// if node key exists, return error.
-			nodePrivKeyPath := ctx.NodePrivKeyPath
+			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
 			if tos.FileExists(nodePrivKeyPath) {
 				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
-			}
-
-			// get config
-			conf, err := config.ReadConfigTOML(getConfigPath(ctx.HomeDir))
-			if err != nil {
-				return fmt.Errorf("failed to read config.toml: %w", err)
-			}
-
-			if err := initLogger(conf); err != nil {
-				return fmt.Errorf("failed to init logger: %w", err)
 			}
 
 			// get trusted block information

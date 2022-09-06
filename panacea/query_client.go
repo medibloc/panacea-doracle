@@ -3,6 +3,9 @@ package panacea
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	ics23 "github.com/confio/ics23/go"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,13 +23,7 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
-
-var DbDir string
 
 const (
 	denom       = "umed"
@@ -43,14 +40,6 @@ type QueryClient struct {
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
-}
-
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -83,7 +72,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs = append(pvs, witness)
 	}
 
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client", config.AbsDataDirPath())
 	if err != nil {
 		return nil, err
 	}

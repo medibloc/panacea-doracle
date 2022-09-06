@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
@@ -17,7 +16,7 @@ type Service struct {
 	Conf          *config.Config
 	OracleAccount *panacea.OracleAccount
 	OraclePrivKey *btcec.PrivateKey
-	UniqueID      string
+	EnclaveInfo   *sgx.EnclaveInfo
 
 	QueryClient *panacea.QueryClient
 	GrpcClient  *panacea.GrpcClient
@@ -49,7 +48,7 @@ func New(conf *config.Config) (*Service, error) {
 	return &Service{
 		Conf:          conf,
 		OraclePrivKey: oraclePrivKey,
-		UniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
+		EnclaveInfo:   selfEnclaveInfo,
 		GrpcClient:    grpcClient.(*panacea.GrpcClient),
 	}, nil
 }

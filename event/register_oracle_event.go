@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/hex"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/service"
 	"github.com/medibloc/panacea-doracle/sgx"
@@ -26,12 +27,12 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service.Service) error {
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 
-	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(addressValue, svc.UniqueID)
+	oracleRegistration, err := svc.GrpcClient.GetOracleRegistration(addressValue, hex.EncodeToString(svc.EnclaveInfo.UniqueID))
 	if err != nil {
 		return err
 	}
 
-	err = verifyRemoteReport(oracleRegistration)
+	err = verifyRemoteReport(oracleRegistration, svc.EnclaveInfo)
 	if err != nil {
 		return err
 	}
@@ -40,13 +41,8 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service
 	return nil
 }
 
-func verifyRemoteReport(oracleRegistration *types.OracleRegistration) error {
-	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-	if err != nil {
-		return err
-	}
-
-	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *selfEnclaveInfo)
+func verifyRemoteReport(oracleRegistration *types.OracleRegistration, selfEnclaveInfo *sgx.EnclaveInfo) error {
+	err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *selfEnclaveInfo)
 	if err != nil {
 		return err
 	}

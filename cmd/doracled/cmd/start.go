@@ -8,6 +8,7 @@ import (
 
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -37,6 +38,13 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to create service: %w", err)
 			}
 			defer svc.Close()
+
+			err = svc.StartSubscriptions(
+				event.NewRegisterOracleEvent(svc),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to start event subscription: %w", err)
+			}
 
 			sigChan := make(chan os.Signal, 1)
 

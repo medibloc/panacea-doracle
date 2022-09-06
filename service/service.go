@@ -55,26 +55,18 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 
-	svc := &Service{
+	return &Service{
 		conf:          conf,
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
-	}
-
-	if err := svc.startSubscriptions(); err != nil {
-		return nil, fmt.Errorf("failed to start subscriptions: %w", err)
-	}
-
-	return svc, nil
+	}, nil
 }
 
-func (s *Service) startSubscriptions() error {
-	return s.subscriber.Run(
-		event.NewRegisterOracleEvent(s),
-	)
+func (s *Service) StartSubscriptions(events ...event.Event) error {
+	return s.subscriber.Run(events...)
 }
 
 func (s *Service) Close() error {

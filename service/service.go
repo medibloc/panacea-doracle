@@ -2,25 +2,31 @@ package service
 
 import (
 	"fmt"
+
+	"os"
+	"path/filepath"
+
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/medibloc/panacea-doracle/types"
-	"os"
-	"path/filepath"
+	log "github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	Conf          *config.Config
+	conf        *config.Config
+	enclaveInfo *sgx.EnclaveInfo
+
 	OracleAccount *panacea.OracleAccount
 	OraclePrivKey []byte
-	EnclaveInfo   *sgx.EnclaveInfo
 
-	QueryClient *panacea.QueryClient
-	GrpcClient  *panacea.GrpcClient
+	// queryClient *panacea.QueryClient //TODO: uncomment this
+	grpcClient *panacea.GrpcClient
+	subscriber *event.PanaceaSubscriber
 }
 
-func New(conf *config.Config) (*Service, error) {
+func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -42,19 +48,42 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
+	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
+	if err != nil {
+		// TODO: close grpcClient
+		return nil, fmt.Errorf("failed to init subscriber: %w", err)
+	}
+
 	return &Service{
-		Conf:          conf,
-		OraclePrivKey: oraclePrivKey,
-		EnclaveInfo:   selfEnclaveInfo,
-		GrpcClient:    grpcClient.(*panacea.GrpcClient),
+		conf:          conf,
+		oracleAccount: oracleAccount,
+		oraclePrivKey: oraclePrivKey,
+		enclaveInfo:   selfEnclaveInfo,
+		grpcClient:    grpcClient.(*panacea.GrpcClient),
+		subscriber:    subscriber,
 	}, nil
 }
 
-func (s Service) Close() error {
+func (s *Service) StartSubscriptions(events ...event.Event) error {
+	return s.subscriber.Run(events...)
+}
+
+func (s *Service) Close() error {
 	// TODO close query client
-	if err := s.GrpcClient.Close(); err != nil {
-		return err
+	if err := s.grpcClient.Close(); err != nil {
+		log.Warn(err)
+	}
+	if err := s.subscriber.Close(); err != nil {
+		log.Warn(err)
 	}
 
 	return nil
+}
+
+func (s *Service) GRPCClient() *panacea.GrpcClient {
+	return s.grpcClient
+}
+
+func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
+	return s.enclaveInfo
 }

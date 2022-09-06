@@ -151,7 +151,7 @@ import (
 //}
 
 func TestGetOracleRegistration(t *testing.T) {
-	hash, err := hex.DecodeString("42E940044E7051B9D83805A87527376D5308DB5C3901CFB8742E1689291CA9B0")
+	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -175,7 +175,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.NoError(t, err)
 
-	Address := "panacea1tt4r6p63jlc20rfj4nxgyk6mjyrgps9t829ghk"
+	Address := "panacea18whaknesgnm6ms93jet77hvft3qzrap39eg06t"
 	// get unique ID
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	require.NoError(t, err)

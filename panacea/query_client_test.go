@@ -10,8 +10,6 @@ import (
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -163,12 +161,14 @@ func TestGetOracleRegistration(t *testing.T) {
 		TrustedBlockHash:   hash,
 	}
 
-	userHomeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
-
-	homeDir := filepath.Join(userHomeDir, ".doracle")
-	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
-	require.NoError(t, err)
+	conf := &config.Config{
+		Panacea: config.PanaceaConfig{
+			ChainID:       "local",
+			RpcAddr:       "tcp://127.0.0.1:26657",
+			PrimaryAddr:   "tcp://127.0.0.1:26657",
+			WitnessesAddr: "tcp://127.0.0.1:26657",
+		},
+	}
 
 	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 

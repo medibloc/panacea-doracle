@@ -38,5 +38,30 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent, svc *service
 	}
 
 	// TODO: Executing Vote Txs
+	
 	return nil
+}
+
+func yesVote(selfEnclave *sgx.EnclaveInfo, svc *service.Service, address string) types.OracleRegistrationVote {
+	registrationVoteYes := types.OracleRegistrationVote{
+		UniqueId:               hex.EncodeToString(selfEnclave.UniqueID),
+		VoterAddress:           svc.OracleAccount.GetAddress(),
+		VotingTargetAddress:    address,
+		VoteOption:             types.VOTE_OPTION_YES,
+		EncryptedOraclePrivKey: svc.OraclePrivKey,
+	}
+
+	return registrationVoteYes
+}
+
+func noVote(selfEnclave *sgx.EnclaveInfo, svc *service.Service, address string) types.OracleRegistrationVote {
+	registrationVoteNo := types.OracleRegistrationVote{
+		UniqueId:               hex.EncodeToString(selfEnclave.UniqueID),
+		VoterAddress:           svc.OracleAccount.GetAddress(),
+		VotingTargetAddress:    address,
+		VoteOption:             types.VOTE_OPTION_NO,
+		EncryptedOraclePrivKey: svc.OraclePrivKey,
+	}
+
+	return registrationVoteNo
 }

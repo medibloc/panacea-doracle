@@ -187,10 +187,10 @@ func TestGetOracleRegistration(t *testing.T) {
 	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
 	require.NoError(t, err)
 
-	fmt.Println(oracleRegistrationFromGrpc.UniqueId)
+	fmt.Println("unique ID1:", oracleRegistrationFromGrpc.UniqueId)
 
 	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
 	require.NoError(t, err)
 
-	fmt.Println(oracleRegistration.UniqueId)
+	fmt.Println("unique ID2:", oracleRegistration.UniqueId)
 }

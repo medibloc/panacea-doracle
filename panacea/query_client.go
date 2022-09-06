@@ -284,6 +284,8 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("bz:", bz)
 	var oracleRegistration oracletypes.OracleRegistration
 	err = oracleRegistration.Unmarshal(bz)
 	if err != nil {

@@ -27,14 +27,13 @@ type BaseConfig struct {
 }
 
 type PanaceaConfig struct {
-	GRPCAddr         string `mapstructure:"grpc-addr"`
-	WSAddr           string `mapstructure:"websocket-addr"`
-	ChainID          string `mapstructure:"chain-id"`
-	DefaultGasLimit  uint64 `mapstructure:"default-gas-limit"`
-	DefaultFeeAmount string `mapstructure:"default-fee-amount"`
-	PrimaryAddr      string `mapstructure:"primary-addr"`
-	WitnessesAddr    string `mapstructure:"witnesses-addr"`
-	RpcAddr          string `mapstructure:"rpc-addr"`
+	GRPCAddr                string `mapstructure:"grpc-addr"`
+	RPCAddr                 string `mapstructure:"rpc-addr"`
+	ChainID                 string `mapstructure:"chain-id"`
+	DefaultGasLimit         uint64 `mapstructure:"default-gas-limit"`
+	DefaultFeeAmount        string `mapstructure:"default-fee-amount"`
+	LightClientPrimaryAddr  string `mapstructure:"light-client-primary-addr"`
+	LightClientWitnessAddrs []string `mapstructure:"light-client-witness-addrs"`
 }
 
 func DefaultConfig() *Config {
@@ -52,14 +51,13 @@ func DefaultConfig() *Config {
 			NodePrivKeyFile:   "node_priv_key.sealed",
 		},
 		Panacea: PanaceaConfig{
-			GRPCAddr:         "127.0.0.1:9090",
-			WSAddr:           "tcp://127.0.0.1:26657",
-			ChainID:          "panacea-3",
-			DefaultGasLimit:  300000,
-			DefaultFeeAmount: "1500000umed",
-			PrimaryAddr:      "https://rpc.gopanacea.org:443",
-			WitnessesAddr:    "https://rpc.gopanacea.org:443",
-			RpcAddr:          "https://rpc.gopanacea.org:443",
+			GRPCAddr:                "127.0.0.1:9090",
+			RPCAddr:                 "tcp://127.0.0.1:26657",
+			ChainID:                 "panacea-3",
+			DefaultGasLimit:         300000,
+			DefaultFeeAmount:        "1500000umed",
+			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
+			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
 		},
 	}
 }

@@ -180,7 +180,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	require.NoError(t, err)
 	uniqueID := base64.StdEncoding.EncodeToString(selfEnclaveInfo.UniqueID)
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(uniqueID, mediblocLimitedAddress)
+	oracleRegistration, err := queryClient.GetOracleRegistration(mediblocLimitedAddress, uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistration)

@@ -2,7 +2,13 @@ package panacea
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
+
 	ics23 "github.com/confio/ics23/go"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,24 +19,21 @@ import (
 	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
-	"github.com/tendermint/tendermint/libs/log"
+	log "github.com/sirupsen/logrus"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
 	tmhttp "github.com/tendermint/tendermint/light/provider/http"
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var DbDir string
 
 const (
-	denom       = "umed"
-	blockPeriod = 6 * time.Second
+	denom = "umed"
 )
 
 type TrustedBlockInfo struct {
@@ -43,6 +46,7 @@ type QueryClient struct {
 	LightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
+	mutex             *sync.Mutex
 }
 
 func init() {
@@ -56,8 +60,9 @@ func init() {
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
+	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
-	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
+	rpcClient, err := rpchttp.New(config.Panacea.RPCAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -68,21 +73,19 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		Hash:   info.TrustedBlockHash,
 	}
 
-	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)
+	pv, err := tmhttp.New(chainID, config.Panacea.LightClientPrimaryAddr)
 	if err != nil {
 		return nil, err
 	}
 
 	var pvs []provider.Provider
-	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, ",")
-	for _, witnessAddr := range witnessAddrs {
+	for _, witnessAddr := range config.Panacea.LightClientWitnessAddrs {
 		witness, err := tmhttp.New(chainID, witnessAddr)
 		if err != nil {
 			return nil, err
 		}
 		pvs = append(pvs, witness)
 	}
-
 	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
 	if err != nil {
 		return nil, err
@@ -98,32 +101,95 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 		pvs,
 		store,
 		light.SkippingVerification(light.DefaultTrustLevel),
-		light.Logger(log.TestingLogger()),
+		light.Logger(tmlog.TestingLogger()),
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	// call refresh every minute
+	go func() {
+		for {
+			time.Sleep(1 * time.Minute)
+			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
+				log.Errorf("light client refresh error: %v", err)
+			}
+		}
+	}()
 
 	return &QueryClient{
 		RpcClient:         rpcClient,
 		LightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
 		sgxLevelDB:        db,
+		mutex:             &lcMutex,
 	}, nil
+}
+
+func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightBlock, error) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	return q.LightClient.Update(ctx, time.Now())
+}
+
+func (q QueryClient) safeVerifyLightBlockAtHeight(ctx context.Context, height int64) (*tmtypes.LightBlock, error) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	return q.LightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
+}
+
+// refresh update light block, if the last light block has been updated more than trustPeriod * 2/3 ago.
+func refresh(ctx context.Context, lc *light.Client, trustPeriod time.Duration, m *sync.Mutex) error {
+	log.Info("check latest light block")
+	lastBlockHeight, err := lc.LastTrustedHeight()
+	if err != nil {
+		return err
+	}
+	lastBlock, err := lc.TrustedLightBlock(lastBlockHeight)
+	if err != nil {
+		return err
+	}
+	lastBlockTime := lastBlock.Time
+	currentTime := time.Now()
+	timeDiff := currentTime.Sub(lastBlockTime)
+	if timeDiff > trustPeriod*2/3 {
+		log.Info("update latest light block")
+		m.Lock()
+		defer m.Unlock()
+		if _, err := lc.Update(ctx, time.Now()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetStoreData get data from panacea with storeKey and key, then verify queried data with light client and merkle proof.
 // the returned data type is ResponseQuery.value ([]byte), so recommend to convert to expected type
 func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []byte) ([]byte, error) {
-	trustedBlock, err := q.LightClient.Update(ctx, time.Now())
+	var queryHeight int64
+
+	// get recent light block
+	// if the latest block has already been updated, get LastTrustedHeight
+	trustedBlock, err := q.safeUpdateLightClient(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if trustedBlock == nil {
+		queryHeight, err = q.LightClient.LastTrustedHeight()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		queryHeight = trustedBlock.Height
 	}
 
 	//set queryOption prove to true
 	option := client.ABCIQueryOptions{
 		Prove:  true,
-		Height: trustedBlock.Height,
+		Height: queryHeight,
 	}
 	// query to kv store with proof option
 	result, err := q.RpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
@@ -131,13 +197,23 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 
-	// get trustedBlock at blockHeight+1
-	time.Sleep(blockPeriod) // AppHash for query is in the next block, so have to wait until the next block is confirmed
-
-	// wait a creation of the next block
-	nextTrustedBlock, err := q.LightClient.VerifyLightBlockAtHeight(ctx, trustedBlock.Height+1, time.Now())
-	if err != nil {
-		return nil, err
+	// for merkle proof, the apphash of the next block is needed.
+	// requests the next block every second, and generates an error after more than 12sec
+	var nextTrustedBlock *tmtypes.LightBlock
+	i := 0
+	for {
+		nextTrustedBlock, err = q.safeVerifyLightBlockAtHeight(ctx, queryHeight+1)
+		if errors.Is(err, provider.ErrHeightTooHigh) {
+			time.Sleep(1 * time.Second)
+			i++
+		} else if err != nil {
+			return nil, err
+		} else {
+			break
+		}
+		if i > 12 {
+			return nil, fmt.Errorf("can not get nextTrustedBlock")
+		}
 	}
 
 	// verify query result with merkle proof & trusted block info
@@ -174,14 +250,15 @@ func (q QueryClient) Close() error {
 // Need to set storeKey and key inside the query function, and change type to expected type.
 
 // GetAccount returns account from address.
-func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
+func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
+
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return nil, err
 	}
 
 	key := authtypes.AddressStoreKey(acc)
-	bz, err := c.GetStoreData(context.Background(), authtypes.StoreKey, key)
+	bz, err := q.GetStoreData(context.Background(), authtypes.StoreKey, key)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +270,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	}
 
 	var account authtypes.AccountI
-	err = c.interfaceRegistry.UnpackAny(&accountAny, &account)
+	err = q.interfaceRegistry.UnpackAny(&accountAny, &account)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +279,7 @@ func (c QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 }
 
 // GetBalance returns balance from address.
-func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
+func (q QueryClient) GetBalance(address string) (sdk.Coin, error) {
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return sdk.Coin{}, err
@@ -210,7 +287,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 
 	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
 
-	bz, err := c.GetStoreData(context.Background(), banktypes.StoreKey, key)
+	bz, err := q.GetStoreData(context.Background(), banktypes.StoreKey, key)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
@@ -225,7 +302,7 @@ func (c QueryClient) GetBalance(address string) (sdk.Coin, error) {
 }
 
 // GetTopic returns topic from address and topicName.
-func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
+func (q QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return aoltypes.Topic{}, err
@@ -233,7 +310,7 @@ func (c QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic,
 
 	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
 	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
-	bz, err := c.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
+	bz, err := q.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
 	if err != nil {
 		return aoltypes.Topic{}, err
 	}

@@ -32,9 +32,74 @@ package panacea_test
 //	require.NoError(t, err)
 //
 //	require.Equal(t, mediblocLimitedAddress, address)
+//}
+
+//func TestMultiGetAddress(t *testing.T) {
 //
-//	err = queryClient.Close()
+//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
 //	require.NoError(t, err)
+//	ctx := context.Background()
+//
+//	trustedBlockinfo := panacea.TrustedBlockInfo{
+//		TrustedBlockHeight: 99,
+//		TrustedBlockHash:   hash,
+//	}
+//	userHomeDir, err := os.UserHomeDir()
+//	require.NoError(t, err)
+//
+//	homeDir := filepath.Join(userHomeDir, ".doracle")
+//	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+//	require.NoError(t, err)
+//
+//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+//
+//	require.NoError(t, err)
+//
+//	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
+//
+//	var wg sync.WaitGroup
+//	wg.Add(5)
+//
+//	fmt.Println("query 1 send")
+//	go func() {
+//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+//		require.NoError(t, err)
+//		wg.Done()
+//		fmt.Println("query 1 receive")
+//	}()
+//
+//	fmt.Println("query 2 send")
+//	go func() {
+//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+//		require.NoError(t, err)
+//		wg.Done()
+//		fmt.Println("query 2 receive")
+//	}()
+//
+//	fmt.Println("query 3 send")
+//	go func() {
+//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+//		require.NoError(t, err)
+//		wg.Done()
+//		fmt.Println("query 3 receive")
+//	}()
+//
+//	fmt.Println("query 4 send")
+//	go func() {
+//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+//		require.NoError(t, err)
+//		wg.Done()
+//		fmt.Println("query 4 receive")
+//	}()
+//
+//	fmt.Println("query 5 send")
+//	go func() {
+//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+//		require.NoError(t, err)
+//		wg.Done()
+//		fmt.Println("query 5 receive")
+//	}()
+//	wg.Wait()
 //
 //}
 

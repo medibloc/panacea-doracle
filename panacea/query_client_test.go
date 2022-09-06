@@ -183,6 +183,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	require.NoError(t, err)
 	uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
+	fmt.Println("uniqueID: ", uniqueID)
 
 	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
 	require.NoError(t, err)

@@ -174,7 +174,7 @@ func TestGetOracleRegistration(t *testing.T) {
 
 	require.NoError(t, err)
 
-	mediblocLimitedAddress := "panacea16xl6zlglk5c4u2qjuf4ds8lp59swv666hp0x5a"
+	mediblocLimitedAddress := "panacea1tt4r6p63jlc20rfj4nxgyk6mjyrgps9t829ghk"
 	// get unique ID
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	require.NoError(t, err)

@@ -22,6 +22,11 @@ const DefaultConfigTemplate = `# This is a TOML config file.
 log-level = "{{ .BaseConfig.LogLevel }}"
 oracle-mnemonic = "{{ .BaseConfig.OracleMnemonic }}"
 listen_addr = "{{ .BaseConfig.ListenAddr }}"
+data_dir = "{{ .BaseConfig.DataDir }}"
+
+oracle_priv_key_file = "{{ .BaseConfig.OraclePrivKeyFile }}"
+oracle_pub_key_file = "{{ .BaseConfig.OraclePubKeyFile }}"
+node_priv_key_file = "{{ .BaseConfig.NodePrivKeyFile }}"
 
 ###############################################################################
 ###                         Panacea Configuration                           ###
@@ -31,20 +36,23 @@ listen_addr = "{{ .BaseConfig.ListenAddr }}"
 
 chain-id = "{{ .Panacea.ChainID }}"
 grpc-addr = "{{ .Panacea.GRPCAddr }}"
-websocket-addr = "{{ .Panacea.WSAddr }}"
+rpc-addr = "{{ .Panacea.RPCAddr }}"
 default-gas-limit = "{{ .Panacea.DefaultGasLimit }}"
 default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 
-primary-addr = "{{ .Panacea.PrimaryAddr }}"
-witnesses-addr= "{{ .Panacea.WitnessesAddr }}"
-rpc-addr= "{{ .Panacea.RpcAddr }}"
+# A primary RPC address for light client verification
+light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
+# Witness addresses (comma-separated) for light client verification
+light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
 `
 
 var configTemplate *template.Template
 
 // init is run automatically when the package is loaded.
 func init() {
-	tmpl := template.New("configFileTemplate")
+	tmpl := template.New("configFileTemplate").Funcs(template.FuncMap{
+		"StringsJoin": strings.Join,
+	})
 
 	var err error
 	if configTemplate, err = tmpl.Parse(DefaultConfigTemplate); err != nil {

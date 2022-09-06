@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -24,19 +25,15 @@ func registerOracleCmd() *cobra.Command {
 		Use:   "register-oracle",
 		Short: "Register an oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := loadConfigFromHome(cmd)
+			if err != nil {
+				return err
+			}
+
 			// if node key exists, return error.
+			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
 			if tos.FileExists(nodePrivKeyPath) {
 				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
-			}
-
-			// get config
-			conf, err := config.ReadConfigTOML(getConfigPath())
-			if err != nil {
-				return fmt.Errorf("failed to read config.toml: %w", err)
-			}
-
-			if err := initLogger(conf); err != nil {
-				return fmt.Errorf("failed to init logger: %w", err)
 			}
 
 			// get trusted block information
@@ -52,7 +49,7 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			// generate node key and its remote report
-			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
+			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey(nodePrivKeyPath)
 			if err != nil {
 				return fmt.Errorf("failed to generate node key pair: %w", err)
 			}
@@ -86,7 +83,7 @@ func registerOracleCmd() *cobra.Command {
 				return fmt.Errorf("register oracle transaction failed: %v", resp.TxResponse.RawLog)
 			}
 
-			log.Info("register-oracle transaction succeed")
+			log.Infof("register-oracle transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
 
 			return nil
 		},
@@ -156,7 +153,7 @@ func getOracleAccount(cmd *cobra.Command, mnemonic string) (*panacea.OracleAccou
 
 // generateNodeKey generates random node key and its remote report
 // And the generated private key is sealed and stored
-func generateNodeKey() ([]byte, []byte, error) {
+func generateNodeKey(nodePrivKeyPath string) ([]byte, []byte, error) {
 	nodePrivKey, err := crypto.NewPrivKey()
 	if err != nil {
 		return nil, nil, err

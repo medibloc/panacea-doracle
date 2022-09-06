@@ -11,7 +11,7 @@ type sgxLevelDBBatch struct {
 }
 
 func (sbatch *sgxLevelDBBatch) Set(key, value []byte) error {
-	log.Info("ENCRYPT SOMETHING SECRETLY - BATCH")
+	log.Debug("sealing before writing to leveldb in batch")
 	sealValue, err := sgx.Seal(value, true)
 	if err != nil {
 		return err

@@ -3,10 +3,16 @@ package panacea_test
 // All the tests can only work in sgx environment, so the tests are commented out.
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/edgelesssys/ego/enclave"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
+	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -175,22 +181,55 @@ func TestGetOracleRegistration(t *testing.T) {
 	require.NoError(t, err)
 
 	mnemonic := "genre cook grace border huge learn collect suffer head casino trial elegant hood check organ galaxy athlete become super typical bulk describe scout fetch"
+
 	oracleAccount, err := panacea.NewOracleAccount(mnemonic, 0, 0)
 	require.NoError(t, err)
 
-	//// get unique ID
-	//selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-	//require.NoError(t, err)
-	//uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
-	//fmt.Println("uniqueID: ", uniqueID)
+	// generate node key and its remote report
+	nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
+	require.NoError(t, err)
 
-	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
+	report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
+	uniqueID := hex.EncodeToString(report.UniqueID)
+
+	// sign and broadcast to Panacea
+	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockinfo.TrustedBlockHeight, trustedBlockinfo.TrustedBlockHash)
+
+	txBuilder := panacea.NewTxBuilder(grpcClient)
+
+	defaultFeeAmount, _ := sdk.ParseCoinsNormalized("1500000umed")
+	txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), 300000, defaultFeeAmount, msgRegisterOracle)
+	require.NoError(t, err)
+
+	_, err = grpcClient.BroadcastTx(txBytes)
+	require.NoError(t, err)
+
+	fmt.Println("register-oracle transaction succeed")
+
+	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println("unique ID1:", oracleRegistrationFromGrpc.UniqueId)
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
+	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println("unique ID2:", oracleRegistration.UniqueId)
+
+	require.EqualValues(t, oracleRegistrationFromGrpc.UniqueId, oracleRegistration.UniqueId)
+}
+
+func generateNodeKey() ([]byte, []byte, error) {
+	nodePrivKey, err := crypto.NewPrivKey()
+	if err != nil {
+		return nil, nil, err
+	}
+	nodePubKey := nodePrivKey.PubKey().SerializeCompressed()
+	oraclePubKeyHash := sha256.Sum256(nodePubKey)
+	nodeKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return nodePubKey, nodeKeyRemoteReport, nil
 }

@@ -2,6 +2,7 @@ package panacea
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	ics23 "github.com/confio/ics23/go"
@@ -285,7 +286,20 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 		return nil, err
 	}
 
-	fmt.Println("bz:", bz)
+	size, n := binary.Uvarint(bz)
+
+	if n < 0 {
+		return nil, fmt.Errorf("invalid number of bytes read from length-prefixed encoding: %d", n)
+	}
+
+	if size > uint64(len(bz)-n) {
+		return nil, fmt.Errorf("not enough bytes to read; want: %v, got: %v", size, len(bz)-n)
+	} else if size < uint64(len(bz)-n) {
+		return nil, fmt.Errorf("too many bytes to read; want: %v, got: %v", size, len(bz)-n)
+	}
+
+	bz = bz[n:]
+
 	var oracleRegistration oracletypes.OracleRegistration
 	err = oracleRegistration.Unmarshal(bz)
 	if err != nil {

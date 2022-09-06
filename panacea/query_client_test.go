@@ -175,18 +175,21 @@ func TestGetOracleRegistration(t *testing.T) {
 	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.NoError(t, err)
 
-	Address := "panacea18whaknesgnm6ms93jet77hvft3qzrap39eg06t"
+	mnemonic := "genre cook grace border huge learn collect suffer head casino trial elegant hood check organ galaxy athlete become super typical bulk describe scout fetch"
+	oracleAccount, err := panacea.NewOracleAccount(mnemonic, 0, 0)
+	require.NoError(t, err)
+
 	// get unique ID
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	require.NoError(t, err)
 	uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
 
-	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(Address, uniqueID)
+	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistrationFromGrpc)
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(Address, uniqueID)
+	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistration)

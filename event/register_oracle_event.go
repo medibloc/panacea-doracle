@@ -1,6 +1,8 @@
 package event
 
 import (
+	"encoding/hex"
+
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
@@ -16,7 +18,7 @@ type RegisterOracleEvent struct {
 // reactor contains all ingredients needed for handling this type of event
 type reactor interface {
 	GRPCClient() *panacea.GrpcClient
-	UniqueID() string
+	EnclaveInfo() *sgx.EnclaveInfo
 }
 
 func NewRegisterOracleEvent(r reactor) RegisterOracleEvent {
@@ -38,29 +40,17 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 
-	oracleRegistration, err := e.reactor.GRPCClient().GetOracleRegistration(addressValue, e.reactor.UniqueID())
+	uniqueID := hex.EncodeToString(e.reactor.EnclaveInfo().UniqueID)
+	oracleRegistration, err := e.reactor.GRPCClient().GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
 		return err
 	}
 
-	err = verifyRemoteReport(oracleRegistration)
+	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *e.reactor.EnclaveInfo())
 	if err != nil {
 		return err
 	}
 
 	// TODO: Executing Vote Txs
-	return nil
-}
-
-func verifyRemoteReport(oracleRegistration *types.OracleRegistration) error {
-	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-	if err != nil {
-		return err
-	}
-
-	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *selfEnclaveInfo)
-	if err != nil {
-		return err
-	}
 	return nil
 }

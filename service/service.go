@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,7 +19,7 @@ type Service struct {
 	conf          *config.Config
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
-	uniqueID      string
+	enclaveInfo   *sgx.EnclaveInfo
 
 	// queryClient *panacea.QueryClient //TODO: uncomment this
 	grpcClient *panacea.GrpcClient
@@ -50,7 +49,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
-	subscriber, err := event.NewSubscriber(conf.Panacea.WSAddr)
+	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
 	if err != nil {
 		// TODO: close grpcClient
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
@@ -60,7 +59,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		conf:          conf,
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
-		uniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
+		enclaveInfo:   selfEnclaveInfo,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
 	}
@@ -94,6 +93,6 @@ func (s *Service) GRPCClient() *panacea.GrpcClient {
 	return s.grpcClient
 }
 
-func (s *Service) UniqueID() string {
-	return s.uniqueID
+func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
+	return s.enclaveInfo
 }

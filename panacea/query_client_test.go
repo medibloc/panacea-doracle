@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
-	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -179,18 +178,18 @@ func TestGetOracleRegistration(t *testing.T) {
 	oracleAccount, err := panacea.NewOracleAccount(mnemonic, 0, 0)
 	require.NoError(t, err)
 
-	// get unique ID
-	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
-	require.NoError(t, err)
-	uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
-	fmt.Println("uniqueID: ", uniqueID)
+	//// get unique ID
+	//selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
+	//require.NoError(t, err)
+	//uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
+	//fmt.Println("uniqueID: ", uniqueID)
 
-	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
+	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistrationFromGrpc)
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
+	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), "41dbf6cf1f732b23765c0ad3d2282225e7f02ce185ba639fb1f1e746ca4ae677")
 	require.NoError(t, err)
 
 	fmt.Println(oracleRegistration)

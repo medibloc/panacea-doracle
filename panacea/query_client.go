@@ -250,14 +250,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 }
 
 func (q QueryClient) Close() error {
-	err := q.sgxLevelDB.Close()
-	if err != nil {
-		return err
-	}
-
-	q.RpcClient.OnStop()
-
-	return nil
+	return q.sgxLevelDB.Close()
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.

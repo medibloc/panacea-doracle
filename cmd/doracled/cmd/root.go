@@ -2,25 +2,22 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/types"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/config"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	homeDir string
 	rootCmd = &cobra.Command{
 		Use:   "doracled",
 		Short: "doracle daemon",
 	}
-
-	nodePrivKeyPath   string
-	oraclePrivKeyPath string
 )
 
 func Execute() error {
@@ -50,15 +47,33 @@ func init() {
 	}
 	defaultAppHomeDir := filepath.Join(userHomeDir, ".doracle")
 
-	rootCmd.PersistentFlags().StringVar(&homeDir, "home", defaultAppHomeDir, "application home directory")
+	rootCmd.PersistentFlags().String(flags.FlagHome, defaultAppHomeDir, "application home directory")
 
-	nodePrivKeyPath = filepath.Join(homeDir, types.DefaultNodePrivKeyName)
-	oraclePrivKeyPath = filepath.Join(homeDir, types.DefaultOraclePrivKeyName)
+	rootCmd.AddCommand(
+		initCmd,
+		startCmd(),
+		genOracleKeyCmd,
+		verifyReport,
+		registerOracleCmd(),
+		getOracleKeyCmd,
+	)
+}
 
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(startCmd())
-	rootCmd.AddCommand(genOracleKeyCmd)
-	rootCmd.AddCommand(verifyReport)
-	rootCmd.AddCommand(registerOracleCmd())
-	rootCmd.AddCommand(getOracleKeyCmd)
+func loadConfigFromHome(cmd *cobra.Command) (*config.Config, error) {
+	homeDir, err := cmd.Flags().GetString(flags.FlagHome)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read a home flag: %w", err)
+	}
+
+	conf, err := config.ReadConfigTOML(getConfigPath(homeDir))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config from file: %w", err)
+	}
+	conf.SetHomeDir(homeDir)
+
+	if err := initLogger(conf); err != nil {
+		return nil, fmt.Errorf("failed to init logger: %w", err)
+	}
+
+	return conf, nil
 }

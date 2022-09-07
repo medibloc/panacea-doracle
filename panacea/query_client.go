@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	ics23 "github.com/confio/ics23/go"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,14 +26,7 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"time"
 )
-
-var DbDir string
 
 const (
 	denom         = "umed"
@@ -50,14 +46,6 @@ type QueryClient struct {
 	mutex             *sync.Mutex
 }
 
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	DbDir = filepath.Join(userHomeDir, ".doracle", "data")
-}
-
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
@@ -74,7 +62,7 @@ func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, 
 func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
 	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
-	rpcClient, err := rpchttp.New(config.Panacea.RpcAddr, "/websocket")
+	rpcClient, err := rpchttp.New(config.Panacea.RPCAddr, "/websocket")
 	if err != nil {
 		return nil, err
 	}
@@ -85,15 +73,14 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	}
 
 	var pvs []provider.Provider
-	witnessAddrs := strings.Split(config.Panacea.WitnessesAddr, ",")
-	for _, witnessAddr := range witnessAddrs {
+	for _, witnessAddr := range config.Panacea.LightClientWitnessAddrs {
 		witness, err := tmhttp.New(chainID, witnessAddr)
 		if err != nil {
 			return nil, err
 		}
 		pvs = append(pvs, witness)
 	}
-	db, err := sgxdb.NewSgxLevelDB("light-client-db", DbDir)
+	db, err := sgxdb.NewSgxLevelDB("light-client", config.AbsDataDirPath())
 	if err != nil {
 		return nil, err
 	}

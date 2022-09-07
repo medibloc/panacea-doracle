@@ -5,6 +5,7 @@ package sgxleveldb
 
 import (
 	"fmt"
+
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -29,7 +30,7 @@ func NewSgxLevelDBWithOpts(name string, dir string, o *opt.Options) (*SgxLevelDB
 }
 
 func (sdb *SgxLevelDB) Set(key, value []byte) error {
-	log.Info("ENCRYPT SOMETHING SECRETLY")
+	log.Debug("sealing before writing to leveldb")
 	sealValue, err := sgx.Seal(value, true)
 	if err != nil {
 		return err
@@ -42,7 +43,7 @@ func (sdb *SgxLevelDB) Get(key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info("DECRYPT SOMETHING SECRETLY")
+	log.Debug("unsealing after reading from leveldb")
 	unsealedVal, err := sgx.Unseal(val, true)
 	if err != nil {
 		return nil, err

@@ -3,14 +3,12 @@ package service
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/medibloc/panacea-doracle/types"
-	"os"
-	"path/filepath"
 )
 
 type Service struct {
@@ -24,13 +22,7 @@ type Service struct {
 }
 
 func New(conf *config.Config) (*Service, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	oraclePrivKeyPath := filepath.Join(homeDir, ".doracle", types.DefaultOraclePrivKeyName)
-	oraclePrivKeyBz, err := sgx.UnsealFromFile(oraclePrivKeyPath)
+	oraclePrivKeyBz, err := sgx.UnsealFromFile(conf.AbsOraclePrivKeyPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
 	}

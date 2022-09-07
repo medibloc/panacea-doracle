@@ -25,6 +25,10 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+const (
+	trustedPeriod = 2 * 365 * 24 * time.Hour
+)
+
 type TrustedBlockInfo struct {
 	TrustedBlockHeight int64
 	TrustedBlockHash   []byte
@@ -41,17 +45,22 @@ type QueryClient struct {
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
+	return newQueryClient(ctx, config, &info)
+}
+
+func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, error) {
+	return newQueryClient(ctx, config, nil)
+}
+
+// newQueryClient creates a QueryClient.
+// If TrustedBlockInfo exists, a new LightClient is created based on this information,
+// and if TrustedBlockInfo is nil, a LightClient is created with information obtained from TrustedStore.
+func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
 	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
 	rpcClient, err := rpchttp.New(config.Panacea.RPCAddr, "/websocket")
 	if err != nil {
 		return nil, err
-	}
-
-	trustOptions := light.TrustOptions{
-		Period: 2 * 365 * 24 * time.Hour,
-		Height: info.TrustedBlockHeight,
-		Hash:   info.TrustedBlockHash,
 	}
 
 	pv, err := tmhttp.New(chainID, config.Panacea.LightClientPrimaryAddr)
@@ -74,16 +83,36 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 
 	store := dbs.New(db, chainID)
 
-	lc, err := light.NewClient(
-		ctx,
-		chainID,
-		trustOptions,
-		pv,
-		pvs,
-		store,
-		light.SkippingVerification(light.DefaultTrustLevel),
-		light.Logger(tmlog.TestingLogger()),
-	)
+	var lc *light.Client
+
+	if info == nil {
+		lc, err = light.NewClientFromTrustedStore(
+			chainID,
+			trustedPeriod,
+			pv,
+			pvs,
+			store,
+			light.SkippingVerification(light.DefaultTrustLevel),
+			light.Logger(tmlog.TestingLogger()),
+		)
+	} else {
+		trustOptions := light.TrustOptions{
+			Period: trustedPeriod,
+			Height: info.TrustedBlockHeight,
+			Hash:   info.TrustedBlockHash,
+		}
+		lc, err = light.NewClient(
+			ctx,
+			chainID,
+			trustOptions,
+			pv,
+			pvs,
+			store,
+			light.SkippingVerification(light.DefaultTrustLevel),
+			light.Logger(tmlog.TestingLogger()),
+		)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +121,7 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	go func() {
 		for {
 			time.Sleep(1 * time.Minute)
-			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
+			if err := refresh(ctx, lc, trustedPeriod, &lcMutex); err != nil {
 				log.Errorf("light client refresh error: %v", err)
 			}
 		}

@@ -66,111 +66,74 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, mediblocLimitedAddress, address)
 }
 
-//func TestMultiGetAddress(t *testing.T) {
-//
-//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-//	require.NoError(t, err)
-//	ctx := context.Background()
-//
-//	trustedBlockinfo := panacea.TrustedBlockInfo{
-//		TrustedBlockHeight: 99,
-//		TrustedBlockHash:   hash,
-//	}
-//	userHomeDir, err := os.UserHomeDir()
-//	require.NoError(t, err)
-//
-//	homeDir := filepath.Join(userHomeDir, ".doracle")
-//	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
-//	require.NoError(t, err)
-//
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
-//
-//	require.NoError(t, err)
-//
-//	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
-//
-//	var wg sync.WaitGroup
-//	wg.Add(5)
-//
-//	fmt.Println("query 1 send")
-//	go func() {
-//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-//		require.NoError(t, err)
-//		wg.Done()
-//		fmt.Println("query 1 receive")
-//	}()
-//
-//	fmt.Println("query 2 send")
-//	go func() {
-//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-//		require.NoError(t, err)
-//		wg.Done()
-//		fmt.Println("query 2 receive")
-//	}()
-//
-//	fmt.Println("query 3 send")
-//	go func() {
-//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-//		require.NoError(t, err)
-//		wg.Done()
-//		fmt.Println("query 3 receive")
-//	}()
-//
-//	fmt.Println("query 4 send")
-//	go func() {
-//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-//		require.NoError(t, err)
-//		wg.Done()
-//		fmt.Println("query 4 receive")
-//	}()
-//
-//	fmt.Println("query 5 send")
-//	go func() {
-//		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-//		require.NoError(t, err)
-//		wg.Done()
-//		fmt.Println("query 5 receive")
-//	}()
-//	wg.Wait()
-//
-//}
+func TestMultiGetAddress(t *testing.T) {
 
-//func TestLightClientConnection(t *testing.T) {
-//	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-//	require.NoError(t, err)
-//	ctx := context.Background()
-//
-//	userHomeDir, err := os.UserHomeDir()
-//	require.NoError(t, err)
-//
-//	homeDir := filepath.Join(userHomeDir, ".doracle")
-//	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
-//	require.NoError(t, err)
-//
-//	trustedBlockinfo := panacea.TrustedBlockInfo{
-//		TrustedBlockHeight: 99,
-//		TrustedBlockHash:   hash,
-//	}
-//
-//	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
-//	require.NoError(t, err)
-//
-//	_, err = queryClient.LightClient.LastTrustedHeight()
-//	require.NoError(t, err)
-//
-//	_, err = panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
-//	require.Error(t, err)
-//
-//	err = queryClient.Close()
-//	require.NoError(t, err)
-//
-//	queryClient2, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
-//	require.NoError(t, err)
-//
-//	_, err = queryClient2.LightClient.LastTrustedHeight()
-//	require.NoError(t, err)
-//
-//}
+	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	trustedBlockinfo := panacea.TrustedBlockInfo{
+		TrustedBlockHeight: 99,
+		TrustedBlockHash:   hash,
+	}
+	userHomeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
+
+	homeDir := filepath.Join(userHomeDir, ".doracle")
+	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+	require.NoError(t, err)
+
+	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+
+	require.NoError(t, err)
+
+	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
+
+	var wg sync.WaitGroup
+	wg.Add(5)
+
+	fmt.Println("query 1 send")
+	go func() {
+		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+		require.NoError(t, err)
+		wg.Done()
+		fmt.Println("query 1 receive")
+	}()
+
+	fmt.Println("query 2 send")
+	go func() {
+		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+		require.NoError(t, err)
+		wg.Done()
+		fmt.Println("query 2 receive")
+	}()
+
+	fmt.Println("query 3 send")
+	go func() {
+		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+		require.NoError(t, err)
+		wg.Done()
+		fmt.Println("query 3 receive")
+	}()
+
+	fmt.Println("query 4 send")
+	go func() {
+		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+		require.NoError(t, err)
+		wg.Done()
+		fmt.Println("query 4 receive")
+	}()
+
+	fmt.Println("query 5 send")
+	go func() {
+		_, err := queryClient.GetAccount(mediblocLimitedAddress)
+		require.NoError(t, err)
+		wg.Done()
+		fmt.Println("query 5 receive")
+	}()
+	wg.Wait()
+
+}
 
 func TestGetOracleRegistration(t *testing.T) {
 	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -46,7 +47,9 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *e.reactor.EnclaveInfo())
+	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
+
+	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo())
 	if err != nil {
 		return err
 	}

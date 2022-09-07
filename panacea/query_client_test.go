@@ -15,6 +15,9 @@ import (
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
+	"os"
+	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -64,6 +67,46 @@ func TestGetAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, mediblocLimitedAddress, address)
+}
+
+func TestLoadQueryClient(t *testing.T) {
+	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	userHomeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
+
+	homeDir := filepath.Join(userHomeDir, ".doracle")
+	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+	require.NoError(t, err)
+
+	trustedBlockinfo := panacea.TrustedBlockInfo{
+		TrustedBlockHeight: 99,
+		TrustedBlockHash:   hash,
+	}
+
+	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	require.NoError(t, err)
+
+	_, err = queryClient.LightClient.LastTrustedHeight()
+	require.NoError(t, err)
+
+	_, err = panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	require.Error(t, err)
+
+	err = queryClient.Close()
+	require.NoError(t, err)
+
+	queryClient, err = panacea.LoadQueryClient(ctx, conf)
+	require.NoError(t, err)
+
+	_, err = queryClient.LightClient.LastTrustedHeight()
+	require.NoError(t, err)
+
+	err = queryClient.Close()
+	require.NoError(t, err)
+
 }
 
 func TestMultiGetAddress(t *testing.T) {

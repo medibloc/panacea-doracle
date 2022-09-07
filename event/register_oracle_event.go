@@ -11,7 +11,6 @@ import (
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
-	log "github.com/sirupsen/logrus"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -60,7 +59,6 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo())
 	if err != nil {
-		fmt.Println("oracle registration vote NO success")
 		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())
 		if err != nil {
 			return err
@@ -89,7 +87,6 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	log.Info("oracle registration vote YES success")
 	return nil
 }
 

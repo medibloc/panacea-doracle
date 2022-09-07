@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"sync"
 	"time"
 
 	ics23 "github.com/confio/ics23/go"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
-	"github.com/medibloc/panacea-core/v2/types/compkey"
-	aoltypes "github.com/medibloc/panacea-core/v2/x/aol/types"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	log "github.com/sirupsen/logrus"
@@ -29,7 +26,6 @@ import (
 )
 
 const (
-	denom         = "umed"
 	trustedPeriod = 2 * 365 * 24 * time.Hour
 )
 
@@ -39,11 +35,11 @@ type TrustedBlockInfo struct {
 }
 
 type QueryClient struct {
-	RpcClient         *rpchttp.HTTP
-	LightClient       *light.Client
-	interfaceRegistry codectypes.InterfaceRegistry
-	sgxLevelDB        *sgxdb.SgxLevelDB
-	mutex             *sync.Mutex
+	RpcClient   *rpchttp.HTTP
+	LightClient *light.Client
+	sgxLevelDB  *sgxdb.SgxLevelDB
+	mutex       *sync.Mutex
+	cdc         *codec.ProtoCodec
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -132,11 +128,11 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	}()
 
 	return &QueryClient{
-		RpcClient:         rpcClient,
-		LightClient:       lc,
-		interfaceRegistry: makeInterfaceRegistry(),
-		sgxLevelDB:        db,
-		mutex:             &lcMutex,
+		RpcClient:   rpcClient,
+		LightClient: lc,
+		sgxLevelDB:  db,
+		mutex:       &lcMutex,
+		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
 	}, nil
 }
 
@@ -258,7 +254,6 @@ func (q QueryClient) Close() error {
 
 // GetAccount returns account from address.
 func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
-
 	acc, err := GetAccAddressFromBech32(address)
 	if err != nil {
 		return nil, err
@@ -270,14 +265,8 @@ func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 		return nil, err
 	}
 
-	var accountAny codectypes.Any
-	err = accountAny.Unmarshal(bz)
-	if err != nil {
-		return nil, err
-	}
-
 	var account authtypes.AccountI
-	err = q.interfaceRegistry.UnpackAny(&accountAny, &account)
+	err = q.cdc.UnmarshalInterface(bz, &account)
 	if err != nil {
 		return nil, err
 	}
@@ -285,48 +274,25 @@ func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	return account, nil
 }
 
-// GetBalance returns balance from address.
-func (q QueryClient) GetBalance(address string) (sdk.Coin, error) {
-	acc, err := GetAccAddressFromBech32(address)
+func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracletypes.OracleRegistration, error) {
+
+	acc, err := GetAccAddressFromBech32(oracleAddr)
 	if err != nil {
-		return sdk.Coin{}, err
+		return nil, err
 	}
 
-	key := append(banktypes.BalancesPrefix, append(acc, []byte(denom)...)...)
+	key := oracletypes.GetOracleRegistrationKey(uniqueID, acc)
 
-	bz, err := q.GetStoreData(context.Background(), banktypes.StoreKey, key)
+	bz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, key)
 	if err != nil {
-		return sdk.Coin{}, err
+		return nil, err
 	}
 
-	var balance sdk.Coin
-	err = balance.Unmarshal(bz)
+	var oracleRegistration oracletypes.OracleRegistration
+	err = q.cdc.UnmarshalLengthPrefixed(bz, &oracleRegistration)
 	if err != nil {
-		return sdk.Coin{}, err
+		return nil, err
 	}
 
-	return balance, nil
-}
-
-// GetTopic returns topic from address and topicName.
-func (q QueryClient) GetTopic(address string, topicName string) (aoltypes.Topic, error) {
-	acc, err := GetAccAddressFromBech32(address)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	key := aoltypes.TopicCompositeKey{OwnerAddress: acc, TopicName: topicName}
-	topicKey := append(aoltypes.TopicKeyPrefix, compkey.MustEncode(&key)...)
-	bz, err := q.GetStoreData(context.Background(), aoltypes.StoreKey, topicKey)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	var topic aoltypes.Topic
-	err = topic.Unmarshal(bz)
-	if err != nil {
-		return aoltypes.Topic{}, err
-	}
-
-	return topic, nil
+	return &oracleRegistration, nil
 }

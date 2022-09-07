@@ -67,7 +67,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 		return nil, err
 	}
 
-	pv, err := tmhttp.New(chainID, config.Panacea.PrimaryAddr)
+	pv, err := tmhttp.New(chainID, config.Panacea.LightClientPrimaryAddr)
 	if err != nil {
 		return nil, err
 	}

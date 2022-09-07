@@ -77,6 +77,10 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	}
 
 	msgVoteOracleRegistrationYes, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_YES, e.reactor.OraclePrivKey())
+	if err != nil {
+		 return err
+	}
+
 	txBytes, err := generateTxBytes(msgVoteOracleRegistrationYes, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
 	if err != nil {
 		return err
@@ -105,6 +109,9 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 	}
 
 	bytes, err := registrationVote.Marshal()
+	if err != nil {
+		return nil, err
+	}
 
 	sign, err := key.Sign(bytes)
 	if err != nil {

@@ -56,11 +56,11 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	fmt.Println(oracleRegistration)
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
 	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo())
 	if err != nil {
+		fmt.Println("oracle registration vote NO success")
 		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())
 		if err != nil {
 			return err
@@ -89,7 +89,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	log.Info("oracle registration success")
+	log.Info("oracle registration vote YES success")
 	return nil
 }
 
@@ -126,7 +126,6 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
-	fmt.Printf("Generate Tx Error, %v", err)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +139,6 @@ func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Broadcast Tx Error, %v", err)
 
 	if resp.TxResponse.Code != 0 {
 		return fmt.Errorf("register oracle vote failed: %v", resp.TxResponse.RawLog)

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -56,8 +57,9 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	}
 
 	fmt.Println(oracleRegistration)
+	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
-	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, oracleRegistration.NodePubKey, *e.reactor.EnclaveInfo())
+	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo())
 	if err != nil {
 		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())
 		if err != nil {

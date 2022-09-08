@@ -55,7 +55,7 @@ func init() {
 		genOracleKeyCmd,
 		verifyReport,
 		registerOracleCmd(),
-		getOracleKeyCmd,
+		getOracleKeyCmd(),
 	)
 }
 

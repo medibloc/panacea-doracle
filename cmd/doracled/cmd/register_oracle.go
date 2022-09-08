@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"github.com/edgelesssys/ego/enclave"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/client/flags"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
@@ -29,6 +28,7 @@ func registerOracleCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			ctx := context.Background()
 
 			// if node key exists, return error.
 			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
@@ -41,6 +41,13 @@ func registerOracleCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get trusted block info: %w", err)
 			}
+
+			// initialize query client using trustedBlockInfo
+			queryClient, err := panacea.NewQueryClient(ctx, conf, *trustedBlockInfo)
+			if err != nil {
+				return fmt.Errorf("failed to initialize QueryClient: %w", err)
+			}
+			defer queryClient.Close()
 
 			// get oracle account from mnemonic.
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
@@ -60,13 +67,11 @@ func registerOracleCmd() *cobra.Command {
 			// sign and broadcast to Panacea
 			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash)
 
-			cli, txBuilder, err := generateGrpcClientAndTxBuilder(conf)
+			txBuilder := panacea.NewTxBuilder(*queryClient)
+			cli, err := panacea.NewGrpcClient(conf)
 			if err != nil {
-				return fmt.Errorf("failed to generate gRPC client and/or Tx builder: %w", err)
+				return fmt.Errorf("failed to generate node key pair: %w", err)
 			}
-			defer func() {
-				_ = cli.Close()
-			}()
 
 			defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 			txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgRegisterOracle)
@@ -117,7 +122,7 @@ func getTrustedBlockInfo(cmd *cobra.Command) (*panacea.TrustedBlockInfo, error) 
 		return nil, fmt.Errorf("trusted block hash cannot be empty")
 	}
 
-	trustedBlockHash, err := base64.StdEncoding.DecodeString(trustedBlockHashStr)
+	trustedBlockHash, err := hex.DecodeString(trustedBlockHashStr)
 	if err != nil {
 		return nil, err
 	}
@@ -171,14 +176,4 @@ func generateNodeKey(nodePrivKeyPath string) ([]byte, []byte, error) {
 	}
 
 	return nodePubKey, nodeKeyRemoteReport, nil
-}
-
-// generateGrpcClientAndTxBuilder generates gRPC client and TxBuilder
-func generateGrpcClientAndTxBuilder(conf *config.Config) (panacea.GrpcClientI, *panacea.TxBuilder, error) {
-	cli, err := panacea.NewGrpcClient(conf)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return cli, panacea.NewTxBuilder(cli), nil
 }

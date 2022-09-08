@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"os"
 	"sync"
 	"time"
 
@@ -40,6 +41,7 @@ type QueryClient struct {
 	sgxLevelDB  *sgxdb.SgxLevelDB
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
+	chainID     string
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -84,6 +86,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	store := dbs.New(db, chainID)
 
 	var lc *light.Client
+	logger := light.Logger(tmlog.NewTMLogger(os.Stdout))
 
 	if info == nil {
 		lc, err = light.NewClientFromTrustedStore(
@@ -93,7 +96,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 			pvs,
 			store,
 			light.SkippingVerification(light.DefaultTrustLevel),
-			light.Logger(tmlog.TestingLogger()),
+			logger,
 		)
 	} else {
 		trustOptions := light.TrustOptions{
@@ -109,7 +112,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 			pvs,
 			store,
 			light.SkippingVerification(light.DefaultTrustLevel),
-			light.Logger(tmlog.TestingLogger()),
+			logger,
 		)
 	}
 
@@ -133,6 +136,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 		sgxLevelDB:  db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
+		chainID:     chainID,
 	}, nil
 }
 

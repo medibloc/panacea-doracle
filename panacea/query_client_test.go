@@ -218,7 +218,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	// sign and broadcast to Panacea
 	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockinfo.TrustedBlockHeight, trustedBlockinfo.TrustedBlockHash)
 
-	txBuilder := panacea.NewTxBuilder(grpcClient)
+	txBuilder := panacea.NewTxBuilder(*queryClient)
 
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized("1500000umed")
 	txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), 300000, defaultFeeAmount, msgRegisterOracle)

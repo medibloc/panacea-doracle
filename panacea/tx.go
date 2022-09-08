@@ -12,16 +12,14 @@ import (
 )
 
 type TxBuilder struct {
-	client     GrpcClientI
+	client     QueryClient
 	marshaller *codec.ProtoCodec
 }
 
-func NewTxBuilder(client GrpcClientI) *TxBuilder {
-	marshaller := codec.NewProtoCodec(client.GetInterfaceRegistry())
-
+func NewTxBuilder(client QueryClient) *TxBuilder {
 	return &TxBuilder{
 		client:     client,
-		marshaller: marshaller,
+		marshaller: client.cdc,
 	}
 }
 
@@ -65,7 +63,7 @@ func (tb TxBuilder) GenerateSignedTxBytes(
 	}
 
 	signerData := authsigning.SignerData{
-		ChainID:       tb.client.GetChainID(),
+		ChainID:       tb.client.chainID,
 		AccountNumber: signerAccount.GetAccountNumber(),
 		Sequence:      signerAccount.GetSequence(),
 	}

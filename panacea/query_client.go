@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"os"
 	"sync"
 	"time"
 
@@ -40,6 +41,7 @@ type QueryClient struct {
 	sgxLevelDB  *sgxdb.SgxLevelDB
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
+	chainID     string
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -84,6 +86,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	store := dbs.New(db, chainID)
 
 	var lc *light.Client
+	logger := light.Logger(tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout)))
 
 	if info == nil {
 		lc, err = light.NewClientFromTrustedStore(
@@ -93,7 +96,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 			pvs,
 			store,
 			light.SkippingVerification(light.DefaultTrustLevel),
-			light.Logger(tmlog.TestingLogger()),
+			logger,
 		)
 	} else {
 		trustOptions := light.TrustOptions{
@@ -109,7 +112,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 			pvs,
 			store,
 			light.SkippingVerification(light.DefaultTrustLevel),
-			light.Logger(tmlog.TestingLogger()),
+			logger,
 		)
 	}
 
@@ -133,6 +136,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 		sgxLevelDB:  db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
+		chainID:     chainID,
 	}, nil
 }
 
@@ -246,14 +250,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 }
 
 func (q QueryClient) Close() error {
-	err := q.sgxLevelDB.Close()
-	if err != nil {
-		return err
-	}
-
-	q.RpcClient.OnStop()
-
-	return nil
+	return q.sgxLevelDB.Close()
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.

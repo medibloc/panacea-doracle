@@ -2,16 +2,19 @@ package panacea
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/edgelesssys/ego/enclave"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
-
 )
 
 // Test for GetAccount function.
@@ -49,7 +52,6 @@ func TestGetAccount(t *testing.T) {
 	}
 
 	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
-
 	require.NoError(t, err)
 
 	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
@@ -63,20 +65,23 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestLoadQueryClient(t *testing.T) {
-	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	userHomeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
-
-	homeDir := filepath.Join(userHomeDir, ".doracle")
-	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
-	require.NoError(t, err)
-
 	trustedBlockinfo := TrustedBlockInfo{
-		TrustedBlockHeight: 99,
+		TrustedBlockHeight: 10,
 		TrustedBlockHash:   hash,
+	}
+
+	conf := &config.Config{
+		Panacea: config.PanaceaConfig{
+			ChainID:                 "local",
+			RPCAddr:                 "tcp://127.0.0.1:26657",
+			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
+			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
+			GRPCAddr:                "127.0.0.1:9090",
+		},
 	}
 
 	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
@@ -105,19 +110,25 @@ func TestLoadQueryClient(t *testing.T) {
 
 func TestMultiGetAddress(t *testing.T) {
 
-	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
+	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")
 	require.NoError(t, err)
 	ctx := context.Background()
 
 	trustedBlockinfo := TrustedBlockInfo{
-		TrustedBlockHeight: 99,
+		TrustedBlockHeight: 10,
 		TrustedBlockHash:   hash,
 	}
-	userHomeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
 
-	homeDir := filepath.Join(userHomeDir, ".doracle")
-	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
+	conf := &config.Config{
+		Panacea: config.PanaceaConfig{
+			ChainID:                 "local",
+			RPCAddr:                 "tcp://127.0.0.1:26657",
+			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
+			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
+			GRPCAddr:                "127.0.0.1:9090",
+		},
+	}
+
 	require.NoError(t, err)
 
 	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)

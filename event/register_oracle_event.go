@@ -1,7 +1,6 @@
 package event
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -30,6 +29,7 @@ type reactor interface {
 	OracleAcc() *panacea.OracleAccount
 	OraclePrivKey() *btcec.PrivateKey
 	Config() *config.Config
+	QueryClient() *panacea.QueryClient
 }
 
 func NewRegisterOracleEvent(r reactor) RegisterOracleEvent {
@@ -52,22 +52,12 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 
 	uniqueID := hex.EncodeToString(e.reactor.EnclaveInfo().UniqueID)
-	oracleRegistration, err := e.reactor.GRPCClient().GetOracleRegistration(addressValue, uniqueID)
+	oracleRegistration, err := e.reactor.QueryClient().GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
 		return err
 	}
 
-	trustedBlockInfo := panacea.TrustedBlockInfo{
-		TrustedBlockHeight: oracleRegistration.TrustedBlockHeight,
-		TrustedBlockHash:   oracleRegistration.TrustedBlockHash,
-	}
-
-	queryClient, err := panacea.NewQueryClient(context.Background(), e.reactor.Config(), trustedBlockInfo)
-	if err != nil {
-		return err
-	}
-
-	txBuilder := panacea.NewTxBuilder(*queryClient)
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
 	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
 

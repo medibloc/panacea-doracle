@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
@@ -18,8 +19,9 @@ type Service struct {
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
 
-	grpcClient *panacea.GrpcClient
-	subscriber *event.PanaceaSubscriber
+	queryClient *panacea.QueryClient
+	grpcClient  *panacea.GrpcClient
+	subscriber  *event.PanaceaSubscriber
 }
 
 func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
@@ -35,6 +37,11 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to set self-enclave info: %w", err)
 	}
 
+	queryClient, err := panacea.LoadQueryClient(context.Background(), conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load query client: %w", err)
+	}
+
 	grpcClient, err := panacea.NewGrpcClient(conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
@@ -42,7 +49,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 
 	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
 	if err != nil {
-		// TODO: close grpcClient
+		_ = grpcClient.Close()
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 
@@ -51,6 +58,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
+		queryClient:   queryClient,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
 	}, nil
@@ -61,7 +69,9 @@ func (s *Service) StartSubscriptions(events ...event.Event) error {
 }
 
 func (s *Service) Close() error {
-	// TODO close query client
+	if err := s.queryClient.Close(); err != nil {
+		log.Warn(err)
+	}
 	if err := s.grpcClient.Close(); err != nil {
 		log.Warn(err)
 	}
@@ -90,4 +100,8 @@ func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
 
 func (s *Service) GRPCClient() *panacea.GrpcClient {
 	return s.grpcClient
+}
+
+func (s *Service) QueryClient() *panacea.QueryClient {
+	return s.queryClient
 }

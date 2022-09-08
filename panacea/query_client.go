@@ -86,7 +86,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	store := dbs.New(db, chainID)
 
 	var lc *light.Client
-	logger := light.Logger(tmlog.NewTMLogger(os.Stdout))
+	logger := light.Logger(tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout)))
 
 	if info == nil {
 		lc, err = light.NewClientFromTrustedStore(

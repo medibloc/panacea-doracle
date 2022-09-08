@@ -17,11 +17,9 @@ type TxBuilder struct {
 }
 
 func NewTxBuilder(client QueryClient) *TxBuilder {
-	marshaller := client.cdc
-
 	return &TxBuilder{
 		client:     client,
-		marshaller: marshaller,
+		marshaller: client.cdc,
 	}
 }
 

@@ -70,8 +70,9 @@ func registerOracleCmd() *cobra.Command {
 			txBuilder := panacea.NewTxBuilder(*queryClient)
 			cli, err := panacea.NewGrpcClient(conf)
 			if err != nil {
-				return fmt.Errorf("failed to generate node key pair: %w", err)
+				return fmt.Errorf("failed to generate gRPC client: %w", err)
 			}
+			defer cli.Close()
 
 			defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 			txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgRegisterOracle)

@@ -50,10 +50,10 @@ func init() {
 	rootCmd.PersistentFlags().String(flags.FlagHome, defaultAppHomeDir, "application home directory")
 
 	rootCmd.AddCommand(
-		initCmd,
+		initCmd(),
 		startCmd(),
-		genOracleKeyCmd,
-		verifyReport,
+		genOracleKeyCmd(),
+		verifyReportCmd(),
 		registerOracleCmd(),
 		getOracleKeyCmd(),
 	)

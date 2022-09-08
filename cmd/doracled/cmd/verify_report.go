@@ -10,26 +10,29 @@ import (
 	"io/ioutil"
 )
 
-var verifyReport = &cobra.Command{
-	Use:   "verify-report [report-file-path]",
-	Short: "Verify whether the report was properly generated in the SGX environment",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// read oracle remote targetReport
-		pubKeyInfo, err := readOracleRemoteReport(args[0])
-		if err != nil {
-			log.Errorf("failed to read remote targetReport: %v", err)
-			return err
-		}
+func verifyReportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "verify-report [report-file-path]",
+		Short: "Verify whether the report was properly generated in the SGX environment",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// read oracle remote targetReport
+			pubKeyInfo, err := readOracleRemoteReport(args[0])
+			if err != nil {
+				log.Errorf("failed to read remote targetReport: %v", err)
+				return err
+			}
 
-		if err := verifyPubKeyRemoteReport(*pubKeyInfo); err != nil {
-			log.Errorf("failed to verify the public key and its remote report: %v", err)
-			return err
-		}
+			if err := verifyPubKeyRemoteReport(*pubKeyInfo); err != nil {
+				log.Errorf("failed to verify the public key and its remote report: %v", err)
+				return err
+			}
 
-		log.Infof("report verification success")
-		return nil
-	},
+			log.Infof("report verification success")
+			return nil
+		},
+	}
+	return cmd
 }
 
 func readOracleRemoteReport(filename string) (*OraclePubKeyInfo, error) {

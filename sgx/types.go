@@ -1,6 +1,7 @@
 package sgx
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/edgelesssys/ego/enclave"
 )
@@ -35,4 +36,8 @@ func GetSelfEnclaveInfo() (*EnclaveInfo, error) {
 	}
 
 	return NewEnclaveInfo(report.ProductID, report.SignerID, report.UniqueID), nil
+}
+
+func (e EnclaveInfo) UniqueIDHex() string {
+	return hex.EncodeToString(e.UniqueID)
 }

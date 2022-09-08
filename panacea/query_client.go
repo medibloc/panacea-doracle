@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	denom = "umed"
+	denom         = "umed"
+	trustedPeriod = 2 * 365 * 24 * time.Hour
 )
 
 type TrustedBlockInfo struct {
@@ -38,8 +39,8 @@ type TrustedBlockInfo struct {
 }
 
 type QueryClient struct {
-	RpcClient         *rpchttp.HTTP
-	LightClient       *light.Client
+	rpcClient         *rpchttp.HTTP
+	lightClient       *light.Client
 	interfaceRegistry codectypes.InterfaceRegistry
 	sgxLevelDB        *sgxdb.SgxLevelDB
 	mutex             *sync.Mutex
@@ -48,17 +49,22 @@ type QueryClient struct {
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
+	return newQueryClient(ctx, config, &info)
+}
+
+func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, error) {
+	return newQueryClient(ctx, config, nil)
+}
+
+// newQueryClient creates a QueryClient.
+// If TrustedBlockInfo exists, a new lightClient is created based on this information,
+// and if TrustedBlockInfo is nil, a lightClient is created with information obtained from TrustedStore.
+func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
 	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
 	rpcClient, err := rpchttp.New(config.Panacea.RPCAddr, "/websocket")
 	if err != nil {
 		return nil, err
-	}
-
-	trustOptions := light.TrustOptions{
-		Period: 2 * 365 * 24 * time.Hour,
-		Height: info.TrustedBlockHeight,
-		Hash:   info.TrustedBlockHash,
 	}
 
 	pv, err := tmhttp.New(chainID, config.Panacea.LightClientPrimaryAddr)
@@ -81,16 +87,36 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 
 	store := dbs.New(db, chainID)
 
-	lc, err := light.NewClient(
-		ctx,
-		chainID,
-		trustOptions,
-		pv,
-		pvs,
-		store,
-		light.SkippingVerification(light.DefaultTrustLevel),
-		light.Logger(tmlog.TestingLogger()),
-	)
+	var lc *light.Client
+
+	if info == nil {
+		lc, err = light.NewClientFromTrustedStore(
+			chainID,
+			trustedPeriod,
+			pv,
+			pvs,
+			store,
+			light.SkippingVerification(light.DefaultTrustLevel),
+			light.Logger(tmlog.TestingLogger()),
+		)
+	} else {
+		trustOptions := light.TrustOptions{
+			Period: trustedPeriod,
+			Height: info.TrustedBlockHeight,
+			Hash:   info.TrustedBlockHash,
+		}
+		lc, err = light.NewClient(
+			ctx,
+			chainID,
+			trustOptions,
+			pv,
+			pvs,
+			store,
+			light.SkippingVerification(light.DefaultTrustLevel),
+			light.Logger(tmlog.TestingLogger()),
+		)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -99,15 +125,15 @@ func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBloc
 	go func() {
 		for {
 			time.Sleep(1 * time.Minute)
-			if err := refresh(ctx, lc, trustOptions.Period, &lcMutex); err != nil {
+			if err := refresh(ctx, lc, trustedPeriod, &lcMutex); err != nil {
 				log.Errorf("light client refresh error: %v", err)
 			}
 		}
 	}()
 
 	return &QueryClient{
-		RpcClient:         rpcClient,
-		LightClient:       lc,
+		rpcClient:         rpcClient,
+		lightClient:       lc,
 		interfaceRegistry: makeInterfaceRegistry(),
 		sgxLevelDB:        db,
 		mutex:             &lcMutex,
@@ -118,14 +144,14 @@ func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightB
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
-	return q.LightClient.Update(ctx, time.Now())
+	return q.lightClient.Update(ctx, time.Now())
 }
 
 func (q QueryClient) safeVerifyLightBlockAtHeight(ctx context.Context, height int64) (*tmtypes.LightBlock, error) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
-	return q.LightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
+	return q.lightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
 }
 
 // refresh update light block, if the last light block has been updated more than trustPeriod * 2/3 ago.
@@ -166,7 +192,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 	if trustedBlock == nil {
-		queryHeight, err = q.LightClient.LastTrustedHeight()
+		queryHeight, err = q.lightClient.LastTrustedHeight()
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +206,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		Height: queryHeight,
 	}
 	// query to kv store with proof option
-	result, err := q.RpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
+	result, err := q.rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
 		return nil, err
 	}
@@ -224,14 +250,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 }
 
 func (q QueryClient) Close() error {
-	err := q.sgxLevelDB.Close()
-	if err != nil {
-		return err
-	}
-
-	q.RpcClient.OnStop()
-
-	return nil
+	return q.sgxLevelDB.Close()
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.

@@ -36,10 +36,10 @@ type TrustedBlockInfo struct {
 }
 
 type QueryClient struct {
-	RpcClient   *rpchttp.HTTP
-	LightClient *light.Client
-	sgxLevelDB  *sgxdb.SgxLevelDB
-	mutex       *sync.Mutex
+	rpcClient         *rpchttp.HTTP
+	lightClient       *light.Client
+	sgxLevelDB        *sgxdb.SgxLevelDB
+	mutex             *sync.Mutex
 	cdc         *codec.ProtoCodec
 	chainID     string
 }
@@ -55,8 +55,8 @@ func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, 
 }
 
 // newQueryClient creates a QueryClient.
-// If TrustedBlockInfo exists, a new LightClient is created based on this information,
-// and if TrustedBlockInfo is nil, a LightClient is created with information obtained from TrustedStore.
+// If TrustedBlockInfo exists, a new lightClient is created based on this information,
+// and if TrustedBlockInfo is nil, a lightClient is created with information obtained from TrustedStore.
 func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
 	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
@@ -131,8 +131,8 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	}()
 
 	return &QueryClient{
-		RpcClient:   rpcClient,
-		LightClient: lc,
+		rpcClient:         rpcClient,
+		lightClient:       lc,
 		sgxLevelDB:  db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
@@ -144,14 +144,14 @@ func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightB
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
-	return q.LightClient.Update(ctx, time.Now())
+	return q.lightClient.Update(ctx, time.Now())
 }
 
 func (q QueryClient) safeVerifyLightBlockAtHeight(ctx context.Context, height int64) (*tmtypes.LightBlock, error) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
-	return q.LightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
+	return q.lightClient.VerifyLightBlockAtHeight(ctx, height, time.Now())
 }
 
 // refresh update light block, if the last light block has been updated more than trustPeriod * 2/3 ago.
@@ -192,7 +192,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		return nil, err
 	}
 	if trustedBlock == nil {
-		queryHeight, err = q.LightClient.LastTrustedHeight()
+		queryHeight, err = q.lightClient.LastTrustedHeight()
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		Height: queryHeight,
 	}
 	// query to kv store with proof option
-	result, err := q.RpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
+	result, err := q.rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
 		return nil, err
 	}

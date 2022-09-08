@@ -1,24 +1,17 @@
-package panacea_test
+package panacea
 
-// All the tests can only work in sgx environment, so the tests are commented out.
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/edgelesssys/ego/enclave"
-	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/crypto"
-	"github.com/medibloc/panacea-doracle/panacea"
-	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
 )
 
 // Test for GetAccount function.
@@ -28,7 +21,7 @@ func TestGetAccount(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
@@ -55,7 +48,7 @@ func TestGetAccount(t *testing.T) {
 		},
 	}
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 
 	require.NoError(t, err)
 
@@ -81,27 +74,28 @@ func TestLoadQueryClient(t *testing.T) {
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
+
 	require.NoError(t, err)
 
-	_, err = queryClient.LightClient.LastTrustedHeight()
+	_, err = queryClient.lightClient.LastTrustedHeight()
 	require.NoError(t, err)
 
-	_, err = panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	_, err = NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.Error(t, err)
 
 	err = queryClient.Close()
 	require.NoError(t, err)
 
-	queryClient, err = panacea.LoadQueryClient(ctx, conf)
+	queryClient, err = LoadQueryClient(ctx, conf)
 	require.NoError(t, err)
 
-	_, err = queryClient.LightClient.LastTrustedHeight()
+	_, err = queryClient.lightClient.LastTrustedHeight()
 	require.NoError(t, err)
 
 	err = queryClient.Close()
@@ -115,7 +109,7 @@ func TestMultiGetAddress(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
@@ -126,7 +120,7 @@ func TestMultiGetAddress(t *testing.T) {
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 
 	require.NoError(t, err)
 
@@ -183,7 +177,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 10,
 		TrustedBlockHash:   hash,
 	}
@@ -198,14 +192,14 @@ func TestGetOracleRegistration(t *testing.T) {
 		},
 	}
 
-	grpcClient, err := panacea.NewGrpcClient(conf)
+	grpcClient, err := NewGrpcClient(conf)
 	require.NoError(t, err)
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.NoError(t, err)
 
 	mnemonic := "genre cook grace border huge learn collect suffer head casino trial elegant hood check organ galaxy athlete become super typical bulk describe scout fetch"
 
-	oracleAccount, err := panacea.NewOracleAccount(mnemonic, 0, 0)
+	oracleAccount, err := NewOracleAccount(mnemonic, 0, 0)
 	require.NoError(t, err)
 
 	// generate node key and its remote report
@@ -218,7 +212,7 @@ func TestGetOracleRegistration(t *testing.T) {
 	// sign and broadcast to Panacea
 	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockinfo.TrustedBlockHeight, trustedBlockinfo.TrustedBlockHash)
 
-	txBuilder := panacea.NewTxBuilder(*queryClient)
+	txBuilder := NewTxBuilder(*queryClient)
 
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized("1500000umed")
 	txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), 300000, defaultFeeAmount, msgRegisterOracle)

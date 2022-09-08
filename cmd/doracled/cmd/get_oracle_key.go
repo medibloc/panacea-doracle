@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -50,7 +49,7 @@ This oracle private key can also be accessed in SGX-enabled environment using th
 		if err != nil {
 			return fmt.Errorf("failed to get self enclave info: %w", err)
 		}
-		uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
+		uniqueID := selfEnclaveInfo.UniqueIDHex()
 
 		// get oracle account from mnemonic.
 		oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)

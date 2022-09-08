@@ -1,9 +1,11 @@
 package event
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,8 +28,7 @@ type reactor interface {
 	GRPCClient() *panacea.GrpcClient
 	EnclaveInfo() *sgx.EnclaveInfo
 	OracleAcc() *panacea.OracleAccount
-	OraclePrivKey() []byte
-	TxBuilder() *panacea.TxBuilder
+	OraclePrivKey() *btcec.PrivateKey
 	Config() *config.Config
 }
 
@@ -56,14 +57,26 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
+	trustedBlockInfo := panacea.TrustedBlockInfo{
+		TrustedBlockHeight: oracleRegistration.TrustedBlockHeight,
+		TrustedBlockHash:   oracleRegistration.TrustedBlockHash,
+	}
 
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey())
+	queryClient, err := panacea.NewQueryClient(context.Background(), e.reactor.Config(), trustedBlockInfo)
 	if err != nil {
 		return err
 	}
 
-	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
+	txBuilder := panacea.NewTxBuilder(*queryClient)
+
+	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
+
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize())
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
 		return err
 	}

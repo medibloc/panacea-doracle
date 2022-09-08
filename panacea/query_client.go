@@ -36,10 +36,10 @@ type TrustedBlockInfo struct {
 }
 
 type QueryClient struct {
-	rpcClient         *rpchttp.HTTP
-	lightClient       *light.Client
-	sgxLevelDB        *sgxdb.SgxLevelDB
-	mutex             *sync.Mutex
+	rpcClient   *rpchttp.HTTP
+	lightClient *light.Client
+	sgxLevelDB  *sgxdb.SgxLevelDB
+	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
 	chainID     string
 }
@@ -131,8 +131,8 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	}()
 
 	return &QueryClient{
-		rpcClient:         rpcClient,
-		lightClient:       lc,
+		rpcClient:   rpcClient,
+		lightClient: lc,
 		sgxLevelDB:  db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),

@@ -2,7 +2,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
@@ -14,12 +16,10 @@ type Service struct {
 	enclaveInfo *sgx.EnclaveInfo
 
 	oracleAccount *panacea.OracleAccount
-	oraclePrivKey []byte
+	oraclePrivKey *btcec.PrivateKey
 
-	// queryClient *panacea.QueryClient //TODO: uncomment this
 	grpcClient *panacea.GrpcClient
 	subscriber *event.PanaceaSubscriber
-	txBuilder  *panacea.TxBuilder
 }
 
 func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
@@ -27,6 +27,8 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
 	}
+
+	oraclePrivKey, _ := crypto.PrivKeyFromBytes(oraclePrivKeyBz)
 
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
 	if err != nil {
@@ -44,16 +46,13 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 
-	txBuilder := panacea.NewTxBuilder(grpcClient)
-
 	return &Service{
 		conf:          conf,
 		oracleAccount: oracleAccount,
-		oraclePrivKey: oraclePrivKeyBz,
+		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
-		txBuilder:     txBuilder,
 	}, nil
 }
 
@@ -81,7 +80,7 @@ func (s *Service) OracleAcc() *panacea.OracleAccount {
 	return s.oracleAccount
 }
 
-func (s *Service) OraclePrivKey() []byte {
+func (s *Service) OraclePrivKey() *btcec.PrivateKey {
 	return s.oraclePrivKey
 }
 
@@ -91,8 +90,4 @@ func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
 
 func (s *Service) GRPCClient() *panacea.GrpcClient {
 	return s.grpcClient
-}
-
-func (s *Service) TxBuilder() *panacea.TxBuilder {
-	return s.txBuilder
 }

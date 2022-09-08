@@ -58,6 +58,7 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, mediblocLimitedAddress, address)
 }
 
+// Test for LoadQueryClient function.
 func TestLoadQueryClient(t *testing.T) {
 	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
 	require.NoError(t, err)
@@ -114,6 +115,7 @@ func TestLoadQueryClient(t *testing.T) {
 
 }
 
+// Test that calls multiple GetAddress at the same time
 func TestMultiGetAddress(t *testing.T) {
 
 	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
@@ -201,6 +203,9 @@ func TestMultiGetAddress(t *testing.T) {
 
 }
 
+// The test below is commented out because it is a test targeting local panacea.
+
+// Test for GetOracleRegistration function.
 //func TestGetOracleRegistration(t *testing.T) {
 //	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")
 //	require.NoError(t, err)

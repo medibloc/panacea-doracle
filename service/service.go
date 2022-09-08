@@ -12,11 +12,11 @@ import (
 )
 
 type Service struct {
-	conf        *config.Config
-	enclaveInfo *sgx.EnclaveInfo
-
+	conf          *config.Config
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
+	uniqueID      string
+	enclaveInfo   *sgx.EnclaveInfo
 
 	grpcClient *panacea.GrpcClient
 	subscriber *event.PanaceaSubscriber
@@ -51,6 +51,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
+		uniqueID:      selfEnclaveInfo.UniqueIDHex(),
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
 	}, nil

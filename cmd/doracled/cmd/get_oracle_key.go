@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
@@ -54,7 +53,7 @@ func getOracleKeyCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get self enclave info: %w", err)
 			}
-			uniqueID := hex.EncodeToString(selfEnclaveInfo.UniqueID)
+			uniqueID := selfEnclaveInfo.UniqueIDHex()
 
 			// get oracle account from mnemonic.
 			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)

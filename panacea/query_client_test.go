@@ -1,17 +1,17 @@
-package panacea_test
+package panacea
 
 import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/panacea"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/stretchr/testify/require"
 )
 
 // All the tests can only work in sgx environment, so the tests are commented out.
@@ -23,7 +23,7 @@ func TestGetAccount(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
@@ -34,7 +34,7 @@ func TestGetAccount(t *testing.T) {
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 
 	require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestMultiGetAddress(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
@@ -68,7 +68,7 @@ func TestMultiGetAddress(t *testing.T) {
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 
 	require.NoError(t, err)
 
@@ -135,27 +135,27 @@ func TestLoadQueryClient(t *testing.T) {
 	conf, err := config.ReadConfigTOML(filepath.Join(homeDir, "config.toml"))
 	require.NoError(t, err)
 
-	trustedBlockinfo := panacea.TrustedBlockInfo{
+	trustedBlockinfo := TrustedBlockInfo{
 		TrustedBlockHeight: 99,
 		TrustedBlockHash:   hash,
 	}
 
-	queryClient, err := panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.NoError(t, err)
 
-	_, err = queryClient.LightClient.LastTrustedHeight()
+	_, err = queryClient.lightClient.LastTrustedHeight()
 	require.NoError(t, err)
 
-	_, err = panacea.NewQueryClient(ctx, conf, trustedBlockinfo)
+	_, err = NewQueryClient(ctx, conf, trustedBlockinfo)
 	require.Error(t, err)
 
 	err = queryClient.Close()
 	require.NoError(t, err)
 
-	queryClient, err = panacea.LoadQueryClient(ctx, conf)
+	queryClient, err = LoadQueryClient(ctx, conf)
 	require.NoError(t, err)
 
-	_, err = queryClient.LightClient.LastTrustedHeight()
+	_, err = queryClient.lightClient.LastTrustedHeight()
 	require.NoError(t, err)
 
 	err = queryClient.Close()

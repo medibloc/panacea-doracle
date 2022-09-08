@@ -111,12 +111,12 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 		return nil, err
 	}
 
-	msgVoteOracleRegistrationNo := &types.MsgVoteOracleRegistration{
+	msgVoteOracleRegistration := &types.MsgVoteOracleRegistration{
 		OracleRegistrationVote: registrationVote,
 		Signature:              sign,
 	}
 
-	return msgVoteOracleRegistrationNo, nil
+	return msgVoteOracleRegistration, nil
 }
 
 // generateTxBytes
@@ -138,7 +138,10 @@ func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("register oracle vote failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("register oracle vote trasnsaction failed: %v", resp.TxResponse.RawLog)
 	}
+
+	log.Infof("MsgVoteOracleRegistration transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
+
 	return nil
 }

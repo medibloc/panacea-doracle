@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -41,7 +40,7 @@ func New(conf *config.Config) (*Service, error) {
 	return &Service{
 		Conf:          conf,
 		OraclePrivKey: oraclePrivKey,
-		UniqueID:      hex.EncodeToString(selfEnclaveInfo.UniqueID),
+		UniqueID:      selfEnclaveInfo.UniqueIDHex(),
 		GrpcClient:    grpcClient.(*panacea.GrpcClient),
 	}, nil
 }

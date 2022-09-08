@@ -16,6 +16,7 @@ type Service struct {
 	conf          *config.Config
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
+	uniqueID      string
 	enclaveInfo   *sgx.EnclaveInfo
 
 	// queryClient *panacea.QueryClient //TODO: uncomment this
@@ -51,6 +52,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
+		uniqueID:      selfEnclaveInfo.UniqueIDHex(),
 		grpcClient:    grpcClient.(*panacea.GrpcClient),
 		subscriber:    subscriber,
 	}, nil

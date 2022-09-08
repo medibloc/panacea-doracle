@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
@@ -71,7 +72,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
 
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize())
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey)
 	if err != nil {
 		return err
 	}
@@ -101,13 +102,23 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 }
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
-func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte) (*types.MsgVoteOracleRegistration, error) {
+func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte, nodePubKey []byte) (*types.MsgVoteOracleRegistration, error) {
+	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedOraclePrivKey, err := crypto.Encrypt(pubKey, oraclePrivKey)
+	if err != nil {
+		return nil, err
+	}
+
 	registrationVote := &types.OracleRegistrationVote{
 		UniqueId:               uniqueID,
 		VoterAddress:           voterAddr,
 		VotingTargetAddress:    votingTargetAddr,
 		VoteOption:             voteOption,
-		EncryptedOraclePrivKey: oraclePrivKey,
+		EncryptedOraclePrivKey: encryptedOraclePrivKey,
 	}
 
 	key := secp256k1.PrivKey{

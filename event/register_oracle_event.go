@@ -56,9 +56,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
-
-	voteOption := verifyReportAndGetVoteOption(oracleRegistration, nodePubKeyHash, e)
+	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey())
 	if err != nil {
@@ -78,7 +76,9 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 // verifyReportAndGetVoteOption validates the RemoteReport and returns the voting result according to the verification result.
-func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, nodePubKeyHash [32]byte, e RegisterOracleEvent) types.VoteOption {
+func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) types.VoteOption {
+	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
+
 	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {
 		log.Infof("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
 		return types.VOTE_OPTION_NO

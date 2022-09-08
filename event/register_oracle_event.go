@@ -11,6 +11,7 @@ import (
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	log "github.com/sirupsen/logrus"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -57,41 +58,33 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
-	err = sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo())
-	if err != nil {
-		msgVoteOracleRegistrationNo, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_NO, e.reactor.OraclePrivKey())
-		if err != nil {
-			return err
-		}
+	voteOption := verifyReportAndGetVoteOption(oracleRegistration, nodePubKeyHash, e)
 
-		txBytes, err := generateTxBytes(msgVoteOracleRegistrationNo, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
-		if err != nil {
-			return err
-		}
-
-		err = broadCastTx(e.reactor.GRPCClient(), txBytes)
-		if err != nil {
-			return err
-		}
-		return err
-	}
-
-	msgVoteOracleRegistrationYes, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, types.VOTE_OPTION_YES, e.reactor.OraclePrivKey())
-	if err != nil {
-		 return err
-	}
-
-	txBytes, err := generateTxBytes(msgVoteOracleRegistrationYes, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey())
 	if err != nil {
 		return err
 	}
 
-	err = broadCastTx(e.reactor.GRPCClient(), txBytes)
+	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), e.reactor.TxBuilder())
 	if err != nil {
+		return err
+	}
+
+	if err := broadCastTx(e.reactor.GRPCClient(), txBytes); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// verifyReportAndGetVoteOption validates the RemoteReport and returns the voting result according to the verification result.
+func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, nodePubKeyHash [32]byte, e RegisterOracleEvent) types.VoteOption {
+	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {
+		log.Infof("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
+		return types.VOTE_OPTION_NO
+	} else {
+		return types.VOTE_OPTION_YES
+	}
 }
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION

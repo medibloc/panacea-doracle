@@ -2,7 +2,6 @@ package event
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -52,7 +51,7 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	addressValue := event.Events[types.EventTypeRegistrationVote+"."+types.AttributeKeyOracleAddress][0]
 
-	uniqueID := hex.EncodeToString(e.reactor.EnclaveInfo().UniqueID)
+	uniqueID := e.reactor.EnclaveInfo().UniqueIDHex()
 	oracleRegistration, err := e.reactor.QueryClient().GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
 		return err

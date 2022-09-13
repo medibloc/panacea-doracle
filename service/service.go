@@ -44,12 +44,20 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 
 	grpcClient, err := panacea.NewGrpcClient(conf)
 	if err != nil {
+		if err := queryClient.Close(); err != nil {
+			log.Warn(err)
+		}
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
 	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
 	if err != nil {
-		_ = grpcClient.Close()
+		if err := queryClient.Close(); err != nil {
+			log.Warn(err)
+		}
+		if err := grpcClient.Close(); err != nil {
+			log.Warn(err)
+		}
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 

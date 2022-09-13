@@ -82,7 +82,7 @@ So please be cautious in using this command.`,
 			if err != nil {
 				return err
 			}
-			if isGenesisOracle == true {
+			if isGenesisOracle {
 				// get trusted block information
 				trustedBlockInfo, err := getTrustedBlockInfo(cmd)
 				if err != nil {

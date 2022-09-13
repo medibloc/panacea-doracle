@@ -71,7 +71,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	if err := broadCastTx(e.reactor.GRPCClient(), txBytes); err != nil {
+	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
 	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {
-		log.Infof("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
+		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
 		return types.VOTE_OPTION_NO
 	} else {
 		return types.VOTE_OPTION_YES
@@ -119,14 +119,14 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 		return nil, err
 	}
 
-	sign, err := key.Sign(bytes)
+	sig, err := key.Sign(bytes)
 	if err != nil {
 		return nil, err
 	}
 
 	msgVoteOracleRegistration := &types.MsgVoteOracleRegistration{
 		OracleRegistrationVote: registrationVote,
-		Signature:              sign,
+		Signature:              sig,
 	}
 
 	return msgVoteOracleRegistration, nil
@@ -143,8 +143,8 @@ func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration,
 	return txBytes, nil
 }
 
-// broadCastTx
-func broadCastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
+// broadcastTx
+func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {
 		return err

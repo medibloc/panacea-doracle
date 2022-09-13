@@ -58,7 +58,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	block, err := e.reactor.QueryClient().GetBlock(oracleRegistration.TrustedBlockHeight)
+	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
 		return err
 	}

@@ -1,30 +1,35 @@
 package service
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	log "github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	Conf          *config.Config
-	OracleAccount *panacea.OracleAccount
-	OraclePrivKey *btcec.PrivateKey
-	UniqueID      string
+	conf        *config.Config
+	enclaveInfo *sgx.EnclaveInfo
 
-	QueryClient *panacea.QueryClient
-	GrpcClient  *panacea.GrpcClient
+	oracleAccount *panacea.OracleAccount
+	oraclePrivKey *btcec.PrivateKey
+
+	queryClient *panacea.QueryClient
+	grpcClient  *panacea.GrpcClient
+	subscriber  *event.PanaceaSubscriber
 }
 
-func New(conf *config.Config) (*Service, error) {
+func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
 	oraclePrivKeyBz, err := sgx.UnsealFromFile(conf.AbsOraclePrivKeyPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
 	}
+
 	oraclePrivKey, _ := crypto.PrivKeyFromBytes(oraclePrivKeyBz)
 
 	selfEnclaveInfo, err := sgx.GetSelfEnclaveInfo()
@@ -32,24 +37,79 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to set self-enclave info: %w", err)
 	}
 
+	queryClient, err := panacea.LoadQueryClient(context.Background(), conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load query client: %w", err)
+	}
+
 	grpcClient, err := panacea.NewGrpcClient(conf)
 	if err != nil {
+		if err := queryClient.Close(); err != nil {
+			log.Warn(err)
+		}
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
+	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
+	if err != nil {
+		if err := queryClient.Close(); err != nil {
+			log.Warn(err)
+		}
+		if err := grpcClient.Close(); err != nil {
+			log.Warn(err)
+		}
+		return nil, fmt.Errorf("failed to init subscriber: %w", err)
+	}
+
 	return &Service{
-		Conf:          conf,
-		OraclePrivKey: oraclePrivKey,
-		UniqueID:      selfEnclaveInfo.UniqueIDHex(),
-		GrpcClient:    grpcClient.(*panacea.GrpcClient),
+		conf:          conf,
+		oracleAccount: oracleAccount,
+		oraclePrivKey: oraclePrivKey,
+		enclaveInfo:   selfEnclaveInfo,
+		queryClient:   queryClient,
+		grpcClient:    grpcClient.(*panacea.GrpcClient),
+		subscriber:    subscriber,
 	}, nil
 }
 
-func (s Service) Close() error {
-	// TODO close query client
-	if err := s.GrpcClient.Close(); err != nil {
-		return err
+func (s *Service) StartSubscriptions(events ...event.Event) error {
+	return s.subscriber.Run(events...)
+}
+
+func (s *Service) Close() error {
+	if err := s.queryClient.Close(); err != nil {
+		log.Warn(err)
+	}
+	if err := s.grpcClient.Close(); err != nil {
+		log.Warn(err)
+	}
+	if err := s.subscriber.Close(); err != nil {
+		log.Warn(err)
 	}
 
 	return nil
+}
+
+func (s *Service) Config() *config.Config {
+	return s.conf
+}
+
+func (s *Service) OracleAcc() *panacea.OracleAccount {
+	return s.oracleAccount
+}
+
+func (s *Service) OraclePrivKey() *btcec.PrivateKey {
+	return s.oraclePrivKey
+}
+
+func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
+	return s.enclaveInfo
+}
+
+func (s *Service) GRPCClient() *panacea.GrpcClient {
+	return s.grpcClient
+}
+
+func (s *Service) QueryClient() *panacea.QueryClient {
+	return s.queryClient
 }

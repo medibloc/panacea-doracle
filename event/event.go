@@ -1,6 +1,8 @@
 package event
 
-import ctypes "github.com/tendermint/tendermint/rpc/core/types"
+import (
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+)
 
 type Event interface {
 	GetEventType() string

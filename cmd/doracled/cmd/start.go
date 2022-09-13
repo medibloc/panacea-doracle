@@ -28,22 +28,17 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account: %w", err)
 			}
 
-			svc, err := service.New(conf)
+			svc, err := service.New(conf, oracleAccount)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}
 			defer svc.Close()
 
-			svc.OracleAccount = oracleAccount
-
-			subscriber, err := event.NewSubscriber(svc)
+			err = svc.StartSubscriptions(
+				event.NewRegisterOracleEvent(svc),
+			)
 			if err != nil {
-				return err
-			}
-			defer subscriber.Close()
-
-			if err := subscriber.Run(event.RegisterOracleEvent{}); err != nil {
-				return fmt.Errorf("failed to subscribe events: %w", err)
+				return fmt.Errorf("failed to start event subscription: %w", err)
 			}
 
 			sigChan := make(chan os.Signal, 1)

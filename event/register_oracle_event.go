@@ -1,6 +1,7 @@
 package event
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
@@ -55,6 +56,15 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	oracleRegistration, err := e.reactor.QueryClient().GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
 		return err
+	}
+
+	block, err := e.reactor.QueryClient().GetBlock(oracleRegistration.TrustedBlockHeight)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(block.Hash().Bytes(), oracleRegistration.TrustedBlockHash) {
+		return fmt.Errorf("invalid trusted block info")
 	}
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())

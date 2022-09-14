@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/go-bip39"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"log"
 	"path/filepath"
@@ -25,7 +26,20 @@ type TestSuite struct {
 	dktResource *dockertest.Resource
 }
 
-func NewTestSuite(panaceaInitScriptAbsPath, validatorMnemonic string) TestSuite {
+func NewTestSuite(panaceaInitScriptAbsPath string) TestSuite {
+	entropy, err := bip39.NewEntropy(256)
+	if err != nil {
+		log.Panic(err)
+	}
+	validatorMnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return NewTestSuiteWithMnemonic(panaceaInitScriptAbsPath, validatorMnemonic)
+}
+
+func NewTestSuiteWithMnemonic(panaceaInitScriptAbsPath, validatorMnemonic string) TestSuite {
 	if !filepath.IsAbs(panaceaInitScriptAbsPath) {
 		log.Panicf("path must be absolute: %s", panaceaInitScriptAbsPath)
 	}

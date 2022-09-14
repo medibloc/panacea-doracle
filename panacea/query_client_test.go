@@ -2,7 +2,6 @@ package panacea
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -24,12 +23,7 @@ func TestQueryClient(t *testing.T) {
 	absPath, err := filepath.Abs("testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
-	suite.Run(t, &queryClientTestSuite{
-		integration.NewTestSuite(
-			absPath,
-			os.Getenv("MNEMONIC"),
-		),
-	})
+	suite.Run(t, &queryClientTestSuite{integration.NewTestSuite(absPath)})
 }
 
 func (suite *queryClientTestSuite) TestGetAccount() {

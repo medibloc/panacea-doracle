@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/client/flags"
@@ -100,8 +101,20 @@ func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.Oracl
 			return errors.New("the oracle private key already exists")
 		}
 
-		// else, get encryptedOraclePrivKey from Panacea and decrypt and SealToFile it
-		oraclePrivKey, err := crypto.Decrypt(nodePrivKey, oracleRegistration.EncryptedOraclePrivKey)
+		oraclePubKeyPath := conf.AbsOraclePubKeyPath()
+		unsealOraclePubKey, err := sgx.UnsealFromFile(oraclePubKeyPath)
+		if err != nil {
+			return fmt.Errorf("failed to unseal from file: %w", err)
+		}
+
+		oraclePubKey, err := btcec.ParsePubKey(unsealOraclePubKey, btcec.S256())
+		if err != nil {
+			return fmt.Errorf("failed to parse oraclePubKey: %w", err)
+		}
+
+		shareKey := crypto.ShareKey(nodePrivKey, oraclePubKey)
+
+		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, oracleRegistration.EncryptedOraclePrivKey)
 		if err != nil {
 			return fmt.Errorf("failed to decrypt the EncryptedOraclePrivKey: %w", err)
 		}

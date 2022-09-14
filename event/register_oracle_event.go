@@ -3,6 +3,7 @@ package event
 import (
 	"crypto/sha256"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -92,12 +93,11 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
 func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte, nodePubKey []byte) (*types.MsgVoteOracleRegistration, error) {
-	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
-	if err != nil {
-		return nil, err
-	}
+	privKey, pubKey := crypto.PrivKeyFromBytes(oraclePrivKey)
+	shareKey := crypto.ShareKey(privKey, pubKey)
 
-	encryptedOraclePrivKey, err := crypto.Encrypt(pubKey, oraclePrivKey)
+	// TODO: Nonce will be added.
+	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nil, oraclePrivKey)
 	if err != nil {
 		return nil, err
 	}

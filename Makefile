@@ -17,7 +17,7 @@ build: go.sum
 test:
 	./scripts/run-tests-with-ego.sh
 
-# Prepare ./testdata/private.pem that you want to use. If not, this command will generate a new one.
+# Prepare ./scripts/private.pem that you want to use. If not, this command will generate a new one.
 sign-prod:
 	ego sign ./scripts/enclave-prod.json
 

@@ -117,7 +117,7 @@ A configuration for production is already prepared in the [`scripts/enclave-prod
 So, you can just put your RSA private key (`private.pem`) into the `scripts/`, and run the following command to sign the binary.
 
 ```bash
-ego sign ./scripts/enclave-prod.json
+ego sign ./testdata/enclave-prod.json
 ```
 
 If the binary is signed successfully, you can move the binary to where you want, or publish the binary to GitHub or so.

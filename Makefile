@@ -21,7 +21,7 @@ else
 	$(GO) test -v ./...
 endif
 
-# Prepare ./scripts/private.pem that you want to use. If not, this command will generate a new one.
+# Prepare ./testdata/private.pem that you want to use. If not, this command will generate a new one.
 sign-prod:
 	ego sign ./scripts/enclave-prod.json
 

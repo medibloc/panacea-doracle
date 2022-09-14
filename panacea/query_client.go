@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/codec"
 
 	ics23 "github.com/confio/ics23/go"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -24,6 +25,7 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 const (
@@ -38,7 +40,7 @@ type TrustedBlockInfo struct {
 type QueryClient struct {
 	rpcClient   *rpchttp.HTTP
 	lightClient *light.Client
-	sgxLevelDB  *sgxdb.SgxLevelDB
+	db          dbm.DB
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
 	chainID     string
@@ -47,17 +49,25 @@ type QueryClient struct {
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
 // a QueryClient that can be used to add query function.
 func NewQueryClient(ctx context.Context, config *config.Config, info TrustedBlockInfo) (*QueryClient, error) {
-	return newQueryClient(ctx, config, &info)
+	return newQueryClientWithSgxLevelDB(ctx, config, &info)
 }
 
 func LoadQueryClient(ctx context.Context, config *config.Config) (*QueryClient, error) {
-	return newQueryClient(ctx, config, nil)
+	return newQueryClientWithSgxLevelDB(ctx, config, nil)
 }
 
-// newQueryClient creates a QueryClient.
+func newQueryClientWithSgxLevelDB(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
+	db, err := sgxdb.NewSgxLevelDB("light-client", config.AbsDataDirPath())
+	if err != nil {
+		return nil, err
+	}
+	return newQueryClientWithDB(ctx, config, info, db)
+}
+
+// newQueryClientWithDB creates a QueryClient using a provided DB.
 // If TrustedBlockInfo exists, a new lightClient is created based on this information,
 // and if TrustedBlockInfo is nil, a lightClient is created with information obtained from TrustedStore.
-func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlockInfo) (*QueryClient, error) {
+func newQueryClientWithDB(ctx context.Context, config *config.Config, info *TrustedBlockInfo, db dbm.DB) (*QueryClient, error) {
 	lcMutex := sync.Mutex{}
 	chainID := config.Panacea.ChainID
 	rpcClient, err := rpchttp.New(config.Panacea.RPCAddr, "/websocket")
@@ -77,10 +87,6 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 			return nil, err
 		}
 		pvs = append(pvs, witness)
-	}
-	db, err := sgxdb.NewSgxLevelDB("light-client", config.AbsDataDirPath())
-	if err != nil {
-		return nil, err
 	}
 
 	store := dbs.New(db, chainID)
@@ -133,7 +139,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	return &QueryClient{
 		rpcClient:   rpcClient,
 		lightClient: lc,
-		sgxLevelDB:  db,
+		db:          db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
 		chainID:     chainID,
@@ -231,8 +237,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 	}
 
 	// verify query result with merkle proof & trusted block info
-	proofOps := result.Response.ProofOps
-	merkleProof, err := types.ConvertProofs(proofOps)
+	merkleProof, err := types.ConvertProofs(result.Response.ProofOps)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +255,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 }
 
 func (q QueryClient) Close() error {
-	return q.sgxLevelDB.Close()
+	return q.db.Close()
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.

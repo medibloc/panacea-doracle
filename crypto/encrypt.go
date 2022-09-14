@@ -42,7 +42,11 @@ func EncryptWithAES256(key, nonce, data []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func DecryptWithAES256(key, ciphertext []byte) ([]byte, error) {
+func DecryptWithAES256(key, nonce, ciphertext []byte) ([]byte, error) {
+	if len(key) != 32 {
+		return nil, fmt.Errorf("secret key is not for AES-256: total %d bits", 8*len(key))
+	}
+
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -53,10 +57,7 @@ func DecryptWithAES256(key, ciphertext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	nonceSize := aesgcm.NonceSize()
-	nonce, rawCiphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-
-	plainText, err := aesgcm.Open(nil, nonce, rawCiphertext, nil)
+	plainText, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}

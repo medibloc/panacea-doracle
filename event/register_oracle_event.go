@@ -93,9 +93,14 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
 func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte, nodePubKey []byte) (*types.MsgVoteOracleRegistration, error) {
-	privKey, pubKey := crypto.PrivKeyFromBytes(oraclePrivKey)
-	shareKey := crypto.ShareKey(privKey, pubKey)
+	privKey, _ := crypto.PrivKeyFromBytes(oraclePrivKey)
 
+	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+
+	shareKey := crypto.ShareKey(privKey, pubKey)
 	// TODO: Nonce will be added.
 	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nil, oraclePrivKey)
 	if err != nil {

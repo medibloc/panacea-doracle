@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/codec"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	ics23 "github.com/confio/ics23/go"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -299,4 +301,13 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 	}
 
 	return &oracleRegistration, nil
+}
+
+func (q QueryClient) GetOracleParamsPublicKey() ([]byte, error) {
+	oraclePubKeyBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
+	if err != nil {
+		return nil, err
+	}
+
+	return oraclePubKeyBz, nil
 }

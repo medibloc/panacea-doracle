@@ -2,9 +2,12 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/rand"
+	"io"
+	"testing"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // Success encryption and decryption
@@ -43,4 +46,51 @@ func TestEncryptData_FailDecryption(t *testing.T) {
 	// try to decrypt using privKey2
 	_, err = btcec.Decrypt(privKey2, cipherText)
 	require.Error(t, err)
+}
+
+func TestEncryptWithAES256(t *testing.T) {
+	privKey1, err := btcec.NewPrivateKey(btcec.S256())
+	require.NoError(t, err)
+	privKey2, err := btcec.NewPrivateKey(btcec.S256())
+	require.NoError(t, err)
+
+	data := []byte("test data")
+
+	shareKey1 := ShareKey(privKey1, privKey2.PubKey())
+	shareKey2 := ShareKey(privKey2, privKey1.PubKey())
+
+	nonce := make([]byte, 12)
+	_, err = io.ReadFull(rand.Reader, nonce)
+	require.NoError(t, err)
+
+	encryptedData1, err := EncryptWithAES256(shareKey1, nonce, data)
+	require.NoError(t, err)
+	encryptedData2, err := EncryptWithAES256(shareKey2, nonce, data)
+	require.NoError(t, err)
+
+	require.Equal(t, encryptedData1, encryptedData2)
+}
+
+func TestDecryptWithAES256(t *testing.T) {
+	privKey1, err := btcec.NewPrivateKey(btcec.S256())
+	require.NoError(t, err)
+	privKey2, err := btcec.NewPrivateKey(btcec.S256())
+	require.NoError(t, err)
+
+	data := []byte("This is temporary data")
+
+	shareKey1 := ShareKey(privKey1, privKey2.PubKey())
+	shareKey2 := ShareKey(privKey2, privKey1.PubKey())
+
+	nonce := make([]byte, 12)
+	_, err = io.ReadFull(rand.Reader, nonce)
+	require.NoError(t, err)
+
+	encryptedData, err := EncryptWithAES256(shareKey1, nonce, data)
+	require.NoError(t, err)
+
+	decryptedData, err := DecryptWithAES256(shareKey2, nonce, encryptedData)
+	require.NoError(t, err)
+
+	require.Equal(t, decryptedData, data)
 }

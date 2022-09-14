@@ -3,7 +3,6 @@ package integration
 import (
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/cosmos/go-bip39"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"log"
 	"path/filepath"
@@ -17,43 +16,24 @@ import (
 type TestSuite struct {
 	suite.Suite
 
-	ChainID                   string
-	validatorMnemonic         string
-	panaceaInitScriptDir      string
-	panaceaInitScriptFilename string
+	initScriptDir      string
+	initScriptFilename string
+	initScriptEnvs     []string
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
 }
 
-func NewTestSuite(panaceaInitScriptAbsPath string) TestSuite {
-	entropy, err := bip39.NewEntropy(256)
-	if err != nil {
-		log.Panic(err)
+func NewTestSuite(initScriptAbsPath string, initScriptEnvs []string) TestSuite {
+	if !filepath.IsAbs(initScriptAbsPath) {
+		log.Panicf("path must be absolute: %s", initScriptAbsPath)
 	}
-	validatorMnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return NewTestSuiteWithMnemonic(panaceaInitScriptAbsPath, validatorMnemonic)
-}
-
-func NewTestSuiteWithMnemonic(panaceaInitScriptAbsPath, validatorMnemonic string) TestSuite {
-	if !filepath.IsAbs(panaceaInitScriptAbsPath) {
-		log.Panicf("path must be absolute: %s", panaceaInitScriptAbsPath)
-	}
-	dir, filename := filepath.Split(panaceaInitScriptAbsPath)
-
-	if validatorMnemonic == "" {
-		log.Panic("validatorMnemonic is empty")
-	}
+	dir, filename := filepath.Split(initScriptAbsPath)
 
 	return TestSuite{
-		ChainID:                   "testing",
-		validatorMnemonic:         validatorMnemonic,
-		panaceaInitScriptDir:      dir,
-		panaceaInitScriptFilename: filename,
+		initScriptDir:      dir,
+		initScriptFilename: filename,
+		initScriptEnvs:     initScriptEnvs,
 	}
 }
 
@@ -72,17 +52,14 @@ func (suite *TestSuite) SetupTest() {
 		&dockertest.RunOptions{
 			Repository: "ghcr.io/medibloc/panacea-core",
 			Tag:        "master",
-			Cmd:        []string{"bash", fmt.Sprintf("/scripts/%s", suite.panaceaInitScriptFilename)},
-			Env: []string{
-				fmt.Sprintf("CHAIN_ID=%s", suite.ChainID),
-				fmt.Sprintf("MNEMONIC=%s", suite.validatorMnemonic),
-			},
+			Cmd:        []string{"bash", fmt.Sprintf("/scripts/%s", suite.initScriptFilename)},
+			Env:        suite.initScriptEnvs,
 		},
 		func(config *docker.HostConfig) {
 			config.AutoRemove = true // so that stopped containers are removed automatically
 			config.Mounts = []docker.HostMount{
 				{
-					Source: suite.panaceaInitScriptDir,
+					Source: suite.initScriptDir,
 					Target: "/scripts",
 					Type:   "bind",
 				},
@@ -123,8 +100,8 @@ func (suite *TestSuite) PanaceaEndpoint(scheme string, port int) string {
 	)
 }
 
-func (suite *TestSuite) ValidatorAccAddress() string {
-	key, err := crypto.GeneratePrivateKeyFromMnemonic(suite.validatorMnemonic, 371, 0, 0)
+func (suite *TestSuite) AccAddressFromMnemonic(mnemonic string, accNum, index uint32) string {
+	key, err := crypto.GeneratePrivateKeyFromMnemonic(mnemonic, 371, accNum, index)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -2,6 +2,8 @@ package panacea
 
 import (
 	"context"
+	"fmt"
+	"github.com/cosmos/go-bip39"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -17,13 +19,32 @@ import (
 
 type queryClientTestSuite struct {
 	integration.TestSuite
+
+	chainID           string
+	validatorMnemonic string
 }
 
 func TestQueryClient(t *testing.T) {
-	absPath, err := filepath.Abs("testdata/panacea-core-init.sh")
+	initScriptPath, err := filepath.Abs("testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
-	suite.Run(t, &queryClientTestSuite{integration.NewTestSuite(absPath)})
+	chainID := "testing"
+	entropy, err := bip39.NewEntropy(256)
+	require.NoError(t, err)
+	validatorMnemonic, err := bip39.NewMnemonic(entropy)
+	require.NoError(t, err)
+
+	suite.Run(t, &queryClientTestSuite{
+		integration.NewTestSuite(
+			initScriptPath,
+			[]string{
+				fmt.Sprintf("CHAIN_ID=%s", chainID),
+				fmt.Sprintf("MNEMONIC=%s", validatorMnemonic),
+			},
+		),
+		chainID,
+		validatorMnemonic,
+	})
 }
 
 func (suite *queryClientTestSuite) TestGetAccount() {
@@ -34,7 +55,7 @@ func (suite *queryClientTestSuite) TestGetAccount() {
 	defer queryClient.Close()
 
 	var wg sync.WaitGroup
-	accAddr := suite.ValidatorAccAddress()
+	accAddr := suite.AccAddressFromMnemonic(suite.validatorMnemonic, 0, 0)
 
 	for i := 0; i < 10; i++ { // to check if queryClient is goroutine-safe
 		wg.Add(1)
@@ -91,7 +112,7 @@ func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config)
 		Panacea: config.PanaceaConfig{
 			GRPCAddr:                suite.PanaceaEndpoint("tcp", 9090),
 			RPCAddr:                 suite.PanaceaEndpoint("tcp", 26657),
-			ChainID:                 suite.ChainID,
+			ChainID:                 suite.chainID,
 			LightClientPrimaryAddr:  suite.PanaceaEndpoint("tcp", 26657),
 			LightClientWitnessAddrs: []string{suite.PanaceaEndpoint("tcp", 26657)},
 		},

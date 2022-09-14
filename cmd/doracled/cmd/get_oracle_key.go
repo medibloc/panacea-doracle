@@ -3,8 +3,10 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -79,7 +81,14 @@ func getOracleKeyCmd() *cobra.Command {
 				return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 			}
 
-			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, queryClient)
+			// TODO: This will be changed to the nonce that is field of oracleRegistration
+			nonce := make([]byte, 12)
+			size, err := io.ReadFull(rand.Reader, nonce)
+			if size == 0 {
+				return err
+			}
+
+			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, nonce, queryClient)
 		},
 	}
 	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
@@ -89,7 +98,7 @@ func getOracleKeyCmd() *cobra.Command {
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration
-func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey, queryClient *panacea.QueryClient) error {
+func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey, nonce []byte, queryClient *panacea.QueryClient) error {
 	switch oracleRegistration.Status {
 	case oracletypes.ORACLE_REGISTRATION_STATUS_VOTING_PERIOD:
 		return errors.New("voting is currently in progress")
@@ -117,7 +126,7 @@ func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.Oracl
 
 		shareKey := crypto.ShareKey(nodePrivKey, oraclePubKey)
 
-		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, oracleRegistration.EncryptedOraclePrivKey)
+		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, nonce, oracleRegistration.EncryptedOraclePrivKey)
 		if err != nil {
 			return fmt.Errorf("failed to decrypt the encrypted oracle private key: %w", err)
 		}

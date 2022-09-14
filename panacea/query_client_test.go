@@ -2,7 +2,6 @@ package panacea
 
 import (
 	"context"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 	"sync"
@@ -34,25 +33,7 @@ func TestQueryClient(t *testing.T) {
 }
 
 func (suite *queryClientTestSuite) TestGetAccount() {
-	hashHex, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
-	require.NoError(suite.T(), err)
-	hash, err := hex.DecodeString(hashHex)
-	require.NoError(suite.T(), err)
-
-	trustedBlockInfo := &TrustedBlockInfo{
-		TrustedBlockHeight: height,
-		TrustedBlockHash:   hash,
-	}
-
-	conf := &config.Config{
-		Panacea: config.PanaceaConfig{
-			GRPCAddr:                suite.PanaceaEndpoint("tcp", 9090),
-			RPCAddr:                 suite.PanaceaEndpoint("tcp", 26657),
-			ChainID:                 suite.ChainID,
-			LightClientPrimaryAddr:  suite.PanaceaEndpoint("tcp", 26657),
-			LightClientWitnessAddrs: []string{suite.PanaceaEndpoint("tcp", 26657)},
-		},
-	}
+	trustedBlockInfo, conf := suite.prepare()
 
 	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
 	require.NoError(suite.T(), err)
@@ -80,27 +61,10 @@ func (suite *queryClientTestSuite) TestGetAccount() {
 }
 
 func (suite *queryClientTestSuite) TestLoadQueryClient() {
-	hashHex, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
-	require.NoError(suite.T(), err)
-	hash, err := hex.DecodeString(hashHex)
-	require.NoError(suite.T(), err)
-
-	trustedBlockInfo := &TrustedBlockInfo{
-		TrustedBlockHeight: height,
-		TrustedBlockHash:   hash,
-	}
-
-	conf := &config.Config{
-		Panacea: config.PanaceaConfig{
-			GRPCAddr:                suite.PanaceaEndpoint("tcp", 9090),
-			RPCAddr:                 suite.PanaceaEndpoint("tcp", 26657),
-			ChainID:                 suite.ChainID,
-			LightClientPrimaryAddr:  suite.PanaceaEndpoint("tcp", 26657),
-			LightClientWitnessAddrs: []string{suite.PanaceaEndpoint("tcp", 26657)},
-		},
-	}
+	trustedBlockInfo, conf := suite.prepare()
 
 	db := dbm.NewMemDB()
+
 	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
 	require.NoError(suite.T(), err)
 
@@ -118,4 +82,26 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 	lastTrustedHeight2, err := queryClient.lightClient.LastTrustedHeight()
 	require.NoError(suite.T(), err)
 	require.GreaterOrEqual(suite.T(), lastTrustedHeight2, lastTrustedHeight)
+}
+
+func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {
+	hash, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+	require.NoError(suite.T(), err)
+
+	trustedBlockInfo := &TrustedBlockInfo{
+		TrustedBlockHeight: height,
+		TrustedBlockHash:   hash,
+	}
+
+	conf := &config.Config{
+		Panacea: config.PanaceaConfig{
+			GRPCAddr:                suite.PanaceaEndpoint("tcp", 9090),
+			RPCAddr:                 suite.PanaceaEndpoint("tcp", 26657),
+			ChainID:                 suite.ChainID,
+			LightClientPrimaryAddr:  suite.PanaceaEndpoint("tcp", 26657),
+			LightClientWitnessAddrs: []string{suite.PanaceaEndpoint("tcp", 26657)},
+		},
+	}
+
+	return trustedBlockInfo, conf
 }

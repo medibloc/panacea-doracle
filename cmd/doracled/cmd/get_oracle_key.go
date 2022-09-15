@@ -106,7 +106,7 @@ func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.Oracl
 			return errors.New("the oracle private key already exists")
 		}
 
-		shareKey := crypto.ShareKey(nodePrivKey, oraclePubKey)
+		shareKey := crypto.SharedKey(nodePrivKey, oraclePubKey)
 
 		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, oracleRegistration.Nonce, oracleRegistration.EncryptedOraclePrivKey)
 		if err != nil {

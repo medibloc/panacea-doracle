@@ -29,6 +29,6 @@ func GeneratePrivateKeyFromMnemonic(mnemonic string, coinType, accNum, index uin
 	return hd.DerivePrivateKeyForPath(master, ch, hdPath)
 }
 
-func ShareKey(priv *btcec.PrivateKey, pub *btcec.PublicKey) []byte {
+func SharedKey(priv *btcec.PrivateKey, pub *btcec.PublicKey) []byte {
 	return btcec.GenerateSharedSecret(priv, pub)
 }

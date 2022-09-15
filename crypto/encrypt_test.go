@@ -56,8 +56,8 @@ func TestEncryptWithAES256(t *testing.T) {
 
 	data := []byte("test data")
 
-	shareKey1 := ShareKey(privKey1, privKey2.PubKey())
-	shareKey2 := ShareKey(privKey2, privKey1.PubKey())
+	shareKey1 := SharedKey(privKey1, privKey2.PubKey())
+	shareKey2 := SharedKey(privKey2, privKey1.PubKey())
 
 	nonce := make([]byte, 12)
 	_, err = io.ReadFull(rand.Reader, nonce)
@@ -79,8 +79,8 @@ func TestDecryptWithAES256(t *testing.T) {
 
 	data := []byte("This is temporary data")
 
-	shareKey1 := ShareKey(privKey1, privKey2.PubKey())
-	shareKey2 := ShareKey(privKey2, privKey1.PubKey())
+	shareKey1 := SharedKey(privKey1, privKey2.PubKey())
+	shareKey2 := SharedKey(privKey2, privKey1.PubKey())
 
 	nonce := make([]byte, 12)
 	_, err = io.ReadFull(rand.Reader, nonce)

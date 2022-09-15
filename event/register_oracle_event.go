@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -71,7 +72,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
 
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey)
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey, oracleRegistration.Nonce)
 	if err != nil {
 		return err
 	}
@@ -101,13 +102,16 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 }
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
-func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte, nodePubKey []byte) (*types.MsgVoteOracleRegistration, error) {
+func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey, nodePubKey, nonce []byte) (*types.MsgVoteOracleRegistration, error) {
+	privKey, _ := crypto.PrivKeyFromBytes(oraclePrivKey)
+
 	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
 	if err != nil {
 		return nil, err
 	}
 
-	encryptedOraclePrivKey, err := crypto.Encrypt(pubKey, oraclePrivKey)
+	shareKey := crypto.SharedKey(privKey, pubKey)
+	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nonce, oraclePrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -124,12 +128,12 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 		Key: oraclePrivKey,
 	}
 
-	bytes, err := registrationVote.Marshal()
+	marshaledRegistrationVote, err := registrationVote.Marshal()
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := key.Sign(bytes)
+	sig, err := key.Sign(marshaledRegistrationVote)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +146,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 	return msgVoteOracleRegistration, nil
 }
 
-// generateTxBytes
+// generateTxBytes generates transaction byte array.
 func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
@@ -153,7 +157,7 @@ func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration,
 	return txBytes, nil
 }
 
-// broadcastTx
+// broadcastTx broadcast transaction to blockchain.
 func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {

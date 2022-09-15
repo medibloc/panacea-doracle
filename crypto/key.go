@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/go-bip39"
@@ -26,4 +27,8 @@ func GeneratePrivateKeyFromMnemonic(mnemonic string, coinType, accNum, index uin
 	master, ch := hd.ComputeMastersFromSeed(bip39.NewSeed(mnemonic, ""))
 
 	return hd.DerivePrivateKeyForPath(master, ch, hdPath)
+}
+
+func SharedKey(priv *btcec.PrivateKey, pub *btcec.PublicKey) []byte {
+	return btcec.GenerateSharedSecret(priv, pub)
 }

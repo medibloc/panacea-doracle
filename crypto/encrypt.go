@@ -19,12 +19,12 @@ func Decrypt(privKey *btcec.PrivateKey, data []byte) ([]byte, error) {
 }
 
 // EncryptWithAES256 encrypts data using a AES256 cryptography.
-func EncryptWithAES256(key, nonce, data []byte) ([]byte, error) {
-	if len(key) != 32 {
-		return nil, fmt.Errorf("secret key is not for AES-256: total %d bits", 8*len(key))
+func EncryptWithAES256(secretKey, nonce, data []byte) ([]byte, error) {
+	if len(secretKey) != 32 {
+		return nil, fmt.Errorf("secret secretKey is not for AES-256: total %d bits", 8*len(secretKey))
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(secretKey)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +44,12 @@ func EncryptWithAES256(key, nonce, data []byte) ([]byte, error) {
 }
 
 // DecryptWithAES256 decrypts data using a AES256 cryptography.
-func DecryptWithAES256(key, nonce, ciphertext []byte) ([]byte, error) {
-	if len(key) != 32 {
-		return nil, fmt.Errorf("secret key is not for AES-256: total %d bits", 8*len(key))
+func DecryptWithAES256(secretKey, nonce, ciphertext []byte) ([]byte, error) {
+	if len(secretKey) != 32 {
+		return nil, fmt.Errorf("secret secretKey is not for AES-256: total %d bits", 8*len(secretKey))
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(secretKey)
 	if err != nil {
 		return nil, err
 	}

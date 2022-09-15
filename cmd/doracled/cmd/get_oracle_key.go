@@ -79,7 +79,12 @@ func getOracleKeyCmd() *cobra.Command {
 				return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 			}
 
-			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, oracleRegistration.Nonce, queryClient)
+			oraclePublicKey, err := queryClient.GetOracleParamsPublicKey()
+			if err != nil {
+				return err
+			}
+
+			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, oraclePublicKey)
 		},
 	}
 	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
@@ -89,7 +94,7 @@ func getOracleKeyCmd() *cobra.Command {
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration
-func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey, nonce []byte, queryClient *panacea.QueryClient) error {
+func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey, oraclePubKey *btcec.PublicKey) error {
 	switch oracleRegistration.Status {
 	case oracletypes.ORACLE_REGISTRATION_STATUS_VOTING_PERIOD:
 		return errors.New("voting is currently in progress")
@@ -101,23 +106,9 @@ func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.Oracl
 			return errors.New("the oracle private key already exists")
 		}
 
-		oraclePublicKey, err := queryClient.GetOracleParamsPublicKey()
-		if err != nil {
-			return err
-		}
-
-		if oraclePublicKey == nil {
-			return errors.New("the oracle public key nil")
-		}
-
-		oraclePubKey, err := btcec.ParsePubKey(oraclePublicKey, btcec.S256())
-		if err != nil {
-			return fmt.Errorf("failed to parse oracle public key: %w", err)
-		}
-
 		shareKey := crypto.ShareKey(nodePrivKey, oraclePubKey)
 
-		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, nonce, oracleRegistration.EncryptedOraclePrivKey)
+		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, oracleRegistration.Nonce, oracleRegistration.EncryptedOraclePrivKey)
 		if err != nil {
 			return fmt.Errorf("failed to decrypt the encrypted oracle private key: %w", err)
 		}

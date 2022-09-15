@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/std"
 
@@ -319,11 +320,19 @@ func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
 	return q.lightClient.TrustedLightBlock(height)
 }
 
-func (q QueryClient) GetOracleParamsPublicKey() ([]byte, error) {
+func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 	oraclePubKeyBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
 	if err != nil {
 		return nil, err
 	}
+	if oraclePubKeyBz == nil {
+		return nil, errors.New("the oracle public key's value is nil")
+	}
 
-	return oraclePubKeyBz, nil
+	oraclePubKey, err := btcec.ParsePubKey(oraclePubKeyBz, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+
+	return oraclePubKey, nil
 }

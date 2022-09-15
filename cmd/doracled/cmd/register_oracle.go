@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
@@ -64,8 +66,14 @@ func registerOracleCmd() *cobra.Command {
 			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
 			uniqueID := hex.EncodeToString(report.UniqueID)
 
+			nonce := make([]byte, 12)
+			_, err = io.ReadFull(rand.Reader, nonce)
+			if err != nil {
+				return fmt.Errorf("failed to make nonce: %w", err)
+			}
+
 			// sign and broadcast to Panacea
-			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash)
+			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash, nonce)
 
 			txBuilder := panacea.NewTxBuilder(*queryClient)
 			cli, err := panacea.NewGrpcClient(conf)

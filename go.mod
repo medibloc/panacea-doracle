@@ -9,7 +9,7 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/cosmos/ibc-go/v2 v2.0.3
 	github.com/edgelesssys/ego v1.0.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220915010659-2c0f80b0f08e
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220915052104-fd4a0ce6c4fb
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0

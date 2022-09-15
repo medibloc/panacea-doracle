@@ -34,6 +34,10 @@ const (
 	trustedPeriod = 2 * 365 * 24 * time.Hour
 )
 
+var (
+	ErrNilResult = errors.New("there is no data in result")
+)
+
 type TrustedBlockInfo struct {
 	TrustedBlockHeight int64
 	TrustedBlockHash   []byte
@@ -221,6 +225,10 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 	result, err := q.rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
 		return nil, err
+	}
+	// if result value is nil, return ErrNilResult
+	if result.Response.Value == nil {
+		return nil, ErrNilResult
 	}
 
 	// for merkle proof, the apphash of the next block is needed.

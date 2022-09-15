@@ -315,6 +315,10 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 	return &oracleRegistration, nil
 }
 
+func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
+	return q.lightClient.TrustedLightBlock(height)
+}
+
 func (q QueryClient) GetOracleParamsPublicKey() ([]byte, error) {
 	oraclePubKeyBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
 	if err != nil {

@@ -146,7 +146,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 	return msgVoteOracleRegistration, nil
 }
 
-// generateTxBytes
+// generateTxBytes generates transaction byte array.
 func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteOracleRegistration)
@@ -157,7 +157,7 @@ func generateTxBytes(msgVoteOracleRegistration *types.MsgVoteOracleRegistration,
 	return txBytes, nil
 }
 
-// broadcastTx
+// broadcastTx broadcast transaction to blockchain.
 func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {

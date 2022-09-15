@@ -72,7 +72,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
 
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey)
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey, oracleRegistration.Nonce)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, 
 }
 
 // makeOracleRegistrationVote makes a vote for oracle registration with VOTE_OPTION
-func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey []byte, nodePubKey []byte) (*types.MsgVoteOracleRegistration, error) {
+func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption types.VoteOption, oraclePrivKey, nodePubKey, nonce []byte) (*types.MsgVoteOracleRegistration, error) {
 	privKey, _ := crypto.PrivKeyFromBytes(oraclePrivKey)
 
 	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
@@ -111,8 +111,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 	}
 
 	shareKey := crypto.ShareKey(privKey, pubKey)
-	// TODO: Nonce will be added.
-	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nil, oraclePrivKey)
+	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nonce, oraclePrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -129,12 +128,12 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 		Key: oraclePrivKey,
 	}
 
-	bytes, err := registrationVote.Marshal()
+	marshaledRegistrationVote, err := registrationVote.Marshal()
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := key.Sign(bytes)
+	sig, err := key.Sign(marshaledRegistrationVote)
 	if err != nil {
 		return nil, err
 	}

@@ -3,10 +3,8 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -81,14 +79,7 @@ func getOracleKeyCmd() *cobra.Command {
 				return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 			}
 
-			// TODO: This will be changed to the nonce that is field of oracleRegistration
-			nonce := make([]byte, 12)
-			size, err := io.ReadFull(rand.Reader, nonce)
-			if size == 0 {
-				return err
-			}
-
-			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, nonce, queryClient)
+			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, oracleRegistration.Nonce, queryClient)
 		},
 	}
 	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")

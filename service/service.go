@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
@@ -67,7 +68,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		oraclePrivKey: oraclePrivKey,
 		enclaveInfo:   selfEnclaveInfo,
 		queryClient:   queryClient,
-		grpcClient:    grpcClient.(*panacea.GrpcClient),
+		grpcClient:    grpcClient,
 		subscriber:    subscriber,
 	}, nil
 }

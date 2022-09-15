@@ -2,7 +2,6 @@ package panacea
 
 import (
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -12,14 +11,12 @@ import (
 )
 
 type TxBuilder struct {
-	client     QueryClient
-	marshaller *codec.ProtoCodec
+	client QueryClient
 }
 
 func NewTxBuilder(client QueryClient) *TxBuilder {
 	return &TxBuilder{
-		client:     client,
-		marshaller: client.cdc,
+		client: client,
 	}
 }
 
@@ -30,7 +27,7 @@ func (tb TxBuilder) GenerateSignedTxBytes(
 	feeAmount sdk.Coins,
 	msg ...sdk.Msg,
 ) ([]byte, error) {
-	txConfig := authtx.NewTxConfig(tb.marshaller, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
+	txConfig := authtx.NewTxConfig(tb.client.cdc, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
 	txBuilder := txConfig.NewTxBuilder()
 	txBuilder.SetGasLimit(gasLimit)
 	txBuilder.SetFeeAmount(feeAmount)

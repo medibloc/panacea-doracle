@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/std"
+
 	"os"
 	"sync"
 	"time"
 
 	ics23 "github.com/confio/ics23/go"
+	sdk "github.com/cosmos/cosmos-sdk/codec/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -42,6 +46,14 @@ type QueryClient struct {
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
 	chainID     string
+}
+
+// makeInterfaceRegistry
+func makeInterfaceRegistry() sdk.InterfaceRegistry {
+	interfaceRegistry := sdk.NewInterfaceRegistry()
+	std.RegisterInterfaces(interfaceRegistry)
+	authtypes.RegisterInterfaces(interfaceRegistry)
+	return interfaceRegistry
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,

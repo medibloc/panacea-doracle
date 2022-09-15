@@ -224,6 +224,8 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 	result, err := q.rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
 		return nil, err
+	} else if result.Response.Value == nil || result.Response.ProofOps == nil {
+		return nil, fmt.Errorf("ABCIQuery returned NotFound")
 	}
 
 	// for merkle proof, the apphash of the next block is needed.

@@ -2,6 +2,7 @@ package panacea
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -323,18 +324,18 @@ func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
 }
 
 func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
-	oraclePubKeyBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
+	pubKeyStrBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
 	if err != nil {
 		return nil, err
 	}
-	if oraclePubKeyBz == nil {
+	if pubKeyStrBz == nil {
 		return nil, errors.New("the oracle public key's value is nil")
 	}
 
-	oraclePubKey, err := btcec.ParsePubKey(oraclePubKeyBz, btcec.S256())
+	pubKeyBz, err := base64.StdEncoding.DecodeString(string(pubKeyStrBz))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)
 	}
 
-	return oraclePubKey, nil
+	return btcec.ParsePubKey(pubKeyBz, btcec.S256())
 }

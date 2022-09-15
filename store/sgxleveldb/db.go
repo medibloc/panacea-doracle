@@ -42,7 +42,10 @@ func (sdb *SgxLevelDB) Get(key []byte) ([]byte, error) {
 	val, err := sdb.GoLevelDB.Get(key)
 	if err != nil {
 		return nil, err
+	} else if val == nil {
+		return nil, nil
 	}
+
 	log.Debug("unsealing after reading from leveldb")
 	unsealedVal, err := sgx.Unseal(val, true)
 	if err != nil {

@@ -317,7 +317,7 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 }
 
 func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
-	return q.lightClient.TrustedLightBlock(height)
+	return q.safeVerifyLightBlockAtHeight(context.Background(), height)
 }
 
 func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {

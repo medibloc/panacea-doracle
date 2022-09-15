@@ -332,6 +332,8 @@ func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 		return nil, errors.New("the oracle public key's value is nil")
 	}
 
+	log.Infof("pubKeyStr:%s", string(pubKeyStrBz))
+
 	pubKeyBz, err := base64.StdEncoding.DecodeString(string(pubKeyStrBz))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)

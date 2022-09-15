@@ -36,7 +36,7 @@ func getOracleKeyCmd() *cobra.Command {
 
 			ctx := context.Background()
 
-			// if there is a node key already, return error
+			// if the node key does not exist, return error
 			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
 			if !tos.FileExists(nodePrivKeyPath) {
 				return errors.New("no node_priv_key.sealed file")

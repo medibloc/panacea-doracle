@@ -312,3 +312,7 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 
 	return &oracleRegistration, nil
 }
+
+func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
+	return q.lightClient.TrustedLightBlock(height)
+}

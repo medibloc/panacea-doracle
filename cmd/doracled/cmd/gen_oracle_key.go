@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/medibloc/panacea-doracle/client/flags"
+	"github.com/medibloc/panacea-doracle/panacea"
 	"io/ioutil"
 	"os"
 
@@ -74,9 +77,27 @@ So please be cautious in using this command.`,
 				return err
 			}
 
+			// get trusted block information
+			trustedBlockInfo, err := getTrustedBlockInfo(cmd)
+			if err != nil {
+				return fmt.Errorf("failed to get trusted block info: %w", err)
+			}
+
+			// initialize query client using trustedBlockInfo
+			queryClient, err := panacea.NewQueryClient(context.Background(), conf, *trustedBlockInfo)
+			if err != nil {
+				return fmt.Errorf("failed to initialize QueryClient: %w", err)
+			}
+			defer queryClient.Close()
+
 			return nil
 		},
 	}
+	cmd.Flags().Int64(flags.FlagTrustedBlockHeight, 0, "Trusted block height")
+	cmd.Flags().String(flags.FlagTrustedBlockHash, "", "Trusted block hash")
+	_ = cmd.MarkFlagRequired(flags.FlagTrustedBlockHeight)
+	_ = cmd.MarkFlagRequired(flags.FlagTrustedBlockHash)
+
 	return cmd
 }
 

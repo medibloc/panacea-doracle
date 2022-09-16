@@ -5,9 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -35,7 +35,7 @@ func getOracleKeyCmd() *cobra.Command {
 
 			ctx := context.Background()
 
-			// if there is a node key already, return error
+			// if the node key does not exist, return error
 			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
 			if !tos.FileExists(nodePrivKeyPath) {
 				return errors.New("no node_priv_key.sealed file")
@@ -56,7 +56,7 @@ func getOracleKeyCmd() *cobra.Command {
 			uniqueID := selfEnclaveInfo.UniqueIDHex()
 
 			// get oracle account from mnemonic.
-			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
+			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 			if err != nil {
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
@@ -78,17 +78,20 @@ func getOracleKeyCmd() *cobra.Command {
 				return errors.New("the existing node key is different from the one used in oracle registration. if you want to re-request RegisterOracle, delete the existing node_priv_key.sealed file and rerun register-oracle cmd")
 			}
 
-			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey)
+			oraclePublicKey, err := queryClient.GetOracleParamsPublicKey()
+			if err != nil {
+				return err
+			}
+
+			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, oraclePublicKey)
 		},
 	}
-	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
-	cmd.Flags().Uint32P(flags.FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
 
 	return cmd
 }
 
 // getOraclePrivKey handles OracleRegistration differently depending on the status of oracle registration
-func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey) error {
+func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.OracleRegistration, nodePrivKey *btcec.PrivateKey, oraclePubKey *btcec.PublicKey) error {
 	switch oracleRegistration.Status {
 	case oracletypes.ORACLE_REGISTRATION_STATUS_VOTING_PERIOD:
 		return errors.New("voting is currently in progress")
@@ -100,10 +103,11 @@ func getOraclePrivKey(conf *config.Config, oracleRegistration *oracletypes.Oracl
 			return errors.New("the oracle private key already exists")
 		}
 
-		// else, get encryptedOraclePrivKey from Panacea and decrypt and SealToFile it
-		oraclePrivKey, err := crypto.Decrypt(nodePrivKey, oracleRegistration.EncryptedOraclePrivKey)
+		shareKey := crypto.SharedKey(nodePrivKey, oraclePubKey)
+
+		oraclePrivKey, err := crypto.DecryptWithAES256(shareKey, oracleRegistration.Nonce, oracleRegistration.EncryptedOraclePrivKey)
 		if err != nil {
-			return fmt.Errorf("failed to decrypt the EncryptedOraclePrivKey: %w", err)
+			return fmt.Errorf("failed to decrypt the encrypted oracle private key: %w", err)
 		}
 
 		if err := sgx.SealToFile(oraclePrivKey, oraclePrivKeyPath); err != nil {

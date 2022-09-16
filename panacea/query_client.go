@@ -2,21 +2,26 @@ package panacea
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-
+	"github.com/btcsuite/btcd/btcec"
 	ics23 "github.com/confio/ics23/go"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
 	log "github.com/sirupsen/logrus"
+	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/light/provider"
@@ -24,6 +29,7 @@ import (
 	dbs "github.com/tendermint/tendermint/light/store/db"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 )
@@ -44,6 +50,14 @@ type QueryClient struct {
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
 	chainID     string
+}
+
+// makeInterfaceRegistry
+func makeInterfaceRegistry() sdk.InterfaceRegistry {
+	interfaceRegistry := sdk.NewInterfaceRegistry()
+	std.RegisterInterfaces(interfaceRegistry)
+	authtypes.RegisterInterfaces(interfaceRegistry)
+	return interfaceRegistry
 }
 
 // NewQueryClient set QueryClient with rpcClient & and returns, if successful,
@@ -212,7 +226,7 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 		Height: queryHeight,
 	}
 	// query to kv store with proof option
-	result, err := q.rpcClient.ABCIQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
+	result, err := q.abciQueryWithOptions(ctx, fmt.Sprintf("/store/%s/key", storeKey), key, option)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +270,35 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 
 func (q QueryClient) Close() error {
 	return q.db.Close()
+}
+
+// abciQueryWithOptions is a wrapper of rpcClient.ABCIQueryWithOptions,
+// but validates the details of result.Response even if rpcClient.ABCIQueryWithOptions returns no error.
+func (q QueryClient) abciQueryWithOptions(ctx context.Context, path string, data tmbytes.HexBytes, opts client.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
+	res, err := q.rpcClient.ABCIQueryWithOptions(ctx, path, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	resp := res.Response
+
+	// Validate the response.
+	if resp.IsErr() {
+		return nil, fmt.Errorf("err response code: %v", resp.Code)
+	}
+	if len(resp.Key) == 0 {
+		return nil, errors.New("empty key")
+	}
+	if len(resp.Value) == 0 {
+		return nil, errors.New("empty value")
+	}
+	if opts.Prove && (resp.ProofOps == nil || len(resp.ProofOps.Ops) == 0) {
+		return nil, errors.New("no proof ops")
+	}
+	if resp.Height <= 0 {
+		return nil, errors.New("negative or zero height")
+	}
+
+	return res, nil
 }
 
 // Below are examples of query function that use GetStoreData function to verify queried result.
@@ -304,4 +347,26 @@ func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracle
 	}
 
 	return &oracleRegistration, nil
+}
+
+func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
+	return q.safeVerifyLightBlockAtHeight(context.Background(), height)
+}
+
+func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
+	pubKeyBase64Bz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
+	if err != nil {
+		return nil, err
+	}
+	// TODO: don't need to handle this case after merging https://github.com/medibloc/panacea-doracle/pull/68
+	if pubKeyBase64Bz == nil {
+		return nil, errors.New("the oracle public key's value is nil")
+	}
+
+	pubKeyBz, err := base64.StdEncoding.DecodeString(string(pubKeyBase64Bz))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)
+	}
+
+	return btcec.ParsePubKey(pubKeyBz, btcec.S256())
 }

@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/edgelesssys/ego/enclave"
@@ -50,7 +52,7 @@ func registerOracleCmd() *cobra.Command {
 			defer queryClient.Close()
 
 			// get oracle account from mnemonic.
-			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
+			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 			if err != nil {
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
@@ -64,8 +66,14 @@ func registerOracleCmd() *cobra.Command {
 			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
 			uniqueID := hex.EncodeToString(report.UniqueID)
 
+			nonce := make([]byte, 12)
+			_, err = io.ReadFull(rand.Reader, nonce)
+			if err != nil {
+				return fmt.Errorf("failed to make nonce: %w", err)
+			}
+
 			// sign and broadcast to Panacea
-			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash)
+			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash, nonce)
 
 			txBuilder := panacea.NewTxBuilder(*queryClient)
 			cli, err := panacea.NewGrpcClient(conf)
@@ -95,8 +103,6 @@ func registerOracleCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
-	cmd.Flags().Uint32P(flags.FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
 	cmd.Flags().Int64(flags.FlagTrustedBlockHeight, 0, "Trusted block height")
 	cmd.Flags().String(flags.FlagTrustedBlockHash, "", "Trusted block hash")
 	_ = cmd.MarkFlagRequired(flags.FlagTrustedBlockHeight)
@@ -132,29 +138,6 @@ func getTrustedBlockInfo(cmd *cobra.Command) (*panacea.TrustedBlockInfo, error) 
 		TrustedBlockHeight: trustedBlockHeight,
 		TrustedBlockHash:   trustedBlockHash,
 	}, nil
-}
-
-// getOracleAccount gets an oracle account from mnemonic.
-// The account is equal to one that is registered as validator.
-// You can set account number and index optionally.
-// The default value is 0 for both account number and index
-func getOracleAccount(cmd *cobra.Command, mnemonic string) (*panacea.OracleAccount, error) {
-	accNum, err := cmd.Flags().GetUint32(flags.FlagAccNum)
-	if err != nil {
-		return &panacea.OracleAccount{}, err
-	}
-
-	index, err := cmd.Flags().GetUint32(flags.FlagIndex)
-	if err != nil {
-		return &panacea.OracleAccount{}, err
-	}
-
-	oracleAccount, err := panacea.NewOracleAccount(mnemonic, accNum, index)
-	if err != nil {
-		return &panacea.OracleAccount{}, err
-	}
-
-	return oracleAccount, nil
 }
 
 // generateNodeKey generates random node key and its remote report

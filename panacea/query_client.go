@@ -51,6 +51,7 @@ type QueryClient struct {
 	sgxLevelDB  *sgxdb.SgxLevelDB
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
+	aminoCdc    *codec.AminoCodec
 	chainID     string
 }
 
@@ -154,6 +155,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 		sgxLevelDB:  db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
+		aminoCdc:    codec.NewAminoCodec(codec.NewLegacyAmino()),
 		chainID:     chainID,
 	}, nil
 }
@@ -362,7 +364,14 @@ func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 		return nil, errors.New("the oracle public key's value is nil")
 	}
 
-	pubKeyBz, err := base64.StdEncoding.DecodeString(string(pubKeyBase64Bz))
+	// If you get a value from params, you should not use protoCodec, but use legacyAmino.
+	var pubKeyBase64 string
+	err = q.aminoCdc.LegacyAmino.UnmarshalJSON(pubKeyBase64Bz, &pubKeyBase64)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKeyBz, err := base64.StdEncoding.DecodeString(pubKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)
 	}

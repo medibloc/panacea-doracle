@@ -17,8 +17,8 @@ type BaseConfig struct {
 
 	LogLevel       string `mapstructure:"log-level"`
 	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
-	AccNum         uint32 `mapstructure:"acc-num"`
-	AccIndex       uint32 `mapstructure:"acc-index"`
+	OracleAccNum   uint32 `mapstructure:"oracle-acc-num"`
+	OracleAccIndex uint32 `mapstructure:"oracle-acc-index"`
 	ListenAddr     string `mapstructure:"listen_addr"`
 	Subscriber     string `mapstructure:"subscriber"`
 	DataDir        string `mapstructure:"data_dir"`
@@ -45,8 +45,8 @@ func DefaultConfig() *Config {
 
 			LogLevel:       "info",
 			OracleMnemonic: "",
-			AccNum:         0,
-			AccIndex:       0,
+			OracleAccNum:   0,
+			OracleAccIndex: 0,
 			ListenAddr:     "127.0.0.1:8080",
 			DataDir:        "data",
 

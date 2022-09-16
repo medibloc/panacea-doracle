@@ -21,8 +21,8 @@ const DefaultConfigTemplate = `# This is a TOML config file.
 
 log-level = "{{ .BaseConfig.LogLevel }}"
 oracle-mnemonic = "{{ .BaseConfig.OracleMnemonic }}"
-acc-num = "{{ .BaseConfig.AccNum }}"
-acc-index = "{{ .BaseConfig.AccIndex }}"
+oracle-acc-num = "{{ .BaseConfig.OracleAccNum }}"
+oracle-acc-index = "{{ .BaseConfig.OracleAccIndex }}"
 listen_addr = "{{ .BaseConfig.ListenAddr }}"
 data_dir = "{{ .BaseConfig.DataDir }}"
 

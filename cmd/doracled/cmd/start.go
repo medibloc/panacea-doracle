@@ -24,7 +24,7 @@ func startCmd() *cobra.Command {
 			}
 
 			// get oracle account from mnemonic.
-			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.AccNum, conf.AccIndex)
+			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 			if err != nil {
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}

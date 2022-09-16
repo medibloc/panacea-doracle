@@ -8,7 +8,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -57,7 +56,7 @@ func getOracleKeyCmd() *cobra.Command {
 			uniqueID := selfEnclaveInfo.UniqueIDHex()
 
 			// get oracle account from mnemonic.
-			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
+			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.AccNum, conf.AccIndex)
 			if err != nil {
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
@@ -87,8 +86,6 @@ func getOracleKeyCmd() *cobra.Command {
 			return getOraclePrivKey(conf, oracleRegistration, nodePrivKey, oraclePublicKey)
 		},
 	}
-	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
-	cmd.Flags().Uint32P(flags.FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
 
 	return cmd
 }

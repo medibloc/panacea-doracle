@@ -21,6 +21,8 @@ const DefaultConfigTemplate = `# This is a TOML config file.
 
 log-level = "{{ .BaseConfig.LogLevel }}"
 oracle-mnemonic = "{{ .BaseConfig.OracleMnemonic }}"
+acc-num = "{{ .BaseConfig.AccNum }}"
+acc-index = "{{ .BaseConfig.AccIndex }}"
 listen_addr = "{{ .BaseConfig.ListenAddr }}"
 data_dir = "{{ .BaseConfig.DataDir }}"
 
@@ -41,8 +43,11 @@ default-gas-limit = "{{ .Panacea.DefaultGasLimit }}"
 default-fee-amount = "{{ .Panacea.DefaultFeeAmount }}"
 
 # A primary RPC address for light client verification
+
 light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
+
 # Witness addresses (comma-separated) for light client verification
+
 light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
 `
 

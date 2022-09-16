@@ -286,6 +286,9 @@ func (q QueryClient) abciQueryWithOptions(ctx context.Context, path string, data
 	if len(resp.Key) == 0 {
 		return nil, errors.New("empty key")
 	}
+	if len(resp.Value) == 0 {
+		return nil, errors.New("empty value")
+	}
 	if opts.Prove && (resp.ProofOps == nil || len(resp.ProofOps.Ops) == 0) {
 		return nil, errors.New("no proof ops")
 	}

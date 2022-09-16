@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/event"
+	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,9 +23,10 @@ func startCmd() *cobra.Command {
 				return err
 			}
 
-			oracleAccount, err := getOracleAccount(cmd, conf.OracleMnemonic)
+			// get oracle account from mnemonic.
+			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 			if err != nil {
-				return fmt.Errorf("failed to get oracle account: %w", err)
+				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
 
 			svc, err := service.New(conf, oracleAccount)
@@ -50,9 +51,6 @@ func startCmd() *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.Flags().Uint32P(flags.FlagAccNum, "a", 0, "Account number of oracle")
-	cmd.Flags().Uint32P(flags.FlagIndex, "i", 0, "Address index number for HD derivation of oracle")
 
 	return cmd
 }

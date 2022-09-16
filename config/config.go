@@ -17,6 +17,8 @@ type BaseConfig struct {
 
 	LogLevel       string `mapstructure:"log-level"`
 	OracleMnemonic string `mapstructure:"oracle-mnemonic"`
+	OracleAccNum   uint32 `mapstructure:"oracle-acc-num"`
+	OracleAccIndex uint32 `mapstructure:"oracle-acc-index"`
 	ListenAddr     string `mapstructure:"listen_addr"`
 	Subscriber     string `mapstructure:"subscriber"`
 	DataDir        string `mapstructure:"data_dir"`
@@ -43,6 +45,8 @@ func DefaultConfig() *Config {
 
 			LogLevel:       "info",
 			OracleMnemonic: "",
+			OracleAccNum:   0,
+			OracleAccIndex: 0,
 			ListenAddr:     "127.0.0.1:8080",
 			DataDir:        "data",
 
@@ -54,8 +58,8 @@ func DefaultConfig() *Config {
 			GRPCAddr:                "127.0.0.1:9090",
 			RPCAddr:                 "tcp://127.0.0.1:26657",
 			ChainID:                 "panacea-3",
-			DefaultGasLimit:         300000,
-			DefaultFeeAmount:        "1500000umed",
+			DefaultGasLimit:         400000,
+			DefaultFeeAmount:        "2000000umed",
 			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
 			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
 		},

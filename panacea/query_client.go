@@ -290,7 +290,7 @@ func (q QueryClient) abciQueryWithOptions(ctx context.Context, path string, data
 		return nil, errors.New("no proof ops")
 	}
 	if resp.Height <= 0 {
-		return nil, fmt.Errorf("negative or zero height")
+		return nil, errors.New("negative or zero height")
 	}
 
 	return res, nil

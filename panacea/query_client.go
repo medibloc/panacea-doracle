@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -105,7 +106,7 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 	store := dbs.New(db, chainID)
 
 	var lc *light.Client
-	logger := light.Logger(tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout)))
+	logger := light.Logger(newTMLogger(config))
 
 	if info == nil {
 		lc, err = light.NewClientFromTrustedStore(
@@ -158,6 +159,21 @@ func newQueryClient(ctx context.Context, config *config.Config, info *TrustedBlo
 		aminoCdc:    codec.NewAminoCodec(codec.NewLegacyAmino()),
 		chainID:     chainID,
 	}, nil
+}
+
+func newTMLogger(conf *config.Config) tmlog.Logger {
+	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+
+	switch strings.ToLower(conf.LogLevel) {
+	case "panic", "fatal", "error":
+		logger = tmlog.NewFilter(logger, tmlog.AllowError())
+	case "warn", "warning", "info":
+		logger = tmlog.NewFilter(logger, tmlog.AllowInfo())
+	default: // "debug", "trace", and so on
+		logger = tmlog.NewFilter(logger, tmlog.AllowDebug())
+	}
+
+	return logger
 }
 
 func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightBlock, error) {

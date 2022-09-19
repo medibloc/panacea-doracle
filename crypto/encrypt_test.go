@@ -74,13 +74,16 @@ func TestEncryptWithAES256(t *testing.T) {
 func TestDecryptWithAES256(t *testing.T) {
 	privKey1, err := btcec.NewPrivateKey(btcec.S256())
 	require.NoError(t, err)
+	t.Logf("len(privKey1):%v, len(pubKey1):%v", len(privKey1.Serialize()), len(privKey1.PubKey().SerializeUncompressed()))
 	privKey2, err := btcec.NewPrivateKey(btcec.S256())
 	require.NoError(t, err)
+	t.Logf("len(privKey2):%v, len(pubKey2):%v", len(privKey2.Serialize()), len(privKey2.PubKey().SerializeUncompressed()))
 
 	data := []byte("This is temporary data")
 
 	shareKey1 := SharedKey(privKey1, privKey2.PubKey())
 	shareKey2 := SharedKey(privKey2, privKey1.PubKey())
+	t.Logf("len(sharedKey1):%v, len(sharedKey2):%v", len(shareKey1), len(shareKey2))
 
 	nonce := make([]byte, 12)
 	_, err = io.ReadFull(rand.Reader, nonce)

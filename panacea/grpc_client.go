@@ -19,7 +19,6 @@ type GrpcClient struct {
 func NewGrpcClient(conf *config.Config) (*GrpcClient, error) {
 	log.Infof("dialing to Panacea gRPC endpoint: %s", conf.Panacea.GRPCAddr)
 
-	//var targetUrl string
 	parsedUrl, err := url.Parse(conf.Panacea.GRPCAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse gRPC endpoint. please use absolute URL (scheme://host:port): %w", err)

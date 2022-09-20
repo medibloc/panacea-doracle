@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,7 @@ type QueryClient struct {
 	db          dbm.DB
 	mutex       *sync.Mutex
 	cdc         *codec.ProtoCodec
+	aminoCdc    *codec.AminoCodec
 	chainID     string
 }
 
@@ -106,7 +108,7 @@ func newQueryClientWithDB(ctx context.Context, config *config.Config, info *Trus
 	store := dbs.New(db, chainID)
 
 	var lc *light.Client
-	logger := light.Logger(tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout)))
+	logger := light.Logger(newTMLogger(config))
 
 	if info == nil {
 		lc, err = light.NewClientFromTrustedStore(
@@ -156,8 +158,24 @@ func newQueryClientWithDB(ctx context.Context, config *config.Config, info *Trus
 		db:          db,
 		mutex:       &lcMutex,
 		cdc:         codec.NewProtoCodec(makeInterfaceRegistry()),
+		aminoCdc:    codec.NewAminoCodec(codec.NewLegacyAmino()),
 		chainID:     chainID,
 	}, nil
+}
+
+func newTMLogger(conf *config.Config) tmlog.Logger {
+	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+
+	switch strings.ToLower(conf.LogLevel) {
+	case "panic", "fatal", "error":
+		logger = tmlog.NewFilter(logger, tmlog.AllowError())
+	case "warn", "warning", "info":
+		logger = tmlog.NewFilter(logger, tmlog.AllowInfo())
+	default: // "debug", "trace", and so on
+		logger = tmlog.NewFilter(logger, tmlog.AllowDebug())
+	}
+
+	return logger
 }
 
 func (q QueryClient) safeUpdateLightClient(ctx context.Context) (*tmtypes.LightBlock, error) {
@@ -363,7 +381,14 @@ func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 		return nil, errors.New("the oracle public key's value is nil")
 	}
 
-	pubKeyBz, err := base64.StdEncoding.DecodeString(string(pubKeyBase64Bz))
+	// If you get a value from params, you should not use protoCodec, but use legacyAmino.
+	var pubKeyBase64 string
+	err = q.aminoCdc.LegacyAmino.UnmarshalJSON(pubKeyBase64Bz, &pubKeyBase64)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKeyBz, err := base64.StdEncoding.DecodeString(pubKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)
 	}

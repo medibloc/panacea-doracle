@@ -3,6 +3,7 @@ package event
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -59,23 +60,14 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(block.Hash().Bytes(), oracleRegistration.TrustedBlockHash) {
-		return fmt.Errorf("invalid trusted block info")
-	}
-
-	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
-
-	voteOption := verifyReportAndGetVoteOption(oracleRegistration, e)
+	voteOption := verifyAndGetVoteOption(oracleRegistration, e)
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey, oracleRegistration.Nonce)
 	if err != nil {
 		return err
 	}
+
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
 	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
@@ -89,8 +81,25 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-// verifyReportAndGetVoteOption validates the RemoteReport and returns the voting result according to the verification result.
-func verifyReportAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) types.VoteOption {
+// verifyAndGetVoteOption performs a verification to determine a vote.
+// - Verify that trustedBlockInfo registered in OracleRegistration is valid
+// - Verify that the RemoteReport is valid
+func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) types.VoteOption {
+	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
+	if err != nil {
+		log.Warnf("failed to get lightBlock. height(%v), error(%v)", oracleRegistration.TrustedBlockHeight, err)
+		return types.VOTE_OPTION_NO
+	}
+
+	if !bytes.Equal(block.Hash().Bytes(), oracleRegistration.TrustedBlockHash) {
+		log.Warnf("failed to verifyAndGetVoteOption trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
+			oracleRegistration.TrustedBlockHeight,
+			hex.EncodeToString(block.Hash().Bytes()),
+			hex.EncodeToString(oracleRegistration.TrustedBlockHash),
+		)
+		return types.VOTE_OPTION_NO
+	}
+
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
 	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {

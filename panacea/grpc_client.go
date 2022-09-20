@@ -2,6 +2,7 @@ package panacea
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 
@@ -27,12 +28,7 @@ func NewGrpcClient(conf *config.Config) (*GrpcClient, error) {
 	var cred grpc.DialOption
 
 	if parsedUrl.Scheme == "https" {
-		tlsConfig, err := config.CreateTLSConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to create TLS cofig: %w", err)
-		}
-		cred = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
-		log.Infof("tls connection! %v", parsedUrl.Host)
+		cred = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	} else {
 		cred = grpc.WithInsecure()
 	}

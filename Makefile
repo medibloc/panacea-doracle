@@ -15,11 +15,7 @@ build: go.sum
 	$(GO) build -mod=readonly $(BUILD_FLAGS) -o $(OUT_DIR)/doracled ./cmd/doracled
 
 test:
-ifeq ($(GO),ego-go)
 	./scripts/run-tests-with-ego.sh
-else
-	$(GO) test -v ./...
-endif
 
 # Prepare ./scripts/private.pem that you want to use. If not, this command will generate a new one.
 sign-prod:

@@ -92,7 +92,7 @@ func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e Regi
 	}
 
 	if !bytes.Equal(block.Hash().Bytes(), oracleRegistration.TrustedBlockHash) {
-		log.Warnf("failed to verifyAndGetVoteOption trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
+		log.Warnf("failed to verify trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
 			oracleRegistration.TrustedBlockHeight,
 			hex.EncodeToString(block.Hash().Bytes()),
 			hex.EncodeToString(oracleRegistration.TrustedBlockHash),

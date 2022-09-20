@@ -55,7 +55,7 @@ func DefaultConfig() *Config {
 			NodePrivKeyFile:   "node_priv_key.sealed",
 		},
 		Panacea: PanaceaConfig{
-			GRPCAddr:                "127.0.0.1:9090",
+			GRPCAddr:                "http://127.0.0.1:9090",
 			RPCAddr:                 "tcp://127.0.0.1:26657",
 			ChainID:                 "panacea-3",
 			DefaultGasLimit:         400000,

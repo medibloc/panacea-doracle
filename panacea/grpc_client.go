@@ -2,12 +2,15 @@ package panacea
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/url"
 
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type GrpcClient struct {
@@ -16,7 +19,21 @@ type GrpcClient struct {
 
 func NewGrpcClient(conf *config.Config) (*GrpcClient, error) {
 	log.Infof("dialing to Panacea gRPC endpoint: %s", conf.Panacea.GRPCAddr)
-	conn, err := grpc.Dial(conf.Panacea.GRPCAddr, grpc.WithInsecure())
+
+	parsedUrl, err := url.Parse(conf.Panacea.GRPCAddr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse gRPC endpoint. please use absolute URL (scheme://host:port): %w", err)
+	}
+
+	var cred grpc.DialOption
+
+	if parsedUrl.Scheme == "https" {
+		cred = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	} else {
+		cred = grpc.WithInsecure()
+	}
+
+	conn, err := grpc.Dial(parsedUrl.Host, cred)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Panacea: %w", err)
 	}

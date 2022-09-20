@@ -2,285 +2,121 @@ package panacea
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/medibloc/panacea-doracle/config"
-	"github.com/stretchr/testify/require"
+	"github.com/cosmos/go-bip39"
+	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/integration"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-// Test for GetAccount function.
-func TestGetAccount(t *testing.T) {
+type queryClientTestSuite struct {
+	integration.TestSuite
 
-	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-	require.NoError(t, err)
-	ctx := context.Background()
-
-	trustedBlockinfo := TrustedBlockInfo{
-		TrustedBlockHeight: 99,
-		TrustedBlockHash:   hash,
-	}
-
-	conf := &config.Config{
-		BaseConfig: config.BaseConfig{
-			LogLevel:          "",
-			OracleMnemonic:    "",
-			ListenAddr:        "",
-			Subscriber:        "",
-			DataDir:           "data",
-			OraclePrivKeyFile: "oracle_priv_key.sealed",
-			OraclePubKeyFile:  "oracle_pub_key.json",
-			NodePrivKeyFile:   "node_priv_key.sealed",
-		},
-		Panacea: config.PanaceaConfig{
-			GRPCAddr:                "https://grpc.gopanacea.org:443",
-			RPCAddr:                 "https://rpc.gopanacea.org:443",
-			ChainID:                 "panacea-3",
-			DefaultGasLimit:         200000,
-			DefaultFeeAmount:        "1000000umed",
-			LightClientPrimaryAddr:  "https://rpc.gopanacea.org:443",
-			LightClientWitnessAddrs: []string{"https://rpc.gopanacea.org:443"},
-		},
-	}
-
-	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
-	require.NoError(t, err)
-
-	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
-	accAddr, err := queryClient.GetAccount(mediblocLimitedAddress)
-	require.NoError(t, err)
-
-	address, err := bech32.ConvertAndEncode("panacea", accAddr.GetPubKey().Address().Bytes())
-	require.NoError(t, err)
-
-	require.Equal(t, mediblocLimitedAddress, address)
+	chainID           string
+	validatorMnemonic string
 }
 
-// Test for LoadQueryClient function.
-func TestLoadQueryClient(t *testing.T) {
-	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-	require.NoError(t, err)
-	ctx := context.Background()
-
-	trustedBlockinfo := TrustedBlockInfo{
-		TrustedBlockHeight: 99,
-		TrustedBlockHash:   hash,
-	}
-
-	conf := &config.Config{
-		BaseConfig: config.BaseConfig{
-			LogLevel:          "",
-			OracleMnemonic:    "",
-			ListenAddr:        "",
-			Subscriber:        "",
-			DataDir:           "data",
-			OraclePrivKeyFile: "oracle_priv_key.sealed",
-			OraclePubKeyFile:  "oracle_pub_key.json",
-			NodePrivKeyFile:   "node_priv_key.sealed",
-		},
-		Panacea: config.PanaceaConfig{
-			GRPCAddr:                "https://grpc.gopanacea.org:443",
-			RPCAddr:                 "https://rpc.gopanacea.org:443",
-			ChainID:                 "panacea-3",
-			DefaultGasLimit:         200000,
-			DefaultFeeAmount:        "1000000umed",
-			LightClientPrimaryAddr:  "https://rpc.gopanacea.org:443",
-			LightClientWitnessAddrs: []string{"https://rpc.gopanacea.org:443"},
-		},
-	}
-
-	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
-
+func TestQueryClient(t *testing.T) {
+	initScriptPath, err := filepath.Abs("testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
-	_, err = queryClient.lightClient.LastTrustedHeight()
+	chainID := "testing"
+	entropy, err := bip39.NewEntropy(256)
+	require.NoError(t, err)
+	validatorMnemonic, err := bip39.NewMnemonic(entropy)
 	require.NoError(t, err)
 
-	_, err = NewQueryClient(ctx, conf, trustedBlockinfo)
-	require.Error(t, err)
-
-	err = queryClient.Close()
-	require.NoError(t, err)
-
-	queryClient, err = LoadQueryClient(ctx, conf)
-	require.NoError(t, err)
-
-	_, err = queryClient.lightClient.LastTrustedHeight()
-	require.NoError(t, err)
-
-	err = queryClient.Close()
-	require.NoError(t, err)
-
+	suite.Run(t, &queryClientTestSuite{
+		integration.NewTestSuite(
+			initScriptPath,
+			[]string{
+				fmt.Sprintf("CHAIN_ID=%s", chainID),
+				fmt.Sprintf("MNEMONIC=%s", validatorMnemonic),
+			},
+		),
+		chainID,
+		validatorMnemonic,
+	})
 }
 
-// Test that calls multiple GetAddress at the same time
-func TestMultiGetAddress(t *testing.T) {
+func (suite *queryClientTestSuite) TestGetAccount() {
+	trustedBlockInfo, conf := suite.prepare()
 
-	hash, err := hex.DecodeString("3531F0F323110AA7831775417B9211348E16A29A07FBFD46018936625E4E5492")
-	require.NoError(t, err)
-	ctx := context.Background()
-
-	trustedBlockinfo := TrustedBlockInfo{
-		TrustedBlockHeight: 99,
-		TrustedBlockHash:   hash,
-	}
-
-	conf := &config.Config{
-		BaseConfig: config.BaseConfig{
-			LogLevel:          "",
-			OracleMnemonic:    "",
-			ListenAddr:        "",
-			Subscriber:        "",
-			DataDir:           "data",
-			OraclePrivKeyFile: "oracle_priv_key.sealed",
-			OraclePubKeyFile:  "oracle_pub_key.json",
-			NodePrivKeyFile:   "node_priv_key.sealed",
-		},
-		Panacea: config.PanaceaConfig{
-			GRPCAddr:                "https://grpc.gopanacea.org:443",
-			RPCAddr:                 "https://rpc.gopanacea.org:443",
-			ChainID:                 "panacea-3",
-			DefaultGasLimit:         200000,
-			DefaultFeeAmount:        "1000000umed",
-			LightClientPrimaryAddr:  "https://rpc.gopanacea.org:443",
-			LightClientWitnessAddrs: []string{"https://rpc.gopanacea.org:443"},
-		},
-	}
-
-	require.NoError(t, err)
-
-	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
-
-	require.NoError(t, err)
-
-	mediblocLimitedAddress := "panacea1ewugvs354xput6xydl5cd5tvkzcuymkejekwk3"
+	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
+	require.NoError(suite.T(), err)
+	defer queryClient.Close()
 
 	var wg sync.WaitGroup
-	wg.Add(5)
+	accAddr := suite.AccAddressFromMnemonic(suite.validatorMnemonic, 0, 0)
 
-	fmt.Println("query 1 send")
-	go func() {
-		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-		require.NoError(t, err)
-		wg.Done()
-		fmt.Println("query 1 receive")
-	}()
+	for i := 0; i < 10; i++ { // to check if queryClient is goroutine-safe
+		wg.Add(1)
 
-	fmt.Println("query 2 send")
-	go func() {
-		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-		require.NoError(t, err)
-		wg.Done()
-		fmt.Println("query 2 receive")
-	}()
+		go func() {
+			defer wg.Done()
 
-	fmt.Println("query 3 send")
-	go func() {
-		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-		require.NoError(t, err)
-		wg.Done()
-		fmt.Println("query 3 receive")
-	}()
+			acc, err := queryClient.GetAccount(accAddr)
+			require.NoError(suite.T(), err)
 
-	fmt.Println("query 4 send")
-	go func() {
-		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-		require.NoError(t, err)
-		wg.Done()
-		fmt.Println("query 4 receive")
-	}()
+			address, err := bech32.ConvertAndEncode("panacea", acc.GetPubKey().Address().Bytes())
+			require.NoError(suite.T(), err)
+			require.Equal(suite.T(), accAddr, address)
+		}()
+	}
 
-	fmt.Println("query 5 send")
-	go func() {
-		_, err := queryClient.GetAccount(mediblocLimitedAddress)
-		require.NoError(t, err)
-		wg.Done()
-		fmt.Println("query 5 receive")
-	}()
 	wg.Wait()
-
 }
 
-// The test below is commented out because it is a test targeting local panacea.
+func (suite *queryClientTestSuite) TestLoadQueryClient() {
+	trustedBlockInfo, conf := suite.prepare()
 
-// Test for GetOracleRegistration function.
-//func TestGetOracleRegistration(t *testing.T) {
-//	hash, err := hex.DecodeString("93EF7A66EE58C1063B13CE408D0D850CE2B4E396D366C92BD5DB1BBF9FA1C4BC")
-//	require.NoError(t, err)
-//	ctx := context.Background()
-//
-//	trustedBlockinfo := TrustedBlockInfo{
-//		TrustedBlockHeight: 10,
-//		TrustedBlockHash:   hash,
-//	}
-//
-//	conf := &config.Config{
-//		Panacea: config.PanaceaConfig{
-//			ChainID:                 "local",
-//			RPCAddr:                 "tcp://127.0.0.1:26657",
-//			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
-//			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
-//			GRPCAddr:                "127.0.0.1:9090",
-//		},
-//	}
-//
-//	grpcClient, err := NewGrpcClient(conf)
-//	require.NoError(t, err)
-//	queryClient, err := NewQueryClient(ctx, conf, trustedBlockinfo)
-//	require.NoError(t, err)
-//
-//	mnemonic := "genre cook grace border huge learn collect suffer head casino trial elegant hood check organ galaxy athlete become super typical bulk describe scout fetch"
-//
-//	oracleAccount, err := NewOracleAccount(mnemonic, 0, 0)
-//	require.NoError(t, err)
-//
-//	// generate node key and its remote report
-//	nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey()
-//	require.NoError(t, err)
-//
-//	report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
-//	uniqueID := hex.EncodeToString(report.UniqueID)
-//
-//	// sign and broadcast to Panacea
-//	msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockinfo.TrustedBlockHeight, trustedBlockinfo.TrustedBlockHash)
-//
-//	txBuilder := NewTxBuilder(*queryClient)
-//
-//	defaultFeeAmount, _ := sdk.ParseCoinsNormalized("1500000umed")
-//	txBytes, err := txBuilder.GenerateSignedTxBytes(oracleAccount.GetPrivKey(), 300000, defaultFeeAmount, msgRegisterOracle)
-//	require.NoError(t, err)
-//
-//	_, err = grpcClient.BroadcastTx(txBytes)
-//	require.NoError(t, err)
-//
-//	fmt.Println("register-oracle transaction succeed")
-//
-//	oracleRegistrationFromGrpc, err := grpcClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
-//	require.NoError(t, err)
-//
-//	fmt.Println("unique ID1:", oracleRegistrationFromGrpc.UniqueId)
-//
-//	oracleRegistration, err := queryClient.GetOracleRegistration(oracleAccount.GetAddress(), uniqueID)
-//	require.NoError(t, err)
-//
-//	fmt.Println("unique ID2:", oracleRegistration.UniqueId)
-//
-//	require.EqualValues(t, oracleRegistrationFromGrpc.UniqueId, oracleRegistration.UniqueId)
-//}
-//
-//func generateNodeKey() ([]byte, []byte, error) {
-//	nodePrivKey, err := crypto.NewPrivKey()
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//	nodePubKey := nodePrivKey.PubKey().SerializeCompressed()
-//	oraclePubKeyHash := sha256.Sum256(nodePubKey)
-//	nodeKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:])
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	return nodePubKey, nodeKeyRemoteReport, nil
-//}
+	db := dbm.NewMemDB()
+
+	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
+	require.NoError(suite.T(), err)
+
+	lastTrustedHeight, err := queryClient.lightClient.LastTrustedHeight()
+	require.NoError(suite.T(), err)
+	require.GreaterOrEqual(suite.T(), lastTrustedHeight, trustedBlockInfo.TrustedBlockHeight)
+
+	err = queryClient.Close() // here, memdb is not closed because MemDB.Close() is actually empty
+	require.NoError(suite.T(), err)
+
+	// try to load query client, instead of creating it
+	queryClient, err = newQueryClientWithDB(context.Background(), conf, nil, db)
+	require.NoError(suite.T(), err)
+
+	lastTrustedHeight2, err := queryClient.lightClient.LastTrustedHeight()
+	require.NoError(suite.T(), err)
+	require.GreaterOrEqual(suite.T(), lastTrustedHeight2, lastTrustedHeight)
+}
+
+func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {
+	hash, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+	require.NoError(suite.T(), err)
+
+	trustedBlockInfo := &TrustedBlockInfo{
+		TrustedBlockHeight: height,
+		TrustedBlockHash:   hash,
+	}
+
+	conf := &config.Config{
+		Panacea: config.PanaceaConfig{
+			GRPCAddr:                suite.PanaceaEndpoint("tcp", 9090),
+			RPCAddr:                 suite.PanaceaEndpoint("tcp", 26657),
+			ChainID:                 suite.chainID,
+			LightClientPrimaryAddr:  suite.PanaceaEndpoint("tcp", 26657),
+			LightClientWitnessAddrs: []string{suite.PanaceaEndpoint("tcp", 26657)},
+		},
+	}
+
+	return trustedBlockInfo, conf
+}

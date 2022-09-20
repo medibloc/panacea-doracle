@@ -110,7 +110,7 @@ func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, vo
 		return nil, err
 	}
 
-	shareKey := crypto.SharedKey(privKey, pubKey)
+	shareKey := crypto.DeriveSharedKey(privKey, pubKey, crypto.KDFSHA256)
 	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nonce, oraclePrivKey)
 	if err != nil {
 		return nil, err

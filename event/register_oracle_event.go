@@ -16,6 +16,7 @@ import (
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
+	"github.com/tendermint/tendermint/light/provider"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -60,7 +61,10 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption := verifyAndGetVoteOption(oracleRegistration, e)
+	voteOption, err := verifyAndGetVoteOption(oracleRegistration, e)
+	if err != nil {
+		return err
+	}
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey, oracleRegistration.Nonce)
 	if err != nil {
@@ -84,11 +88,15 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) types.VoteOption {
+func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) (types.VoteOption, error) {
 	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
-		log.Warnf("failed to get lightBlock. height(%v), error(%v)", oracleRegistration.TrustedBlockHeight, err)
-		return types.VOTE_OPTION_NO
+		switch err {
+		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
+			return types.VOTE_OPTION_NO, nil
+		default:
+			return types.VOTE_OPTION_UNSPECIFIED, err
+		}
 	}
 
 	if !bytes.Equal(block.Hash().Bytes(), oracleRegistration.TrustedBlockHash) {
@@ -97,16 +105,16 @@ func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e Regi
 			hex.EncodeToString(block.Hash().Bytes()),
 			hex.EncodeToString(oracleRegistration.TrustedBlockHash),
 		)
-		return types.VOTE_OPTION_NO
+		return types.VOTE_OPTION_NO, nil
 	}
 
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
 	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {
 		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
-		return types.VOTE_OPTION_NO
+		return types.VOTE_OPTION_NO, nil
 	} else {
-		return types.VOTE_OPTION_YES
+		return types.VOTE_OPTION_YES, nil
 	}
 }
 

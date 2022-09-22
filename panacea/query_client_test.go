@@ -3,10 +3,11 @@ package panacea
 import (
 	"context"
 	"fmt"
-	"github.com/cosmos/go-bip39"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/cosmos/go-bip39"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	dbm "github.com/tendermint/tm-db"
@@ -50,7 +51,7 @@ func TestQueryClient(t *testing.T) {
 func (suite *queryClientTestSuite) TestGetAccount() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
 	require.NoError(suite.T(), err)
 	defer queryClient.Close()
 
@@ -80,7 +81,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 
 	db := dbm.NewMemDB()
 
-	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
 	require.NoError(suite.T(), err)
 
 	lastTrustedHeight, err := queryClient.lightClient.LastTrustedHeight()
@@ -91,7 +92,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 	require.NoError(suite.T(), err)
 
 	// try to load query client, instead of creating it
-	queryClient, err = newQueryClientWithDB(context.Background(), conf, nil, db)
+	queryClient, err = NewQueryClientWithDB(context.Background(), conf, nil, db)
 	require.NoError(suite.T(), err)
 
 	lastTrustedHeight2, err := queryClient.lightClient.LastTrustedHeight()

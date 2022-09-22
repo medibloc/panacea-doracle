@@ -1,4 +1,4 @@
-package event
+package oracle
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-var _ Event = (*RegisterOracleEvent)(nil)
+var _ event.Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
 	reactor reactor
@@ -61,12 +62,20 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption, err := verifyAndGetVoteOption(oracleRegistration, e)
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 	if err != nil {
 		return err
 	}
 
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(uniqueID, e.reactor.OracleAcc().GetAddress(), addressValue, voteOption, e.reactor.OraclePrivKey().Serialize(), oracleRegistration.NodePubKey, oracleRegistration.Nonce)
+	msgVoteOracleRegistration, err := makeOracleRegistrationVote(
+		uniqueID,
+		e.reactor.OracleAcc().GetAddress(),
+		addressValue,
+		voteOption,
+		e.reactor.OraclePrivKey().Serialize(),
+		oracleRegistration.NodePubKey,
+		oracleRegistration.Nonce,
+	)
 	if err != nil {
 		return err
 	}
@@ -88,7 +97,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration, e RegisterOracleEvent) (types.VoteOption, error) {
+func (e RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *types.OracleRegistration) (types.VoteOption, error) {
 	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
 		switch err {

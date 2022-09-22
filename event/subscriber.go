@@ -42,24 +42,24 @@ func (s *PanaceaSubscriber) Run(events ...Event) error {
 	return nil
 }
 
-func (s *PanaceaSubscriber) subscribe(event Event) error {
+func (s *PanaceaSubscriber) subscribe(e Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	query := event.GetEventType() + "." + event.GetEventAttributeKey() + "=" + event.GetEventAttributeValue()
+	query := e.GetEventType() + "." + e.GetEventAttributeKey() + "=" + e.GetEventAttributeValue()
 
 	txs, err := s.client.Subscribe(ctx, "", query)
 	if err != nil {
 		return err
 	}
 
-	go func(event Event) {
+	go func(e Event) {
 		for tx := range txs {
-			if err := event.EventHandler(tx); err != nil {
+			if err := e.EventHandler(tx); err != nil {
 				log.Errorf("failed to handle event '%s': %v", query, err)
 			}
 		}
-	}(event)
+	}(e)
 
 	return nil
 }

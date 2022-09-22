@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/medibloc/panacea-doracle/event"
+	"github.com/medibloc/panacea-doracle/event/oracle"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
@@ -36,7 +36,7 @@ func startCmd() *cobra.Command {
 			defer svc.Close()
 
 			err = svc.StartSubscriptions(
-				event.NewRegisterOracleEvent(svc),
+				oracle.NewRegisterOracleEvent(svc),
 			)
 			if err != nil {
 				return fmt.Errorf("failed to start event subscription: %w", err)

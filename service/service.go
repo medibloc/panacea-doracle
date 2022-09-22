@@ -25,7 +25,11 @@ type Service struct {
 	subscriber  *event.PanaceaSubscriber
 }
 
-func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, error) {
+func New(conf *config.Config) (*Service, error) {
+	oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
+	if err != nil {
+		return nil, err
+	}
 	oraclePrivKeyBz, err := sgx.UnsealFromFile(conf.AbsOraclePrivKeyPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal oracle_priv_key.sealed file: %w", err)
@@ -43,7 +47,7 @@ func New(conf *config.Config, oracleAccount *panacea.OracleAccount) (*Service, e
 		return nil, fmt.Errorf("failed to load query client: %w", err)
 	}
 
-	grpcClient, err := panacea.NewGrpcClient(conf)
+	grpcClient, err := panacea.NewGrpcClient(conf.Panacea.GRPCAddr)
 	if err != nil {
 		if err := queryClient.Close(); err != nil {
 			log.Warn(err)

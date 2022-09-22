@@ -6,8 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/medibloc/panacea-doracle/event/oracle"
-	"github.com/medibloc/panacea-doracle/panacea"
+	event "github.com/medibloc/panacea-doracle/event/oracle"
 	"github.com/medibloc/panacea-doracle/service"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,20 +22,14 @@ func startCmd() *cobra.Command {
 				return err
 			}
 
-			// get oracle account from mnemonic.
-			oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
-			if err != nil {
-				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
-			}
-
-			svc, err := service.New(conf, oracleAccount)
+			svc, err := service.New(conf)
 			if err != nil {
 				return fmt.Errorf("failed to create service: %w", err)
 			}
 			defer svc.Close()
 
 			err = svc.StartSubscriptions(
-				oracle.NewRegisterOracleEvent(svc),
+				event.NewRegisterOracleEvent(svc),
 			)
 			if err != nil {
 				return fmt.Errorf("failed to start event subscription: %w", err)

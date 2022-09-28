@@ -8,16 +8,17 @@ import (
 	"github.com/cosmos/go-bip39"
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/integration"
+	"github.com/medibloc/panacea-doracle/integration/rest"
+	"github.com/medibloc/panacea-doracle/integration/service"
+	"github.com/medibloc/panacea-doracle/integration/suite"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
-var _ reactor = (*integration.ServiceWithoutSGX)(nil)
+var _ reactor = (*service.TestService)(nil)
 
 type registerOracleEventTestSuite struct {
-	integration.TestSuite
+	suite.TestSuite
 
 	chainID           string
 	validatorMnemonic string
@@ -34,7 +35,7 @@ func TestRegisterOracleEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &registerOracleEventTestSuite{
-		integration.NewTestSuite(
+		suite.NewTestSuite(
 			initScriptPath,
 			[]string{
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
@@ -49,7 +50,7 @@ func TestRegisterOracleEvent(t *testing.T) {
 func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := integration.NewServiceWithoutSGX(conf, trustedBlockInfo)
+	svc, err := service.NewTestService(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &types.OracleRegistration{
@@ -67,7 +68,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := integration.NewServiceWithoutSGX(conf, trustedBlockInfo)
+	svc, err := service.NewTestService(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &types.OracleRegistration{
@@ -83,7 +84,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrust
 }
 
 func (suite *registerOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {
-	hash, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)
 
 	trustedBlockInfo := &panacea.TrustedBlockInfo{

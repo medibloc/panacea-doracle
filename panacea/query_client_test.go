@@ -7,19 +7,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/cosmos/go-bip39"
-
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/go-bip39"
+	"github.com/medibloc/panacea-doracle/integration/rest"
+	"github.com/medibloc/panacea-doracle/integration/suite"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/integration"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type queryClientTestSuite struct {
-	integration.TestSuite
+	suite.TestSuite
 
 	chainID           string
 	validatorMnemonic string
@@ -36,7 +35,7 @@ func TestQueryClient(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &queryClientTestSuite{
-		integration.NewTestSuite(
+		suite.NewTestSuite(
 			initScriptPath,
 			[]string{
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
@@ -101,7 +100,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 }
 
 func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {
-	hash, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)
 
 	trustedBlockInfo := &TrustedBlockInfo{

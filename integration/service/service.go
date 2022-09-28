@@ -1,4 +1,4 @@
-package integration
+package service
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 )
 
-type ServiceWithoutSGX struct {
+type TestService struct {
 	conf          *config.Config
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
@@ -21,7 +21,7 @@ type ServiceWithoutSGX struct {
 	subscriber  *event.PanaceaSubscriber
 }
 
-func NewServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (*ServiceWithoutSGX, error) {
+func NewTestService(conf *config.Config, info *panacea.TrustedBlockInfo) (*TestService, error) {
 	oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func NewServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (
 		return nil, err
 	}
 
-	return &ServiceWithoutSGX{
+	return &TestService{
 		conf:          conf,
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
@@ -57,26 +57,26 @@ func NewServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (
 	}, nil
 }
 
-func (s *ServiceWithoutSGX) Config() *config.Config {
+func (s *TestService) Config() *config.Config {
 	return s.conf
 }
 
-func (s *ServiceWithoutSGX) OracleAcc() *panacea.OracleAccount {
+func (s *TestService) OracleAcc() *panacea.OracleAccount {
 	return s.oracleAccount
 }
 
-func (s *ServiceWithoutSGX) OraclePrivKey() *btcec.PrivateKey {
+func (s *TestService) OraclePrivKey() *btcec.PrivateKey {
 	return s.oraclePrivKey
 }
 
-func (s *ServiceWithoutSGX) EnclaveInfo() *sgx.EnclaveInfo {
+func (s *TestService) EnclaveInfo() *sgx.EnclaveInfo {
 	return nil
 }
 
-func (s *ServiceWithoutSGX) GRPCClient() *panacea.GrpcClient {
+func (s *TestService) GRPCClient() *panacea.GrpcClient {
 	return s.grpcClient
 }
 
-func (s *ServiceWithoutSGX) QueryClient() *panacea.QueryClient {
+func (s *TestService) QueryClient() *panacea.QueryClient {
 	return s.queryClient
 }

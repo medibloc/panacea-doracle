@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ reactor = (*service.TestService)(nil)
+var _ reactor = (*service.TestServiceWithoutSGX)(nil)
 
 type registerOracleEventTestSuite struct {
 	suite.TestSuite
@@ -50,7 +50,7 @@ func TestRegisterOracleEvent(t *testing.T) {
 func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := service.NewTestService(conf, trustedBlockInfo)
+	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &types.OracleRegistration{
@@ -68,7 +68,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := service.NewTestService(conf, trustedBlockInfo)
+	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &types.OracleRegistration{

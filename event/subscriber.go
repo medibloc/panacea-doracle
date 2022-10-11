@@ -53,9 +53,9 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 		return err
 	}
 
-	go func(event Event) {
+	go func(e Event) {
 		for tx := range txs {
-			if err := event.EventHandler(tx); err != nil {
+			if err := e.EventHandler(tx); err != nil {
 				log.Errorf("failed to handle event '%s': %v", query, err)
 			}
 		}

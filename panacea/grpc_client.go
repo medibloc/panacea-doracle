@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/medibloc/panacea-doracle/config"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -17,10 +16,10 @@ type GrpcClient struct {
 	conn *grpc.ClientConn
 }
 
-func NewGrpcClient(conf *config.Config) (*GrpcClient, error) {
-	log.Infof("dialing to Panacea gRPC endpoint: %s", conf.Panacea.GRPCAddr)
+func NewGrpcClient(grpcAddr string) (*GrpcClient, error) {
+	log.Infof("dialing to Panacea gRPC endpoint: %s", grpcAddr)
 
-	parsedUrl, err := url.Parse(conf.Panacea.GRPCAddr)
+	parsedUrl, err := url.Parse(grpcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse gRPC endpoint. please use absolute URL (scheme://host:port): %w", err)
 	}

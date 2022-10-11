@@ -76,7 +76,7 @@ func registerOracleCmd() *cobra.Command {
 			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash, nonce)
 
 			txBuilder := panacea.NewTxBuilder(*queryClient)
-			cli, err := panacea.NewGrpcClient(conf)
+			cli, err := panacea.NewGrpcClient(conf.Panacea.GRPCAddr)
 			if err != nil {
 				return fmt.Errorf("failed to generate gRPC client: %w", err)
 			}

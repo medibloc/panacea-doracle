@@ -3,22 +3,22 @@ package panacea
 import (
 	"context"
 	"fmt"
-	"github.com/cosmos/go-bip39"
 	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/go-bip39"
+	"github.com/medibloc/panacea-doracle/integration/rest"
+	"github.com/medibloc/panacea-doracle/integration/suite"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/medibloc/panacea-doracle/config"
-	"github.com/medibloc/panacea-doracle/integration"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type queryClientTestSuite struct {
-	integration.TestSuite
+	suite.TestSuite
 
 	chainID           string
 	validatorMnemonic string
@@ -35,7 +35,7 @@ func TestQueryClient(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &queryClientTestSuite{
-		integration.NewTestSuite(
+		suite.NewTestSuite(
 			initScriptPath,
 			[]string{
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
@@ -50,7 +50,7 @@ func TestQueryClient(t *testing.T) {
 func (suite *queryClientTestSuite) TestGetAccount() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
 	require.NoError(suite.T(), err)
 	defer queryClient.Close()
 
@@ -80,7 +80,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 
 	db := dbm.NewMemDB()
 
-	queryClient, err := newQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, db)
 	require.NoError(suite.T(), err)
 
 	lastTrustedHeight, err := queryClient.lightClient.LastTrustedHeight()
@@ -91,7 +91,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 	require.NoError(suite.T(), err)
 
 	// try to load query client, instead of creating it
-	queryClient, err = newQueryClientWithDB(context.Background(), conf, nil, db)
+	queryClient, err = NewQueryClientWithDB(context.Background(), conf, nil, db)
 	require.NoError(suite.T(), err)
 
 	lastTrustedHeight2, err := queryClient.lightClient.LastTrustedHeight()
@@ -100,7 +100,7 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 }
 
 func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {
-	hash, height, err := integration.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)
 
 	trustedBlockInfo := &TrustedBlockInfo{

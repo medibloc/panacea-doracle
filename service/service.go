@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
+	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
@@ -23,6 +24,8 @@ type Service struct {
 	queryClient *panacea.QueryClient
 	grpcClient  *panacea.GrpcClient
 	subscriber  *event.PanaceaSubscriber
+
+	shell *shell.Shell
 }
 
 func New(conf *config.Config) (*Service, error) {
@@ -55,6 +58,8 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create a new gRPC client: %w", err)
 	}
 
+	ipfs := shell.NewShell(conf.Ipfs.IpfsNodeAddr)
+
 	subscriber, err := event.NewSubscriber(conf.Panacea.RPCAddr)
 	if err != nil {
 		if err := queryClient.Close(); err != nil {
@@ -74,6 +79,7 @@ func New(conf *config.Config) (*Service, error) {
 		queryClient:   queryClient,
 		grpcClient:    grpcClient,
 		subscriber:    subscriber,
+		shell:         ipfs,
 	}, nil
 }
 

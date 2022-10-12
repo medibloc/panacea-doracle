@@ -10,6 +10,8 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	Panacea PanaceaConfig `mapstructure:"panacea"`
+
+	Ipfs IpfsConfig `mapstrucutre:"ipfs"`
 }
 
 type BaseConfig struct {
@@ -38,6 +40,10 @@ type PanaceaConfig struct {
 	LightClientWitnessAddrs []string `mapstructure:"light-client-witness-addrs"`
 }
 
+type IpfsConfig struct {
+	IpfsNodeAddr string `mapstructure:"ipfs-addr"`
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig: BaseConfig{
@@ -62,6 +68,9 @@ func DefaultConfig() *Config {
 			DefaultFeeAmount:        "2000000umed",
 			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
 			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
+		},
+		Ipfs: IpfsConfig{
+			IpfsNodeAddr: "127.0.0.1:5001",
 		},
 	}
 }

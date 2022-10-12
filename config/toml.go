@@ -49,6 +49,15 @@ light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
 # Witness addresses (comma-separated) for light client verification
 
 light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
+
+
+###############################################################################
+###                         IPFS Configuration                           ###
+###############################################################################
+
+[ipfs]
+
+ipfs-addr = "{{ .Ipfs.IpfsNodeAddr }}"
 `
 
 var configTemplate *template.Template

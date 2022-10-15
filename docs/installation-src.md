@@ -112,7 +112,7 @@ If the binary is signed successfully, you can move the binary to where you want.
 
 ### For production
 
-A configuration for production is already prepared in the [`scripts/enclave-prod.json`](scripts/enclave-prod.json).
+A configuration for production is already prepared in the [`scripts/enclave-prod.json`](../scripts/enclave-prod.json).
 
 So, you can just put your RSA private key (`private.pem`) into the `scripts/`, and run the following command to sign the binary.
 
@@ -124,4 +124,4 @@ If the binary is signed successfully, you can move the binary to where you want,
 
 Note that a `/doracle` directory must be created and its permissions must be set properly before running the binary,
 because the `/doracle` directory will be mounted as a `HOME` directory to the enclave.
-For more details, please see the [`scripts/enclave-prod.json`](scripts/enclave-prod.json).
+For more details, please see the [`scripts/enclave-prod.json`](../scripts/enclave-prod.json).

@@ -43,9 +43,9 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-    # Build and push ego-base image with Buildx (don't push on PR)
+    # Build ego-base image with Buildx
     # https://github.com/docker/build-push-action
-    - name: Build and push ego-base image
+    - name: Build ego-base image
       uses: docker/build-push-action@v2.6.1
       with:
         context: .
@@ -53,9 +53,9 @@ jobs:
         push: false
         tags: ego-base:latest
 
-    # Build and push doracle image with Buildx (don't push on PR)
+    # Build doracle image with Buildx, and push it except on PR
     # https://github.com/docker/build-push-action
-    - name: Build and push doracle image
+    - name: Build (and push) doracle image
       uses: docker/build-push-action@v2.6.1
       with:
         context: .

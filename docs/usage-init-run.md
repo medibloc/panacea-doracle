@@ -73,9 +73,7 @@ The account number and index are optional with the default value of 0.
 ```bash
 $DOCKER_CMD ego run doracled register-oracle \
     --trusted-block-height <block-height> \
-    --trusted-block-hash <base64-encoded-block-hash> \
-    --acc-num <account-number> \
-    --index <account-index>
+    --trusted-block-hash <base64-encoded-block-hash>
 ```
 
 ## Get the oracle key registered in the Panacea

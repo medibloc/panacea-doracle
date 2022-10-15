@@ -20,7 +20,7 @@ Then, if you want to run the `doracled` using Docker as described in the [instal
 ```bash
 export DOCKER_CMD="docker run --rm --device /dev/sgx_enclave --device /dev/sgx_provision -v $(pwd)/doracle:/doracle ghcr.io/medibloc/panacea-doracle:latest"
 ```
-If you want to run the `doracled` on your host, you can just set:
+Even if you are not going to use Docker, it would be easier to follow the instruction below if you set the environment variable as an empty string.
 ```bash
 export DOCKER_CMD=""
 ```

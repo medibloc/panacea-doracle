@@ -63,7 +63,7 @@ Then, you can verify the remote report.
 $DOCKER_CMD ego run doracled verify-report <remote-report-path>
 ```
 
-### Register an oracle to the Panacea
+## Register an oracle to the Panacea
 
 Request to register an oracle.
 
@@ -78,7 +78,7 @@ $DOCKER_CMD ego run doracled register-oracle \
     --index <account-index>
 ```
 
-### Get the oracle key registered in the Panacea
+## Get the oracle key registered in the Panacea
 
 If an oracle registered successfully (vote for oracle registration is passed), the oracle can be shared the oracle private key.
 The oracle private key is encrypted and shared, and it can only be decrypted using the node private key (which is used when registering oracle) 

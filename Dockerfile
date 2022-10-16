@@ -1,4 +1,4 @@
-FROM ego-base:latest AS build
+FROM tmp/medibloc/panacea-doracle-ego-base:latest AS build
 
 # Install prerequisites
 RUN apt-get update && apt-get install -y --no-install-recommends git build-essential
@@ -11,7 +11,7 @@ RUN ego sign ./scripts/enclave-prod.json
 
 ####################################################
 
-FROM ego-base:latest
+FROM tmp/medibloc/panacea-doracle-ego-base:latest
 
 COPY --from=build /src/build/doracled /usr/bin/doracled
 RUN chmod +x /usr/bin/doracled

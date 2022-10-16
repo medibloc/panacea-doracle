@@ -16,4 +16,4 @@ FROM tmp/medibloc/panacea-doracle-ego-base:latest
 COPY --from=build /src/build/doracled /usr/bin/doracled
 RUN chmod +x /usr/bin/doracled
 
-CMD ["doracled"]
+CMD ["ego", "run", "/usr/bin/doracled"]

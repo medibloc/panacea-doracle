@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
   libsgx-pce-logic=$DCAP_VERSION \
   libsgx-qe3-logic=$DCAP_VERSION \
   libsgx-urts=$PSW_VERSION \
-  && apt-get install -y az-dcap-client libsgx-dcap-default-qpl=$DCAP_VERSION
+  && apt-get install -y az-dcap-client
 
 # Install EGo
 # https://docs.edgeless.systems/ego/#/getting-started/install?id=install-the-deb-package

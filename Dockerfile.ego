@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20220801 AS build
+FROM ubuntu:focal-20220801
 
 # Install Intel SGX drivers
 # https://github.com/edgelesssys/edgelessdb/blob/c91d353d45370e68218e885e9cbea621fdedf642/Dockerfile#L45

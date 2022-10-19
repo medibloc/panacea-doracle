@@ -50,6 +50,7 @@ func TestIpfsGet(t *testing.T) {
 
 	var deal types.Deal
 	err = json.Unmarshal(file, &deal)
+	require.NoError(t, err)
 
 	require.Equal(t, deal.DataSchema, getStrings)
 }

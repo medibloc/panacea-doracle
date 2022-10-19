@@ -10,6 +10,7 @@ import (
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
+	"github.com/medibloc/panacea-doracle/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ type Service struct {
 	queryClient *panacea.QueryClient
 	grpcClient  *panacea.GrpcClient
 	subscriber  *event.PanaceaSubscriber
+	ipfs        *store.Ipfs
 }
 
 func New(conf *config.Config) (*Service, error) {
@@ -66,6 +68,8 @@ func New(conf *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to init subscriber: %w", err)
 	}
 
+	ipfs := store.NewIpfs(conf.Ipfs.IpfsNodeAddr)
+
 	return &Service{
 		conf:          conf,
 		oracleAccount: oracleAccount,
@@ -74,6 +78,7 @@ func New(conf *config.Config) (*Service, error) {
 		queryClient:   queryClient,
 		grpcClient:    grpcClient,
 		subscriber:    subscriber,
+		ipfs:          ipfs,
 	}, nil
 }
 

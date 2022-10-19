@@ -70,7 +70,7 @@ func DefaultConfig() *Config {
 			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
 		},
 		Ipfs: IpfsConfig{
-			IpfsNodeAddr: "http://127.0.0.1:5001",
+			IpfsNodeAddr: "127.0.0.1:5001",
 		},
 	}
 }

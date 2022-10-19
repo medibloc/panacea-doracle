@@ -13,7 +13,7 @@ type Ipfs struct {
 	sh *shell.Shell
 }
 
-// NewIpfs generates a ipfs node with ipfs url.
+// NewIpfs generates an ipfs node with ipfs url.
 func NewIpfs(url string) *Ipfs {
 	newShell := shell.NewShell(url)
 
@@ -51,9 +51,9 @@ func (i *Ipfs) Get(cid string) ([]string, error) {
 
 	newStr := buf.String()
 
-	var deal *types.Deal
+	var deal types.Deal
 
-	err = json.Unmarshal([]byte(newStr), deal)
+	err = json.Unmarshal([]byte(newStr), &deal)
 	if err != nil {
 		return nil, err
 	}

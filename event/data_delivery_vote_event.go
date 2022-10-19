@@ -1,0 +1,140 @@
+package event
+
+import (
+	"strconv"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	dealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
+	"github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/panacea"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+)
+
+var _ Event = (*DataDeliveryVoteEvent)(nil)
+
+type DataDeliveryVoteEvent struct {
+	reactor reactor
+}
+
+func NewDataDeliveryVoteEvent(r reactor) DataDeliveryVoteEvent {
+	return DataDeliveryVoteEvent{r}
+}
+
+func (e DataDeliveryVoteEvent) GetEventType() string {
+	return "message"
+}
+
+func (e DataDeliveryVoteEvent) GetEventAttributeKey() string {
+	return "action"
+}
+
+func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
+	return "'DataDeliveryVote'"
+}
+
+func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
+
+	dealID, err := strconv.ParseUint(event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDealID][0], 10, 64)
+	dataHash := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDataHash][0]
+
+	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
+	if err != nil {
+		return err
+	}
+
+	voteOption, err := e.verifyDataSaleAndGetVoteOption(dataSale)
+	if err != nil {
+		return err
+	}
+	deliveredCID, err := e.makeDeliveredCid(dataSale)
+
+	msgVoteDataDelivery, err := e.makeDataDeliveryVote(dealID, e.reactor.OracleAcc().GetAddress(), dataHash, deliveredCID, voteOption, e.reactor.OraclePrivKey().Serialize())
+	if err != nil {
+		return err
+	}
+
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
+
+	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
+	if err != nil {
+		return err
+	}
+
+	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtypes.DataSale) (types.VoteOption, error) {
+	if dataSale.Status != dealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
+		return types.VOTE_OPTION_NO, nil // err?
+	}
+
+	if len(dataSale.VerifiableCid) == 0 {
+		return types.VOTE_OPTION_NO, nil
+	}
+
+	return types.VOTE_OPTION_YES, nil
+
+}
+
+func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale) (string, error) {
+	// ipfs.get(dataSale.verifiableCid)
+	// get decrypt shared key
+	// decrypt data
+
+	// get oraclePrivateKey & buyerPublicKey
+	// make sharedKey
+	// encrypt data
+	// ipfs.add (decrypted data) & get CID
+
+	return "", nil
+}
+
+func (e DataDeliveryVoteEvent) makeDataDeliveryVote(dealID uint64, voterAddr, dataHash, DeliveredCid string, voteOption types.VoteOption, oraclePrivKey []byte) (*dealtypes.MsgVoteDataDelivery, error) {
+
+	dataDeliveryVote := &dealtypes.DataDeliveryVote{
+		VoterAddress: voterAddr,
+		DealId:       dealID,
+		DataHash:     dataHash,
+		DeliveredCid: DeliveredCid,
+		VoteOption:   voteOption,
+	}
+
+	key := secp256k1.PrivKey{
+		Key: oraclePrivKey,
+	}
+
+	marshaledDataDeliveryVote, err := dataDeliveryVote.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	sig, err := key.Sign(marshaledDataDeliveryVote)
+	if err != nil {
+		return nil, err
+	}
+
+	msgVoteDataDelivery := &dealtypes.MsgVoteDataDelivery{
+		DataDeliveryVote: dataDeliveryVote,
+		Signature:        sig,
+	}
+
+	return msgVoteDataDelivery, nil
+}
+
+func (e DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *dealtypes.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
+	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataDelivery)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
+}

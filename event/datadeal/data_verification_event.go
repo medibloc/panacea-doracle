@@ -1,6 +1,8 @@
 package datadeal
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/ipfs"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -71,19 +74,30 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	dataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
+	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		return err
 	}
 
-	voteOption := d.verifyDataSaleAndGetVoteOption(dataBz, deal.DataSchema)
+	oraclePrivKey := d.reactor.OraclePrivKey()
+
+	decryptedData, err := d.decryptData(oraclePrivKey, dataSale, deal, encryptedDataBz)
+	if err != nil {
+		return err
+	}
+
+	if !d.compareDataHash(dataSale, decryptedData) {
+		return fmt.Errorf("invalid data hash (%s)", dataSale.DataHash)
+	}
+
+	voteOption := d.verifyDataSaleAndGetVoteOption(decryptedData, deal.DataSchema)
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
 		d.reactor.OracleAcc().GetAddress(),
 		dataHash,
 		dealID,
 		voteOption,
-		d.reactor.OraclePrivKey().Serialize(),
+		oraclePrivKey.Serialize(),
 	)
 	if err != nil {
 		return err
@@ -101,6 +115,38 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	}
 
 	return nil
+}
+
+func (d DataVerificationEvent) decryptData(oraclePrivKey *btcec.PrivateKey, dataSale *types.DataSale, deal *types.Deal, encryptedDataBz []byte) ([]byte, error) {
+	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
+	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+
+	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
+
+	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataBz)
+	if err != nil {
+		return nil, err
+	}
+	return decryptedData, nil
+}
+
+func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decryptedData []byte) bool {
+	decryptedDataHash := sha256.Sum256(decryptedData)
+	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
+
+	if decryptedDataHashStr != dataSale.DataHash {
+		return false
+	}
+
+	return true
 }
 
 func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(jsonInput []byte, dataSchema []string) oracletypes.VoteOption {
@@ -125,12 +171,12 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 		Key: oraclePrivKey,
 	}
 
-	marshaledRegistrationVote, err := dataVerificationVote.Marshal()
+	marshaledVerificationVote, err := dataVerificationVote.Marshal()
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := key.Sign(marshaledRegistrationVote)
+	sig, err := key.Sign(marshaledVerificationVote)
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +210,10 @@ func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("register oracle vote trasnsaction failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("data verification vote trasnsaction failed: %v", resp.TxResponse.RawLog)
 	}
 
-	log.Infof("MsgVoteOracleRegistration transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
+	log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
 
 	return nil
 }

@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 )
 
 func verifyReportCmd() *cobra.Command {
@@ -36,7 +37,7 @@ func verifyReportCmd() *cobra.Command {
 }
 
 func readOracleRemoteReport(filename string) (*OraclePubKeyInfo, error) {
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

@@ -41,7 +41,7 @@ type PanaceaConfig struct {
 }
 
 type IpfsConfig struct {
-	IpfsNodeAddr string `mapstructure:"ipfs-addr"`
+	IpfsNodeAddr string `mapstructure:"ipfs-node-addr"`
 }
 
 func DefaultConfig() *Config {

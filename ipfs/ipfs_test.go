@@ -1,4 +1,4 @@
-package store_test
+package ipfs_test
 
 //type testdata struct {
 //	Name        string `json:"name"`

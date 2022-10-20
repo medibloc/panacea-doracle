@@ -3,7 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -49,6 +49,14 @@ light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
 # Witness addresses (comma-separated) for light client verification
 
 light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
+
+###############################################################################
+###                         Ipfs Configuration                           ###
+###############################################################################
+
+[ipfs]
+
+ipfs-node-addr = "{{ .Ipfs.IpfsNodeAddr }}"
 `
 
 var configTemplate *template.Template
@@ -71,7 +79,7 @@ func WriteConfigTOML(path string, config *Config) error {
 		return fmt.Errorf("failed to populate config template: %w", err)
 	}
 
-	return ioutil.WriteFile(path, buffer.Bytes(), 0600)
+	return os.WriteFile(path, buffer.Bytes(), 0600)
 }
 
 func ReadConfigTOML(path string) (*Config, error) {

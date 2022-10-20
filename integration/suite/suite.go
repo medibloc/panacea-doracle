@@ -1,9 +1,13 @@
-package integration
+package suite
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/integration/rest"
+
 	"log"
 	"path/filepath"
 	"time"
@@ -22,6 +26,10 @@ type TestSuite struct {
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
+}
+
+func Run(t *testing.T, s suite.TestingSuite) {
+	suite.Run(t, s)
 }
 
 func NewTestSuite(initScriptAbsPath string, initScriptEnvs []string) TestSuite {
@@ -73,7 +81,7 @@ func (suite *TestSuite) SetupTest() {
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	suite.dktPool.MaxWait = 1 * time.Minute
 	if err := suite.dktPool.Retry(func() error {
-		_, height, err := QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
+		_, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 		if err != nil {
 			return err
 		} else if height < 2 {

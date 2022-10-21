@@ -1,1 +1,1 @@
-package datadeal
+package event

@@ -24,7 +24,7 @@ import (
 var _ event.Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
-	service reactor
+	reactor reactor
 }
 
 func NewRegisterOracleEvent(s reactor) RegisterOracleEvent {
@@ -46,23 +46,23 @@ func (e RegisterOracleEvent) GetEventAttributeValue() string {
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	addressValue := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
-	uniqueID := e.service.EnclaveInfo().UniqueIDHex()
-	oracleRegistration, err := e.service.QueryClient().GetOracleRegistration(addressValue, uniqueID)
+	uniqueID := e.reactor.EnclaveInfo().UniqueIDHex()
+	oracleRegistration, err := e.reactor.QueryClient().GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
 		return err
 	}
 
-	voteOption, err := verifyAndGetVoteOption(e.service, oracleRegistration)
+	voteOption, err := verifyAndGetVoteOption(e.reactor, oracleRegistration)
 	if err != nil {
 		return err
 	}
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(
 		uniqueID,
-		e.service.OracleAcc().GetAddress(),
+		e.reactor.OracleAcc().GetAddress(),
 		addressValue,
 		voteOption,
-		e.service.OraclePrivKey().Serialize(),
+		e.reactor.OraclePrivKey().Serialize(),
 		oracleRegistration.NodePubKey,
 		oracleRegistration.Nonce,
 	)
@@ -70,14 +70,14 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	txBuilder := panacea.NewTxBuilder(*e.service.QueryClient())
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
-	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.service.OracleAcc().GetPrivKey(), e.service.Config(), txBuilder)
+	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
 		return err
 	}
 
-	if err := broadcastTx(e.service.GRPCClient(), txBytes); err != nil {
+	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
 		return err
 	}
 
@@ -87,8 +87,8 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func verifyAndGetVoteOption(service reactor, oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
-	block, err := service.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
+func verifyAndGetVoteOption(reactor reactor, oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+	block, err := reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
 		switch err {
 		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
@@ -109,7 +109,7 @@ func verifyAndGetVoteOption(service reactor, oracleRegistration *oracletypes.Ora
 
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
-	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *service.EnclaveInfo()); err != nil {
+	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *reactor.EnclaveInfo()); err != nil {
 		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
 		return oracletypes.VOTE_OPTION_NO, nil
 	} else {

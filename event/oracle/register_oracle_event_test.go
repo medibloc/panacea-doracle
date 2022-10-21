@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/cosmos/go-bip39"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/integration/rest"
 	"github.com/medibloc/panacea-doracle/integration/service"
@@ -53,16 +53,15 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
-	oracleRegistration := &types.OracleRegistration{
+	oracleRegistration := &oracletypes.OracleRegistration{
 		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
 		TrustedBlockHash:   []byte("invalid"),
 	}
-	registerOracleEvent := NewRegisterOracleEvent(svc)
 
-	voteOption, err := registerOracleEvent.verifyAndGetVoteOption(oracleRegistration)
+	voteOption, err := verifyAndGetVoteOption(svc, oracleRegistration)
 
 	require.NoError(suite.T(), err)
-	require.Equal(suite.T(), types.VOTE_OPTION_NO, voteOption)
+	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
 func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
@@ -71,16 +70,15 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrust
 	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
 	require.NoError(suite.T(), err)
 
-	oracleRegistration := &types.OracleRegistration{
+	oracleRegistration := &oracletypes.OracleRegistration{
 		TrustedBlockHeight: 100,
 		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
 	}
-	registerOracleEvent := NewRegisterOracleEvent(svc)
 
-	voteOption, err := registerOracleEvent.verifyAndGetVoteOption(oracleRegistration)
+	voteOption, err := verifyAndGetVoteOption(svc, oracleRegistration)
 
 	require.NoError(suite.T(), err)
-	require.Equal(suite.T(), types.VOTE_OPTION_NO, voteOption)
+	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
 func (suite *registerOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {

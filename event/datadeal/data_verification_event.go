@@ -69,7 +69,7 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
+	dataSale, err := d.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
 		return err
 	}

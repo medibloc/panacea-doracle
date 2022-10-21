@@ -22,15 +22,6 @@ type DataDeliveryVoteEvent struct {
 	reactor reactor
 }
 
-// reactor contains all ingredients needed for handling this type of event
-type reactor interface {
-	GRPCClient() *panacea.GrpcClient
-	OracleAcc() *panacea.OracleAccount
-	OraclePrivKey() *btcec.PrivateKey
-	Config() *config.Config
-	QueryClient() *panacea.QueryClient
-}
-
 func NewDataDeliveryVoteEvent(r reactor) DataDeliveryVoteEvent {
 	return DataDeliveryVoteEvent{r}
 }

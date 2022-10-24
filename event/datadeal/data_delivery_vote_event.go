@@ -12,7 +12,6 @@ import (
 	"github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
-	"github.com/medibloc/panacea-doracle/ipfs"
 	"github.com/medibloc/panacea-doracle/panacea"
 	log "github.com/sirupsen/logrus"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -91,9 +90,7 @@ func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtype
 
 func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
 	// get encrypted data from ipfs
-	newIpfs := ipfs.NewIpfs("ipfs.io/ipfs")
-
-	encryptedDataWithSellerKey, err := newIpfs.Get(dataSale.VerifiableCid)
+	encryptedDataWithSellerKey, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +140,7 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, or
 	}
 
 	// ipfs.add (decrypted data) & get CID
-	deliveredCid, err := newIpfs.Add(encryptDataWithBuyerKey)
+	deliveredCid, err := e.reactor.Ipfs().Add(encryptDataWithBuyerKey)
 	if err != nil {
 		return "", err
 	}

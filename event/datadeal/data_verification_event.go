@@ -86,7 +86,7 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption := d.verifyDataSaleAndGetVoteOption(decryptedData, deal.DataSchema)
+	voteOption := d.verifyDataSaleAndGetVoteOption(dataSale, decryptedData, deal.DataSchema)
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
 		d.reactor.OracleAcc().GetAddress(),
@@ -141,14 +141,14 @@ func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decrypt
 	return decryptedDataHashStr != dataSale.DataHash
 }
 
-func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(dataSale *types.DataSale, decryptedData, jsonInput []byte, dataSchema []string) oracletypes.VoteOption {
+func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(dataSale *types.DataSale, decryptedData []byte, dataSchema []string) oracletypes.VoteOption {
 	if !d.compareDataHash(dataSale, decryptedData) {
 		return oracletypes.VOTE_OPTION_NO
 	}
 
-	err := validation.ValidateJSONSchemata(jsonInput, dataSchema)
+	err := validation.ValidateJSONSchemata(decryptedData, dataSchema)
 	if err != nil {
-		log.Warnf("failed to verify data. data(%s) error(%s)", string(jsonInput), err)
+		log.Warnf("failed to verify data. error(%s)", err)
 		return oracletypes.VOTE_OPTION_NO
 	}
 

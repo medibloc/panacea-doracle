@@ -148,6 +148,7 @@ func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decrypt
 func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(jsonInput []byte, dataSchema []string) oracletypes.VoteOption {
 	err := validation.ValidateJSONSchemata(jsonInput, dataSchema)
 	if err != nil {
+		log.Warnf("validation JSON error: %s", err)
 		log.Warnf("failed to verify data. data(%s)", string(jsonInput))
 		return oracletypes.VOTE_OPTION_NO
 	}

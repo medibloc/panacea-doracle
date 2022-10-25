@@ -18,14 +18,15 @@ import (
 
 var _ event.Reactor = (*service.TestServiceWithoutSGX)(nil)
 
-type registerOracleEventTestSuite struct {
+type upgradeOracleEventTestSuite struct {
 	suite.TestSuite
 
 	chainID           string
 	validatorMnemonic string
+	uniqueID          string
 }
 
-func TestRegisterOracleEvent(t *testing.T) {
+func TestUpgradeOracleEvent(t *testing.T) {
 	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
@@ -34,21 +35,24 @@ func TestRegisterOracleEvent(t *testing.T) {
 	require.NoError(t, err)
 	validatorMnemonic, err := bip39.NewMnemonic(entropy)
 	require.NoError(t, err)
+	uniqueID := "uniqueID"
 
-	suite.Run(t, &registerOracleEventTestSuite{
+	suite.Run(t, &upgradeOracleEventTestSuite{
 		suite.NewTestSuite(
 			initScriptPath,
 			[]string{
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
 				fmt.Sprintf("MNEMONIC=%s", validatorMnemonic),
+				fmt.Sprintf("UNIQUE_ID=%s", uniqueID),
 			},
 		),
 		chainID,
 		validatorMnemonic,
+		uniqueID,
 	})
 }
 
-func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
+func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
 	trustedBlockInfo, conf := suite.prepare()
 
 	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
@@ -65,7 +69,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
-func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
+func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
 	trustedBlockInfo, conf := suite.prepare()
 
 	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
@@ -82,7 +86,27 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrust
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
-func (suite *registerOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {
+func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotExistUpgradeInfo() {
+	trustedBlockInfo, conf := suite.prepare()
+
+	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
+	require.NoError(suite.T(), err)
+
+	oracleRegistration := &oracletypes.OracleRegistration{
+		UniqueId:           suite.uniqueID,
+		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
+		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
+	}
+
+	e := NewUpgradeOracleEvent(svc)
+
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
+
+	require.NoError(suite.T(), err)
+	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
+}
+
+func (suite *upgradeOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {
 	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)
 

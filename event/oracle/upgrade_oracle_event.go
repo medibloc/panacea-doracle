@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"errors"
+
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -10,12 +11,12 @@ import (
 )
 
 type UpgradeOracleEvent struct {
-	service reactor
+	reactor event.Reactor
 }
 
 var _ event.Event = (*UpgradeOracleEvent)(nil)
 
-func NewUpgradeOracleEvent(s reactor) UpgradeOracleEvent {
+func NewUpgradeOracleEvent(s event.Reactor) UpgradeOracleEvent {
 	return UpgradeOracleEvent{s}
 }
 
@@ -32,13 +33,13 @@ func (e UpgradeOracleEvent) GetEventAttributeValue() string {
 }
 
 func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+	uniqueID := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	addressValue := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyOracleAddress][0]
-	service := e.service
-	queryClient := service.QueryClient()
+	queryClient := e.reactor.QueryClient()
 
-	uniqueID := service.EnclaveInfo().UniqueIDHex()
 	oracleRegistration, err := queryClient.GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
+		log.Infof("failed to get oracleRegistration, voting ignored. uniqueID(%s), address(%s)", uniqueID, addressValue)
 		return err
 	}
 
@@ -49,10 +50,10 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(
 		uniqueID,
-		e.service.OracleAcc().GetAddress(),
+		e.reactor.OracleAcc().GetAddress(),
 		addressValue,
 		voteOption,
-		e.service.OraclePrivKey().Serialize(),
+		e.reactor.OraclePrivKey().Serialize(),
 		oracleRegistration.NodePubKey,
 		oracleRegistration.Nonce,
 	)
@@ -60,14 +61,14 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	txBuilder := panacea.NewTxBuilder(*e.service.QueryClient())
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
-	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.service.OracleAcc().GetPrivKey(), e.service.Config(), txBuilder)
+	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
 		return err
 	}
 
-	if err := broadcastTx(e.service.GRPCClient(), txBytes); err != nil {
+	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
 		return err
 	}
 
@@ -75,20 +76,20 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 func (e UpgradeOracleEvent) verifyAndGetVoteOption(r *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
-	upgradeInfo, err := e.service.QueryClient().GetOracleUpgradeInfo()
+	upgradeInfo, err := e.reactor.QueryClient().GetOracleUpgradeInfo()
 	if err != nil {
 		if errors.Is(err, panacea.ErrEmptyValue) {
 			log.Infof("not exist oracle upgrade info")
 			return oracletypes.VOTE_OPTION_NO, nil
 		}
 		log.Errorf("failed to get oracle upgrade info. %v", err)
-		return oracletypes.VOTE_OPTION_NO, nil
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
 	}
-	if upgradeInfo.UniqueId != e.service.EnclaveInfo().UniqueIDHex() {
+	if upgradeInfo.UniqueId != r.UniqueId {
 		log.Infof("oracle's uniqueID does not match the uniqueID being upgraded. expected uniqueID(%s), oracle's uniqueID(%s), ",
 			upgradeInfo.UniqueId,
-			e.service.EnclaveInfo().UniqueIDHex())
+			r.UniqueId)
 		return oracletypes.VOTE_OPTION_NO, nil
 	}
-	return verifyAndGetVoteOption(e.service, r)
+	return verifyAndGetVoteOption(e.reactor, r)
 }

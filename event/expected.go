@@ -1,4 +1,4 @@
-package oracle
+package event
 
 import (
 	"github.com/btcsuite/btcd/btcec"
@@ -7,8 +7,8 @@ import (
 	"github.com/medibloc/panacea-doracle/sgx"
 )
 
-// reactor contains all ingredients needed for handling this type of event
-type reactor interface {
+// Reactor contains all ingredients needed for handling this type of event
+type Reactor interface {
 	GRPCClient() *panacea.GrpcClient
 	EnclaveInfo() *sgx.EnclaveInfo
 	OracleAcc() *panacea.OracleAccount

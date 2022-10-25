@@ -2,6 +2,7 @@ package panacea
 
 import (
 	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -61,4 +62,8 @@ func (oa OracleAccount) GetPubKey() cryptotypes.PubKey {
 
 func GetAccAddressFromBech32(address string) (addr sdk.AccAddress, err error) {
 	return sdk.GetFromBech32(address, prefix)
+}
+
+func GetAddress(addressBz []byte) (string, error) {
+	return bech32.ConvertAndEncode(HRP, addressBz)
 }

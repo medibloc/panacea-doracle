@@ -24,10 +24,10 @@ import (
 var _ event.Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
-	reactor reactor
+	reactor event.Reactor
 }
 
-func NewRegisterOracleEvent(s reactor) RegisterOracleEvent {
+func NewRegisterOracleEvent(s event.Reactor) RegisterOracleEvent {
 	return RegisterOracleEvent{s}
 }
 
@@ -87,7 +87,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func verifyAndGetVoteOption(reactor reactor, oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+func verifyAndGetVoteOption(reactor event.Reactor, oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
 	block, err := reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
 		switch err {
@@ -121,15 +121,18 @@ func verifyAndGetVoteOption(reactor reactor, oracleRegistration *oracletypes.Ora
 func makeOracleRegistrationVote(uniqueID, voterAddr, votingTargetAddr string, voteOption oracletypes.VoteOption, oraclePrivKey, nodePubKey, nonce []byte) (*oracletypes.MsgVoteOracleRegistration, error) {
 	privKey, _ := crypto.PrivKeyFromBytes(oraclePrivKey)
 
-	pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
-	if err != nil {
-		return nil, err
-	}
+	var encryptedOraclePrivKey []byte
+	if oracletypes.VOTE_OPTION_YES == voteOption {
+		pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
+		if err != nil {
+			return nil, err
+		}
 
-	shareKey := crypto.DeriveSharedKey(privKey, pubKey, crypto.KDFSHA256)
-	encryptedOraclePrivKey, err := crypto.EncryptWithAES256(shareKey, nonce, oraclePrivKey)
-	if err != nil {
-		return nil, err
+		shareKey := crypto.DeriveSharedKey(privKey, pubKey, crypto.KDFSHA256)
+		encryptedOraclePrivKey, err = crypto.EncryptWithAES256(shareKey, nonce, oraclePrivKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	registrationVote := &oracletypes.OracleRegistrationVote{

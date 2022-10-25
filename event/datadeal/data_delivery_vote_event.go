@@ -26,15 +26,15 @@ func NewDataDeliveryVoteEvent(r reactor) DataDeliveryVoteEvent {
 }
 
 func (e DataDeliveryVoteEvent) GetEventType() string {
-	return "message"
+	return "data_delivery"
 }
 
 func (e DataDeliveryVoteEvent) GetEventAttributeKey() string {
-	return "action"
+	return "vote_status"
 }
 
 func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
-	return "'DataDeliveryVote'"
+	return "'started'"
 }
 
 func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {

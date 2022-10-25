@@ -138,7 +138,7 @@ func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decrypt
 	decryptedDataHash := sha256.Sum256(decryptedData)
 	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
 
-	return decryptedDataHashStr != dataSale.DataHash
+	return decryptedDataHashStr == dataSale.DataHash
 }
 
 func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(dataSale *types.DataSale, decryptedData []byte, dataSchema []string) oracletypes.VoteOption {

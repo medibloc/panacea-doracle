@@ -68,19 +68,16 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("get deal dealID: %d \n", deal.Id)
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
 		return err
 	}
-	log.Infof("get dataSale verifiableCid: %s \n", dataSale.VerifiableCid)
 
 	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		return err
 	}
-	log.Infof("encrypted data: %s \n", string(encryptedDataBz))
 
 	oraclePrivKey := d.reactor.OraclePrivKey()
 
@@ -144,8 +141,6 @@ func (d DataVerificationEvent) decryptData(oraclePrivKey *btcec.PrivateKey, data
 func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decryptedData []byte) bool {
 	decryptedDataHash := sha256.Sum256(decryptedData)
 	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
-	log.Infof("decryptedDataHashStr: %s \n", decryptedDataHashStr)
-	log.Infof("dataSale.DataHash: %s \n", dataSale.DataHash)
 
 	return decryptedDataHashStr == dataSale.DataHash
 }

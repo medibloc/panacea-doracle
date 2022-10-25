@@ -81,7 +81,21 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	oraclePrivKey := d.reactor.OraclePrivKey()
 
-	decryptedData, err := d.decryptData(oraclePrivKey, dataSale, deal, encryptedDataBz)
+	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
+	if err != nil {
+		return err
+	}
+
+	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
+
+	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
+	if err != nil {
+		return err
+	}
+
+	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
+
+	decryptedData, err := d.decryptData(decryptSharedKey, deal.Nonce, encryptedDataBz)
 	if err != nil {
 		return err
 	}
@@ -113,33 +127,12 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-func (d DataVerificationEvent) decryptData(oraclePrivKey *btcec.PrivateKey, dataSale *types.DataSale, deal *types.Deal, encryptedDataBz []byte) ([]byte, error) {
-	decryptedSharedKey, err := d.getDecryptedSharedKey(oraclePrivKey, dataSale)
-	if err != nil {
-		return nil, err
-	}
-
-	decryptedData, err := crypto.DecryptWithAES256(decryptedSharedKey, deal.Nonce, encryptedDataBz)
+func (d DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
+	decryptedData, err := crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
 	if err != nil {
 		return nil, err
 	}
 	return decryptedData, nil
-}
-
-func (d DataVerificationEvent) getDecryptedSharedKey(oraclePrivKey *btcec.PrivateKey, dataSale *types.DataSale) ([]byte, error) {
-	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
-	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
-	if err != nil {
-		return nil, err
-	}
-
-	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
-	return decryptSharedKey, nil
 }
 
 func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decryptedData []byte) bool {

@@ -114,6 +114,19 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 func (d DataVerificationEvent) decryptData(oraclePrivKey *btcec.PrivateKey, dataSale *types.DataSale, deal *types.Deal, encryptedDataBz []byte) ([]byte, error) {
+	decryptedSharedKey, err := d.getDecryptedSharedKey(oraclePrivKey, dataSale)
+	if err != nil {
+		return nil, err
+	}
+
+	decryptedData, err := crypto.DecryptWithAES256(decryptedSharedKey, deal.Nonce, encryptedDataBz)
+	if err != nil {
+		return nil, err
+	}
+	return decryptedData, nil
+}
+
+func (d DataVerificationEvent) getDecryptedSharedKey(oraclePrivKey *btcec.PrivateKey, dataSale *types.DataSale) ([]byte, error) {
 	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
 		return nil, err
@@ -126,12 +139,7 @@ func (d DataVerificationEvent) decryptData(oraclePrivKey *btcec.PrivateKey, data
 	}
 
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
-
-	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataBz)
-	if err != nil {
-		return nil, err
-	}
-	return decryptedData, nil
+	return decryptSharedKey, nil
 }
 
 func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decryptedData []byte) bool {

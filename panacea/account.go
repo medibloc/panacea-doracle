@@ -63,7 +63,3 @@ func (oa OracleAccount) GetPubKey() cryptotypes.PubKey {
 func GetAccAddressFromBech32(address string) (addr sdk.AccAddress, err error) {
 	return sdk.GetFromBech32(address, prefix)
 }
-
-func GetAddress(addressBz []byte) (string, error) {
-	return bech32.ConvertAndEncode(HRP, addressBz)
-}

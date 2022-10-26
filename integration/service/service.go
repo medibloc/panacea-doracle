@@ -6,6 +6,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
+	"github.com/medibloc/panacea-doracle/ipfs"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 	dbm "github.com/tendermint/tm-db"
@@ -19,6 +20,7 @@ type TestServiceWithoutSGX struct {
 	queryClient *panacea.QueryClient
 	grpcClient  *panacea.GrpcClient
 	subscriber  *event.PanaceaSubscriber
+	ipfs        *ipfs.Ipfs
 }
 
 func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (*TestServiceWithoutSGX, error) {
@@ -47,6 +49,8 @@ func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInf
 		return nil, err
 	}
 
+	ipfs := ipfs.NewIpfs(conf.Ipfs.IpfsNodeAddr)
+
 	return &TestServiceWithoutSGX{
 		conf:          conf,
 		oracleAccount: oracleAccount,
@@ -54,6 +58,7 @@ func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInf
 		queryClient:   queryClient,
 		grpcClient:    grpcClient,
 		subscriber:    panaceaSubscriber,
+		ipfs:          ipfs,
 	}, nil
 }
 

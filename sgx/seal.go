@@ -2,7 +2,7 @@ package sgx
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/edgelesssys/ego/ecrypto"
 	log "github.com/sirupsen/logrus"
@@ -15,7 +15,7 @@ func SealToFile(data []byte, filePath string) error {
 		return fmt.Errorf("failed to seal oracle private key: %w", err)
 	}
 
-	if err := ioutil.WriteFile(filePath, sealedData, 0644); err != nil {
+	if err := os.WriteFile(filePath, sealedData, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", filePath, err)
 	}
 	log.Infof("%s is sealed and written successfully", filePath)
@@ -24,7 +24,7 @@ func SealToFile(data []byte, filePath string) error {
 }
 
 func UnsealFromFile(filePath string) ([]byte, error) {
-	sealed, err := ioutil.ReadFile(filePath)
+	sealed, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s: %w", filePath, err)
 	}

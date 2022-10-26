@@ -6,10 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/medibloc/panacea-doracle/client/flags"
 	"github.com/medibloc/panacea-doracle/panacea"
-	"io/ioutil"
-	"os"
 
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/medibloc/panacea-doracle/crypto"
@@ -113,7 +113,7 @@ func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, filePath stri
 		return fmt.Errorf("failed to marshal oracle pub key data: %w", err)
 	}
 
-	err = ioutil.WriteFile(filePath, oraclePubKeyFile, 0644)
+	err = os.WriteFile(filePath, oraclePubKeyFile, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write oracle pub key file: %w", err)
 	}

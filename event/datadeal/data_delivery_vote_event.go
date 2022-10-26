@@ -39,24 +39,32 @@ func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
 
 func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
-	dealID, err := strconv.ParseUint(event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDealID][0], 10, 64)
+	dealIDStr := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDataHash][0]
 
+	dealID, err := strconv.ParseUint(dealIDStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	log.Infof("dealID: %d", dealID)
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
+		log.Errorf("get dataSale error: %v", err)
 		return err
 	}
-	voteOption, err := e.verifyDataSaleAndGetVoteOption(dataSale)
-	if err != nil {
-		return err
-	}
+	log.Infof("dataSele verifiableCid: %s", dataSale.VerifiableCid)
+	voteOption := e.verifyDataSaleAndGetVoteOption(dataSale)
+	log.Infof("voteOption: %s", voteOption)
+
 	deliveredCID, err := e.makeDeliveredCid(dataSale, e.reactor.OraclePrivKey())
 	if err != nil {
+		log.Errorf("make delivery cid error: %v", err)
 		return err
 	}
-
+	log.Infof("deliveredCid: %s", voteOption)
 	msgVoteDataDelivery, err := e.makeDataDeliveryVote(dealID, e.reactor.OracleAcc().GetAddress(), dataHash, deliveredCID, voteOption, e.reactor.OraclePrivKey().Serialize())
 	if err != nil {
+		log.Errorf("make vote error: %v", err)
 		return err
 	}
 
@@ -64,6 +72,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
+		log.Errorf("make vote error: %v", err)
 		return err
 	}
 
@@ -75,16 +84,16 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 }
 
-func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtypes.DataSale) (types.VoteOption, error) {
+func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtypes.DataSale) types.VoteOption {
 	if dataSale.Status != dealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return types.VOTE_OPTION_NO, nil // err?
+		return types.VOTE_OPTION_UNSPECIFIED
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return types.VOTE_OPTION_NO, nil
+		return types.VOTE_OPTION_UNSPECIFIED
 	}
 
-	return types.VOTE_OPTION_YES, nil
+	return types.VOTE_OPTION_YES
 
 }
 

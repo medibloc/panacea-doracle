@@ -105,12 +105,12 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, or
 	}
 
 	// get shared key oraclePrivKey + sellerPublicKey
-	sellerAccount, err := e.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
+	sellerAcc, err := e.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
 		return "", err
 	}
 
-	sellerPubKeyBytes := sellerAccount.GetPubKey().Bytes()
+	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
 
 	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
 	if err != nil {

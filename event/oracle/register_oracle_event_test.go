@@ -59,7 +59,8 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 		TrustedBlockHash:   []byte("invalid"),
 	}
 
-	voteOption, err := verifyAndGetVoteOption(svc, oracleRegistration)
+	e := NewRegisterOracleEvent(svc)
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
 	require.NoError(suite.T(), err)
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
@@ -76,7 +77,8 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrust
 		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
 	}
 
-	voteOption, err := verifyAndGetVoteOption(svc, oracleRegistration)
+	e := NewRegisterOracleEvent(svc)
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
 	require.NoError(suite.T(), err)
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)

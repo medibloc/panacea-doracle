@@ -1,7 +1,13 @@
 package oracle
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"github.com/edgelesssys/ego/enclave"
+	"github.com/medibloc/panacea-doracle/sgx"
+	"github.com/tendermint/tendermint/light/provider"
 
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/event"
@@ -91,5 +97,60 @@ func (e UpgradeOracleEvent) verifyAndGetVoteOption(r *oracletypes.OracleRegistra
 			r.UniqueId)
 		return oracletypes.VOTE_OPTION_NO, nil
 	}
-	return verifyAndGetVoteOption(e.reactor, r)
+
+	block, err := e.reactor.QueryClient().GetLightBlock(r.TrustedBlockHeight)
+	if err != nil {
+		switch err {
+		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
+			return oracletypes.VOTE_OPTION_NO, nil
+		default:
+			return oracletypes.VOTE_OPTION_UNSPECIFIED, err
+		}
+	}
+
+	if !bytes.Equal(block.Hash().Bytes(), r.TrustedBlockHash) {
+		log.Warnf("failed to verify trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
+			r.TrustedBlockHeight,
+			hex.EncodeToString(block.Hash().Bytes()),
+			hex.EncodeToString(r.TrustedBlockHash),
+		)
+		return oracletypes.VOTE_OPTION_NO, nil
+	}
+
+	if err := e.VerifyRemoteReport(r.NodePubKeyRemoteReport, r.NodePubKey, r.UniqueId); err != nil {
+		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", r.UniqueId, r.Address, err)
+		return oracletypes.VOTE_OPTION_NO, nil
+	} else {
+		return oracletypes.VOTE_OPTION_YES, nil
+	}
+}
+
+func (e UpgradeOracleEvent) VerifyRemoteReport(reportBytes, expectedData []byte, expectedUniqueID string) error {
+	enclaveInfo := e.reactor.EnclaveInfo()
+	report, err := enclave.VerifyRemoteReport(reportBytes)
+	if err != nil {
+		return err
+	}
+
+	if report.SecurityVersion < sgx.PromisedMinSecurityVersion {
+		return fmt.Errorf("invalid security version in the report")
+	}
+	if !bytes.Equal(report.ProductID, enclaveInfo.ProductID) {
+		return fmt.Errorf("invalid product ID in the report")
+	}
+	if !bytes.Equal(report.SignerID, enclaveInfo.SignerID) {
+		return fmt.Errorf("invalid signer ID in the report")
+	}
+	uniqueID, err := hex.DecodeString(expectedUniqueID)
+	if err != nil {
+		return fmt.Errorf("invalid uniqueID format. uniqueID(%s). %w", uniqueID, err)
+	}
+	if !bytes.Equal(report.UniqueID, uniqueID) {
+		return fmt.Errorf("invalid unique ID in the report")
+	}
+	if !bytes.Equal(report.Data[:len(expectedData)], expectedData) {
+		return fmt.Errorf("invalid data in the report")
+	}
+
+	return nil
 }

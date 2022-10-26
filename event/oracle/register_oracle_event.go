@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -52,7 +51,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption, err := verifyAndGetVoteOption(e.reactor, oracleRegistration)
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 	if err != nil {
 		return err
 	}
@@ -87,8 +86,8 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func verifyAndGetVoteOption(reactor event.Reactor, oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
-	block, err := reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
+func (e RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+	block, err := e.reactor.QueryClient().GetLightBlock(oracleRegistration.TrustedBlockHeight)
 	if err != nil {
 		switch err {
 		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
@@ -109,7 +108,7 @@ func verifyAndGetVoteOption(reactor event.Reactor, oracleRegistration *oracletyp
 
 	nodePubKeyHash := sha256.Sum256(oracleRegistration.NodePubKey)
 
-	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *reactor.EnclaveInfo()); err != nil {
+	if err := sgx.VerifyRemoteReport(oracleRegistration.NodePubKeyRemoteReport, nodePubKeyHash[:], *e.reactor.EnclaveInfo()); err != nil {
 		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
 		return oracletypes.VOTE_OPTION_NO, nil
 	} else {

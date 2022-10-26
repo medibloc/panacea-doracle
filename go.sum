@@ -716,10 +716,6 @@ github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0j
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/medibloc/cosmos-sdk v0.45.4-panacea h1:j5IV+xx9S8obSFkqOQwGG3Lt6ErCKq2s01iShjz3ntQ=
 github.com/medibloc/cosmos-sdk v0.45.4-panacea/go.mod h1:WOqtDxN3eCCmnYLVla10xG7lEXkFjpTaqm2a2WasgCc=
-github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220916060638-9a0c908458a3 h1:lK22vM7PJrqB8Qey0SOxxPGNlby5gf7Aff0Xaezt92s=
-github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20220916060638-9a0c908458a3/go.mod h1:l9fOSt3J2e5jUKrMnd/wD6etXymvoKbByW5f2V4gZu4=
-github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221019051827-bba2bd781920 h1:GutGCXItsL8X+ZXnE84h7w/JKsbC8Xi+zajjueGKIXY=
-github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221019051827-bba2bd781920/go.mod h1:l9fOSt3J2e5jUKrMnd/wD6etXymvoKbByW5f2V4gZu4=
 github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221021020602-abe285280aff h1:w2ZSoOlHdWP/1AIoyGAuZ6N+ypTd1f1wNnx8VSLF9G0=
 github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221021020602-abe285280aff/go.mod h1:l9fOSt3J2e5jUKrMnd/wD6etXymvoKbByW5f2V4gZu4=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=

@@ -56,6 +56,7 @@ func init() {
 		verifyReportCmd(),
 		registerOracleCmd(),
 		getOracleKeyCmd(),
+		upgradeOracleCmd(),
 	)
 }
 

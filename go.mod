@@ -10,7 +10,7 @@ require (
 	github.com/cosmos/ibc-go/v2 v2.0.3
 	github.com/edgelesssys/ego v1.0.0
 	github.com/ipfs/go-ipfs-api v0.3.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221019051827-bba2bd781920
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221021020602-abe285280aff
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
@@ -19,6 +19,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/tendermint v0.34.19
 	github.com/tendermint/tm-db v0.6.7
+	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.48.0
 )
 
@@ -88,6 +89,7 @@ require (
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/medibloc/panacea-core v1.3.4-0.20210720092959-607178cd19e8 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20181016162300-f8f6d4d2b643 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
@@ -130,7 +132,6 @@ require (
 	github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect

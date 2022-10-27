@@ -91,11 +91,11 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtypes.DataSale) types.VoteOption {
 	if dataSale.Status != dealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return types.VOTE_OPTION_UNSPECIFIED
+		return types.VOTE_OPTION_NO
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return types.VOTE_OPTION_UNSPECIFIED
+		return types.VOTE_OPTION_NO
 	}
 
 	return types.VOTE_OPTION_YES
@@ -210,7 +210,6 @@ func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txByt
 	if err != nil {
 		return err
 	}
-	log.Infof("txResponse code: %d", resp.TxResponse.Code)
 
 	if resp.TxResponse.Code != 0 {
 		return fmt.Errorf("vote trasnsaction failed: %v", resp.TxResponse.RawLog)

@@ -39,6 +39,8 @@ func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
 
 func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
+	log.Info("DataDelivery EventHandler Start")
+
 	dealIDStr := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDataHash][0]
 

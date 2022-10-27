@@ -149,7 +149,7 @@ func (d DataVerificationEvent) verifyDataSaleAndGetVoteOption(dataSale *types.Da
 
 	err := validation.ValidateJSONSchemata(decryptedData, dataSchema)
 	if err != nil {
-		log.Warnf("failed to verify data. error(%s)", err)
+		log.Infof("failed to verify data. error(%s)", err)
 		return oracletypes.VOTE_OPTION_NO
 	}
 

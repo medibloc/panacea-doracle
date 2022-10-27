@@ -48,25 +48,29 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("dealID: %d", dealID)
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
-		log.Errorf("get dataSale error: %v", err)
 		return err
 	}
-	log.Infof("dataSele verifiableCid: %s", dataSale.VerifiableCid)
 	voteOption := e.verifyDataSaleAndGetVoteOption(dataSale)
-	log.Infof("voteOption: %s", voteOption)
 
-	deliveredCID, err := e.makeDeliveredCid(dataSale, e.reactor.OraclePrivKey())
+	oraclePrivKey := e.reactor.OraclePrivKey()
+
+	deliveredCID, err := e.makeDeliveredCid(dataSale, oraclePrivKey)
 	if err != nil {
-		log.Errorf("make delivery cid error: %v", err)
 		return err
 	}
-	log.Infof("deliveredCid: %s", voteOption)
-	msgVoteDataDelivery, err := e.makeDataDeliveryVote(dealID, e.reactor.OracleAcc().GetAddress(), dataHash, deliveredCID, voteOption, e.reactor.OraclePrivKey().Serialize())
+	log.Infof("deliveredCid: %s", deliveredCID)
+
+	msgVoteDataDelivery, err := makeDataDeliveryVote(
+		e.reactor.OracleAcc().GetAddress(),
+		dataHash,
+		deliveredCID,
+		dealID,
+		voteOption,
+		oraclePrivKey.Serialize(),
+	)
 	if err != nil {
-		log.Errorf("make vote error: %v", err)
 		return err
 	}
 
@@ -74,7 +78,6 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
-		log.Errorf("make vote error: %v", err)
 		return err
 	}
 
@@ -159,7 +162,7 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, or
 	return deliveredCid, nil
 }
 
-func (e DataDeliveryVoteEvent) makeDataDeliveryVote(dealID uint64, voterAddr, dataHash, DeliveredCid string, voteOption types.VoteOption, oraclePrivKey []byte) (*dealtypes.MsgVoteDataDelivery, error) {
+func makeDataDeliveryVote(voterAddr, dataHash, DeliveredCid string, dealID uint64, voteOption types.VoteOption, oraclePrivKey []byte) (*dealtypes.MsgVoteDataDelivery, error) {
 
 	dataDeliveryVote := &dealtypes.DataDeliveryVote{
 		VoterAddress: voterAddr,
@@ -207,6 +210,7 @@ func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txByt
 	if err != nil {
 		return err
 	}
+	log.Infof("txResponse code: %d", resp.TxResponse.Code)
 
 	if resp.TxResponse.Code != 0 {
 		return fmt.Errorf("vote trasnsaction failed: %v", resp.TxResponse.RawLog)

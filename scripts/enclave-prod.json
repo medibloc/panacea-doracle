@@ -24,5 +24,10 @@
       "value": "/home_mnt"
     }
   ],
-  "files": null
+  "files": [
+    {
+      "source": "/etc/ssl/certs/ca-certificates.crt",
+      "target": "/etc/ssl/certs/ca-certificates.crt"
+    }
+  ]
 }

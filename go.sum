@@ -728,6 +728,8 @@ github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221024074056-954ab306ff7f 
 github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221024074056-954ab306ff7f/go.mod h1:NVeGOCi6Vqeh1nLA63jQ1H5+Xj74uieQ9LFd63mbiP0=
 github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221025071452-93b962151250 h1:MkLBolGo6ing6X1n3JOfpYeYTP22mvYlRClVKzOB5M4=
 github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221025071452-93b962151250/go.mod h1:p9dICvOrvPu7JW25W/DIlkeOx/7XxEYlNICu6VCvKCM=
+github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221028024658-c797a4dc156f h1:qBsFx7aYokIgl1qHDNDmxgvpM2bn/ypEHkXCM9gSYHw=
+github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221028024658-c797a4dc156f/go.mod h1:p9dICvOrvPu7JW25W/DIlkeOx/7XxEYlNICu6VCvKCM=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=

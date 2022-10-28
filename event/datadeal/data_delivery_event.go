@@ -47,24 +47,21 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 	if err != nil {
 		return err
 	}
-	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
-	if err != nil {
-		return err
-	}
-	voteOption := e.verifyDataSaleAndGetVoteOption(dataSale)
 
 	oraclePrivKey := e.reactor.OraclePrivKey()
 
-	deliveredCID, err := e.makeDeliveredCid(dataSale, oraclePrivKey)
+	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash, oraclePrivKey)
 	if err != nil {
-		log.Infof("err while make deliveredCid %v", err)
-		voteOption = oracletypes.VOTE_OPTION_NO
+		log.Infof("error while verify: %v", err)
+		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
+			return err
+		}
 	}
 
 	msgVoteDataDelivery, err := e.makeDataDeliveryVote(
 		e.reactor.OracleAcc().GetAddress(),
 		dataHash,
-		deliveredCID,
+		deliveredCid,
 		dealID,
 		voteOption,
 		oraclePrivKey.Serialize(),
@@ -88,20 +85,44 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 }
 
-func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *datadealtypes.DataSale) oracletypes.VoteOption {
+func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string, oraclePrivKey *btcec.PrivateKey) (oracletypes.VoteOption, string, error) {
+
+	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
+	if err != nil {
+		if err == datadealtypes.ErrDataSaleNotFound {
+			return oracletypes.VOTE_OPTION_NO, "", err
+		} else {
+			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
+		}
+	}
+
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO, "", nil
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return oracletypes.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO, "", nil
 	}
 
-	return oracletypes.VOTE_OPTION_YES
+	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
+	if err != nil {
+		if err == datadealtypes.ErrDealNotFound {
+			return oracletypes.VOTE_OPTION_NO, "", err
+		} else {
+			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
+		}
+	}
+
+	deliveredCID, err := e.makeDeliveredCid(deal, dataSale, oraclePrivKey)
+	if err != nil {
+		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("error while make deliveredCid: %v", err)
+	}
+
+	return oracletypes.VOTE_OPTION_YES, deliveredCID, nil
 
 }
 
-func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
+func (e DataDeliveryVoteEvent) makeDeliveredCid(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
 	// get encrypted data from ipfs
 	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
@@ -113,7 +134,6 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *datadealtypes.DataSale
 	if err != nil {
 		return "", err
 	}
-
 	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
 
 	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
@@ -123,17 +143,12 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *datadealtypes.DataSale
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
 
 	// decrypt data
-	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
-	if err != nil {
-		return "", err
-	}
-
 	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataBz)
 	if err != nil {
 		return "", err
 	}
 
-	// get oraclePrivateKey & buyerPublicKey & make shared key
+	// get oraclePrivateKey & buyerPublicKey and make shared key
 	buyerAccount, err := e.reactor.QueryClient().GetAccount(deal.BuyerAddress)
 	if err != nil {
 		return "", err
@@ -145,8 +160,8 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *datadealtypes.DataSale
 		return "", err
 	}
 	encryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, buyerPubKey, crypto.KDFSHA256)
-	// encrypt data
 
+	// encrypt data
 	encryptDataWithBuyerKey, err := crypto.EncryptWithAES256(encryptSharedKey, deal.Nonce, decryptedData)
 	if err != nil {
 		return "", err

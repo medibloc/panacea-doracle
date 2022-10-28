@@ -1,4 +1,4 @@
-package event
+package datadeal
 
 import (
 	"crypto/sha256"

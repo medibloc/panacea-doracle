@@ -1,4 +1,4 @@
-package event
+package datadeal
 
 import (
 	"fmt"
@@ -39,8 +39,6 @@ func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
 
 func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
-	log.Info("DataDelivery EventHandler Start")
-
 	dealIDStr := event.Events[types.EventTypeDataDeliveryVote+"."+types.AttributeKeyDealID][0]
 	dataHash := event.Events[types.EventTypeDataDeliveryVote+"."+types.AttributeKeyDataHash][0]
 
@@ -58,9 +56,9 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	deliveredCID, err := e.makeDeliveredCid(dataSale, oraclePrivKey)
 	if err != nil {
-		return err
+		log.Infof("err while make deliveredCid %v", err)
+		voteOption = oracletypes.VOTE_OPTION_NO
 	}
-	log.Infof("deliveredCid: %s", deliveredCID)
 
 	msgVoteDataDelivery, err := makeDataDeliveryVote(
 		e.reactor.OracleAcc().GetAddress(),

@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	dealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
-	"github.com/medibloc/panacea-core/v2/x/oracle/types"
+	types "github.com/medibloc/panacea-core/v2/x/datadeal/types"
+	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -41,8 +41,8 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	log.Info("DataDelivery EventHandler Start")
 
-	dealIDStr := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDealID][0]
-	dataHash := event.Events[dealtypes.EventTypeDataDeliveryVote+"."+dealtypes.AttributeKeyDataHash][0]
+	dealIDStr := event.Events[types.EventTypeDataDeliveryVote+"."+types.AttributeKeyDealID][0]
+	dataHash := event.Events[types.EventTypeDataDeliveryVote+"."+types.AttributeKeyDataHash][0]
 
 	dealID, err := strconv.ParseUint(dealIDStr, 10, 64)
 	if err != nil {
@@ -89,22 +89,22 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 }
 
-func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *dealtypes.DataSale) types.VoteOption {
-	if dataSale.Status != dealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return types.VOTE_OPTION_NO
+func (e DataDeliveryVoteEvent) verifyDataSaleAndGetVoteOption(dataSale *types.DataSale) oracletypes.VoteOption {
+	if dataSale.Status != types.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
+		return oracletypes.VOTE_OPTION_NO
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return types.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO
 	}
 
-	return types.VOTE_OPTION_YES
+	return oracletypes.VOTE_OPTION_YES
 
 }
 
-func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
+func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *types.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
 	// get encrypted data from ipfs
-	encryptedDataWithSellerKey, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
+	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		return "", err
 	}
@@ -129,7 +129,7 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, or
 		return "", err
 	}
 
-	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataWithSellerKey)
+	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataBz)
 	if err != nil {
 		return "", err
 	}
@@ -162,13 +162,13 @@ func (e DataDeliveryVoteEvent) makeDeliveredCid(dataSale *dealtypes.DataSale, or
 	return deliveredCid, nil
 }
 
-func makeDataDeliveryVote(voterAddr, dataHash, DeliveredCid string, dealID uint64, voteOption types.VoteOption, oraclePrivKey []byte) (*dealtypes.MsgVoteDataDelivery, error) {
+func makeDataDeliveryVote(voterAddress, dataHash, deliveredCid string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*types.MsgVoteDataDelivery, error) {
 
-	dataDeliveryVote := &dealtypes.DataDeliveryVote{
-		VoterAddress: voterAddr,
+	dataDeliveryVote := &types.DataDeliveryVote{
+		VoterAddress: voterAddress,
 		DealId:       dealID,
 		DataHash:     dataHash,
-		DeliveredCid: DeliveredCid,
+		DeliveredCid: deliveredCid,
 		VoteOption:   voteOption,
 	}
 
@@ -186,7 +186,7 @@ func makeDataDeliveryVote(voterAddr, dataHash, DeliveredCid string, dealID uint6
 		return nil, err
 	}
 
-	msgVoteDataDelivery := &dealtypes.MsgVoteDataDelivery{
+	msgVoteDataDelivery := &types.MsgVoteDataDelivery{
 		DataDeliveryVote: dataDeliveryVote,
 		Signature:        sig,
 	}
@@ -194,7 +194,7 @@ func makeDataDeliveryVote(voterAddr, dataHash, DeliveredCid string, dealID uint6
 	return msgVoteDataDelivery, nil
 }
 
-func (e DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *dealtypes.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
+func (e DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *types.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataDelivery)
 	if err != nil {
@@ -212,10 +212,10 @@ func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txByt
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("vote trasnsaction failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("data delivery vote trasnsaction failed: %v", resp.TxResponse.RawLog)
 	}
 
-	log.Infof("transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
+	log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
 
 	return nil
 }

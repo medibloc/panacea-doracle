@@ -1,4 +1,4 @@
-package event
+package oracle
 
 import (
 	"bytes"

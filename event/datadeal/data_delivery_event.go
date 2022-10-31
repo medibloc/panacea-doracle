@@ -90,7 +90,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
-		if err == datadealtypes.ErrDataSaleNotFound {
+		if errors.Is(err, datadealtypes.ErrDataSaleNotFound) {
 			return oracletypes.VOTE_OPTION_NO, "", err
 		} else {
 			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
@@ -98,7 +98,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 	}
 
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_NO, "", errors.New("datasale status is not DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD")
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", errors.New("datasale status is not DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD")
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
@@ -107,7 +107,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
 	if err != nil {
-		if err == datadealtypes.ErrDealNotFound {
+		if errors.Is(err, datadealtypes.ErrDealNotFound) {
 			return oracletypes.VOTE_OPTION_NO, "", err
 		} else {
 			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err

@@ -54,7 +54,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
 			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 		} else {
-			log.Infof("vote NO due to error while verify: %v", err)
+			log.Infof("vote NO due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 		}
 	}
 
@@ -67,18 +67,18 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		e.reactor.OraclePrivKey().Serialize(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("make DataDeliveryVote failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
 	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
 	if err != nil {
-		return err
+		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
 	if err := e.broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
-		return err
+		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
 	return nil

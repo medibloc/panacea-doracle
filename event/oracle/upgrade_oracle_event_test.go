@@ -24,10 +24,11 @@ type upgradeOracleEventTestSuite struct {
 	chainID           string
 	validatorMnemonic string
 	uniqueID          string
+	upgradeUniqueID   string
 }
 
 func TestUpgradeOracleEvent(t *testing.T) {
-	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init.sh")
+	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init-upgrade.sh")
 	require.NoError(t, err)
 
 	chainID := "testing"
@@ -36,6 +37,7 @@ func TestUpgradeOracleEvent(t *testing.T) {
 	validatorMnemonic, err := bip39.NewMnemonic(entropy)
 	require.NoError(t, err)
 	uniqueID := "uniqueID"
+	upgradeUniqueID := "upgradeUniqueID"
 
 	suite.Run(t, &upgradeOracleEventTestSuite{
 		suite.NewTestSuite(
@@ -44,12 +46,33 @@ func TestUpgradeOracleEvent(t *testing.T) {
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
 				fmt.Sprintf("MNEMONIC=%s", validatorMnemonic),
 				fmt.Sprintf("UNIQUE_ID=%s", uniqueID),
+				fmt.Sprintf("UPGRADE_UNIQUE_ID=%s", upgradeUniqueID),
 			},
 		),
 		chainID,
 		validatorMnemonic,
 		uniqueID,
+		upgradeUniqueID,
 	})
+}
+
+func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidReport() {
+	trustedBlockInfo, conf := suite.prepare()
+
+	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
+	require.NoError(suite.T(), err)
+
+	oracleRegistration := &oracletypes.OracleRegistration{
+		UniqueId:           suite.upgradeUniqueID,
+		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
+		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
+	}
+
+	e := NewUpgradeOracleEvent(svc)
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
+
+	require.Error(suite.T(), err, "failed to verification report.")
+	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
 func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
@@ -59,6 +82,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrust
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &oracletypes.OracleRegistration{
+		UniqueId:           suite.upgradeUniqueID,
 		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
 		TrustedBlockHash:   []byte("invalid"),
 	}
@@ -66,7 +90,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrust
 	e := NewUpgradeOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.NoError(suite.T(), err)
+	require.Error(suite.T(), err, "failed to verify trusted block information.")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
@@ -77,14 +101,15 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTruste
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &oracletypes.OracleRegistration{
-		TrustedBlockHeight: 100,
+		UniqueId:           suite.upgradeUniqueID,
+		TrustedBlockHeight: 1,
 		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
 	}
 
 	e := NewUpgradeOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.NoError(suite.T(), err)
+	require.Error(suite.T(), err, "failed to verify trusted block information.")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
@@ -95,7 +120,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotExistUpgr
 	require.NoError(suite.T(), err)
 
 	oracleRegistration := &oracletypes.OracleRegistration{
-		UniqueId:           suite.uniqueID,
+		UniqueId:           suite.upgradeUniqueID,
 		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
 		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
 	}
@@ -104,7 +129,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotExistUpgr
 
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.NoError(suite.T(), err)
+	require.Error(suite.T(), err)
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 

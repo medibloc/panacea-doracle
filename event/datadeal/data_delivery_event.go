@@ -53,9 +53,11 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash, oraclePrivKey)
 	if err != nil {
-		log.Errorf("error while verify: %v", err)
 		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
+			log.Errorf("can't vote due to error while verify: %v", err)
 			return err
+		} else {
+			log.Infof("vote NO due to error while verify: %v", err)
 		}
 	}
 

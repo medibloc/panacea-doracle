@@ -104,7 +104,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return oracletypes.VOTE_OPTION_NO, "", errors.New("there is no verifiavleCid")
+		return oracletypes.VOTE_OPTION_NO, "", errors.New("there is no verifiableCid")
 	}
 
 	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)

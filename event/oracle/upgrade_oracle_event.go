@@ -2,6 +2,8 @@ package oracle
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -51,7 +53,15 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 	if err != nil {
-		return err
+		switch voteOption {
+		case oracletypes.VOTE_OPTION_NO:
+			log.Infof("vote No due to error while verify: %v", err)
+		case oracletypes.VOTE_OPTION_UNSPECIFIED:
+			log.Errorf("can't vote due to error whiile verify: %v", err)
+			return err
+		default:
+			log.Warnf("if an error occurs, no other voteOption is possible. voteOption(%s), err(%v)", voteOption, err)
+		}
 	}
 
 	msgVoteOracleRegistration, err := makeOracleRegistrationVote(
@@ -67,7 +77,11 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	log.Infof("generated msgVoteOracleRegistration. %s", msgVoteOracleRegistration)
+	log.Infof("oracle upgrade voting info. uniqueID(%s), votingTargetAddress(%s), voteOption(%s)",
+		msgVoteOracleRegistration.OracleRegistrationVote.UniqueId,
+		msgVoteOracleRegistration.OracleRegistrationVote.VotingTargetAddress,
+		msgVoteOracleRegistration.OracleRegistrationVote.VoteOption,
+	)
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
@@ -87,41 +101,37 @@ func (e UpgradeOracleEvent) verifyAndGetVoteOption(r *oracletypes.OracleRegistra
 	upgradeInfo, err := e.reactor.QueryClient().GetOracleUpgradeInfo()
 	if err != nil {
 		if errors.Is(err, panacea.ErrEmptyValue) {
-			log.Infof("not exist oracle upgrade info")
-			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("")
+			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found oracle upgrade info. %w", err)
 		}
-		log.Errorf("failed to get oracle upgrade info. %v", err)
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, fmt.Errorf("failed to get oracle upgrade info. %v", err)
 	}
 	if upgradeInfo.UniqueId != r.UniqueId {
-		log.Infof("oracle's uniqueID does not match the uniqueID being upgraded. expected uniqueID(%s), oracle's uniqueID(%s), ",
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("oracle's uniqueID does not match the uniqueID being upgraded. expected uniqueID(%s), oracle's uniqueID(%s), ",
 			upgradeInfo.UniqueId,
 			r.UniqueId)
-		return oracletypes.VOTE_OPTION_NO, nil
 	}
 
 	block, err := e.reactor.QueryClient().GetLightBlock(r.TrustedBlockHeight)
 	if err != nil {
 		switch err {
 		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
-			return oracletypes.VOTE_OPTION_NO, nil
+			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found light block. %w", err)
 		default:
 			return oracletypes.VOTE_OPTION_UNSPECIFIED, err
 		}
 	}
 
 	if !bytes.Equal(block.Hash().Bytes(), r.TrustedBlockHash) {
-		log.Warnf("failed to verify trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to verify trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
 			r.TrustedBlockHeight,
 			hex.EncodeToString(block.Hash().Bytes()),
 			hex.EncodeToString(r.TrustedBlockHash),
 		)
-		return oracletypes.VOTE_OPTION_NO, nil
 	}
 
-	if err := e.VerifyRemoteReport(r.NodePubKeyRemoteReport, r.NodePubKey, r.UniqueId); err != nil {
-		log.Warnf("failed to verification report. uniqueID(%s), address(%s), err(%v)", r.UniqueId, r.Address, err)
-		return oracletypes.VOTE_OPTION_NO, nil
+	nodePubKeyHash := sha256.Sum256(r.NodePubKey)
+	if err := e.VerifyRemoteReport(r.NodePubKeyRemoteReport, nodePubKeyHash[:], r.UniqueId); err != nil {
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to verification report. uniqueID(%s), address(%s), err(%v)", r.UniqueId, r.Address, err)
 	} else {
 		return oracletypes.VOTE_OPTION_YES, nil
 	}
@@ -151,7 +161,10 @@ func (e UpgradeOracleEvent) VerifyRemoteReport(reportBytes, expectedData []byte,
 		return fmt.Errorf("invalid unique ID in the report")
 	}
 	if !bytes.Equal(report.Data[:len(expectedData)], expectedData) {
-		return fmt.Errorf("invalid data in the report")
+		return fmt.Errorf("invalid data in the report. expected(%s), got(%s)",
+			base64.StdEncoding.EncodeToString(expectedData),
+			base64.StdEncoding.EncodeToString(report.Data[:len(expectedData)]),
+		)
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package datadeal
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -52,7 +53,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash, oraclePrivKey)
 	if err != nil {
-		log.Infof("error while verify: %v", err)
+		log.Errorf("error while verify: %v", err)
 		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
 			return err
 		}
@@ -97,11 +98,11 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 	}
 
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_NO, "", nil
+		return oracletypes.VOTE_OPTION_NO, "", errors.New("datasale status is not DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD")
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
-		return oracletypes.VOTE_OPTION_NO, "", nil
+		return oracletypes.VOTE_OPTION_NO, "", errors.New("there is no verifiavleCid")
 	}
 
 	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
@@ -113,7 +114,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 		}
 	}
 
-	deliveredCID, err := e.makeDeliveredCid(deal, dataSale, oraclePrivKey)
+	deliveredCID, err := e.convertBuyerDataAndAddToIpfs(deal, dataSale, oraclePrivKey)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("error while make deliveredCid: %v", err)
 	}
@@ -122,7 +123,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 }
 
-func (e DataDeliveryVoteEvent) makeDeliveredCid(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
+func (e DataDeliveryVoteEvent) convertBuyerDataAndAddToIpfs(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
 	// get encrypted data from ipfs
 	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {

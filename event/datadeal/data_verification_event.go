@@ -153,7 +153,7 @@ func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	decryptedData, err := d.convertSellerData(deal, dataSale)
 	if err != nil {
-		log.Infof("failed to decrypt seller data")
+		log.Infof("failed to decrypt seller data, error (%s)", err)
 		return oracletypes.VOTE_OPTION_NO
 	}
 

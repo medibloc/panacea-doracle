@@ -35,7 +35,7 @@ func (e UpgradeOracleEvent) GetEventAttributeKey() string {
 }
 
 func (e UpgradeOracleEvent) GetEventAttributeValue() string {
-	return "'UpgradeOracle'"
+	return "'OracleUpgrade'"
 }
 
 func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
@@ -45,7 +45,7 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	oracleRegistration, err := queryClient.GetOracleRegistration(addressValue, uniqueID)
 	if err != nil {
-		log.Infof("failed to get oracleRegistration, voting ignored. uniqueID(%s), address(%s)", uniqueID, addressValue)
+		log.Infof("failed to get oracleRegistration, voting ignored. uniqueID(%s), address(%s). %v", uniqueID, addressValue, err)
 		return err
 	}
 
@@ -67,6 +67,8 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
+	log.Infof("generated msgVoteOracleRegistration. %s", msgVoteOracleRegistration)
+
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
 	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
@@ -86,7 +88,7 @@ func (e UpgradeOracleEvent) verifyAndGetVoteOption(r *oracletypes.OracleRegistra
 	if err != nil {
 		if errors.Is(err, panacea.ErrEmptyValue) {
 			log.Infof("not exist oracle upgrade info")
-			return oracletypes.VOTE_OPTION_NO, nil
+			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("")
 		}
 		log.Errorf("failed to get oracle upgrade info. %v", err)
 		return oracletypes.VOTE_OPTION_UNSPECIFIED, err

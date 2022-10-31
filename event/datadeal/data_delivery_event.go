@@ -49,13 +49,10 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	oraclePrivKey := e.reactor.OraclePrivKey()
-
-	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash, oraclePrivKey)
+	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
 		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
-			log.Errorf("can't vote due to error while verify: %v", err)
-			return err
+			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 		} else {
 			log.Infof("vote NO due to error while verify: %v", err)
 		}
@@ -67,7 +64,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		deliveredCid,
 		dealID,
 		voteOption,
-		oraclePrivKey.Serialize(),
+		e.reactor.OraclePrivKey().Serialize(),
 	)
 	if err != nil {
 		return err
@@ -88,7 +85,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 }
 
-func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string, oraclePrivKey *btcec.PrivateKey) (oracletypes.VoteOption, string, error) {
+func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, string, error) {
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
@@ -116,7 +113,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 		}
 	}
 
-	deliveredCID, err := e.convertBuyerDataAndAddToIpfs(deal, dataSale, oraclePrivKey)
+	deliveredCID, err := e.convertBuyerDataAndAddToIpfs(deal, dataSale, e.reactor.OraclePrivKey())
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("error while make deliveredCid: %v", err)
 	}

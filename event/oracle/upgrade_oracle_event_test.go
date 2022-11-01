@@ -56,7 +56,7 @@ func TestUpgradeOracleEvent(t *testing.T) {
 	})
 }
 
-func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidReport() {
+func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotFoundOracleUpgradeInfo() {
 	trustedBlockInfo, conf := suite.prepare()
 
 	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
@@ -71,65 +71,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidRepor
 	e := NewUpgradeOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.Error(suite.T(), err, "failed to verification report.")
-	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
-}
-
-func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
-	trustedBlockInfo, conf := suite.prepare()
-
-	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
-	require.NoError(suite.T(), err)
-
-	oracleRegistration := &oracletypes.OracleRegistration{
-		UniqueId:           suite.upgradeUniqueID,
-		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
-		TrustedBlockHash:   []byte("invalid"),
-	}
-
-	e := NewUpgradeOracleEvent(svc)
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-
-	require.Error(suite.T(), err, "failed to verify trusted block information.")
-	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
-}
-
-func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
-	trustedBlockInfo, conf := suite.prepare()
-
-	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
-	require.NoError(suite.T(), err)
-
-	oracleRegistration := &oracletypes.OracleRegistration{
-		UniqueId:           suite.upgradeUniqueID,
-		TrustedBlockHeight: 1,
-		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
-	}
-
-	e := NewUpgradeOracleEvent(svc)
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-
-	require.Error(suite.T(), err, "failed to verify trusted block information.")
-	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
-}
-
-func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotExistUpgradeInfo() {
-	trustedBlockInfo, conf := suite.prepare()
-
-	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
-	require.NoError(suite.T(), err)
-
-	oracleRegistration := &oracletypes.OracleRegistration{
-		UniqueId:           suite.upgradeUniqueID,
-		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
-		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
-	}
-
-	e := NewUpgradeOracleEvent(svc)
-
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-
-	require.Error(suite.T(), err)
+	require.ErrorContains(suite.T(), err, "not found oracle upgrade info.")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 

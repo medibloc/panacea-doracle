@@ -53,7 +53,14 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption := d.verifyAndGetVoteOption(dealID, dataHash)
+	voteOption, err := d.verifyAndGetVoteOption(dealID, dataHash)
+	if err != nil {
+		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
+			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
+		} else {
+			log.Infof("vote NO due to error while verifying. dealID(%d). dataHash(%s)", dealID, dataHash)
+		}
+	}
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
 		d.reactor.OracleAcc().GetAddress(),
@@ -98,21 +105,24 @@ func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decrypt
 func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *types.DataSale) ([]byte, error) {
 	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
-		return nil, err
+		log.Infof("failed to get data from IPFS: %v", err)
+		return nil, nil
 	}
 
 	oraclePrivKey := d.reactor.OraclePrivKey()
 
 	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
-		return nil, err
+		log.Infof("failed to get account from panacea: %v", err)
+		return nil, nil
 	}
 
 	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
 
 	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
 	if err != nil {
-		return nil, err
+		log.Infof("failed to parsing sellerPubKey: %v", err)
+		return nil, nil
 	}
 
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
@@ -125,50 +135,40 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 	return decryptedData, nil
 }
 
-func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) oracletypes.VoteOption {
+func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := d.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
-		if errors.Is(err, types.ErrDataSaleNotFound) {
-			log.Infof("failed to find deal (%d)", dealID)
-			return oracletypes.VOTE_OPTION_NO
-		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED
-		}
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
 	}
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
-		if errors.Is(err, types.ErrDataSaleNotFound) {
-			log.Infof("failed to find dataSale (%s)", dataHash)
-			return oracletypes.VOTE_OPTION_NO
-		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED
-		}
+		log.Infof("failed to find dataSale (%s)", dataHash)
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
 	}
 
 	if dataSale.Status != types.DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD {
-		log.Info("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
-		return oracletypes.VOTE_OPTION_UNSPECIFIED
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
 	}
 
 	decryptedData, err := d.convertSellerData(deal, dataSale)
 	if err != nil {
 		log.Infof("failed to decrypt seller data, error (%s)", err)
-		return oracletypes.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO, err
 	}
 
 	if !d.compareDataHash(dataSale, decryptedData) {
 		log.Infof("invalid data hash")
-		return oracletypes.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO, err
 	}
 
 	err = validation.ValidateJSONSchemata(decryptedData, deal.DataSchema)
 	if err != nil {
 		log.Infof("failed to verify data. error(%s)", err)
-		return oracletypes.VOTE_OPTION_NO
+		return oracletypes.VOTE_OPTION_NO, err
 	}
 
-	return oracletypes.VOTE_OPTION_YES
+	return oracletypes.VOTE_OPTION_YES, nil
 }
 
 func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*types.MsgVoteDataVerification, error) {

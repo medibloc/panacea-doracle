@@ -28,7 +28,7 @@ type upgradeOracleEventTestSuite struct {
 }
 
 func TestUpgradeOracleEvent(t *testing.T) {
-	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init-upgrade.sh")
+	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
 	chainID := "testing"

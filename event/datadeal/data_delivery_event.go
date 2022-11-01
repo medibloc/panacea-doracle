@@ -89,11 +89,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
-		if errors.Is(err, datadealtypes.ErrDataSaleNotFound) {
-			return oracletypes.VOTE_OPTION_NO, "", err
-		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
-		}
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
 	}
 
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {

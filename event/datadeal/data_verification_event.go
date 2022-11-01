@@ -77,11 +77,11 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	txBytes, err := generateTxBytes(msgVoteDataVerification, d.reactor.OracleAcc().GetPrivKey(), d.reactor.Config(), txBuilder)
 	if err != nil {
-		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
 	if err := broadcastTx(d.reactor.GRPCClient(), txBytes); err != nil {
-		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
 	return nil
@@ -138,7 +138,8 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := d.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
+		log.Infof("failed to find deal (%d)", dealID)
+		return oracletypes.VOTE_OPTION_NO, nil
 	}
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
@@ -153,7 +154,7 @@ func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	decryptedData, err := d.convertSellerData(deal, dataSale)
 	if err != nil {
-		log.Infof("failed to decrypt seller data, error (%s)", err)
+		log.Infof("failed to decrypt seller data, error (%v)", err)
 		return oracletypes.VOTE_OPTION_NO, err
 	}
 

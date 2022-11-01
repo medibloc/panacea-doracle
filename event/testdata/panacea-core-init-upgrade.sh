@@ -19,6 +19,7 @@ sed -i 's|^cors_allowed_origins = .*|cors_allowed_origins = \["*"\]|g' ~/.panace
 sed -i 's|^enable = false$|enable = true|g' ~/.panacea/config/app.toml
 sed -i 's|^enabled-unsafe-cors = false$|enabled-unsafe-cors = true|g' ~/.panacea/config/app.toml
 
-#sed -i 's|"oracle_upgrade_info".*|"oracle_upgrade_info": {"height":"100","unique_id":"'"${UPGRADE_UNIQUE_ID}"'"}|g' ~/.panacea/config/genesis.json
+sed -i 's|"oracle_upgrade_info".*|"oracle_upgrade_info": {"height":"100","unique_id":"'"${UPGRADE_UNIQUE_ID}"'"}|g' ~/.panacea/config/genesis.json
+cat ~/.panacea/config/genesis.json
 
 panacead start

@@ -57,10 +57,17 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		case oracletypes.VOTE_OPTION_NO:
 			log.Infof("vote No due to error while verify: %v", err)
 		case oracletypes.VOTE_OPTION_UNSPECIFIED:
-			log.Errorf("can't vote due to error whiile verify: %v", err)
+			log.Errorf("can't vote due to error whiile verify. uniqueID(%s), votingTargetAddress(%s), error(%v)",
+				uniqueID,
+				addressValue,
+				err)
 			return err
 		default:
-			log.Warnf("if an error occurs, no other voteOption is possible. voteOption(%s), err(%v)", voteOption, err)
+			log.Warnf("if an error occurs, no other voteOption is possible. uniqueID(%s), votingTargetAddress(%s) voteOption(%s), err(%v)",
+				uniqueID,
+				addressValue,
+				voteOption,
+				err)
 		}
 	}
 

@@ -96,7 +96,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 		return oracletypes.VOTE_OPTION_NO, "", errors.New("there is no verifiableCid")
 	}
 
-	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
+	deal, err := e.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get deal. %v", err)
 	}

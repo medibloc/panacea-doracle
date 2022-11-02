@@ -55,11 +55,7 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, err := d.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
-		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
-			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
-		} else {
-			log.Infof("vote NO due to error while verifying. dealID(%d). dataHash(%s)", dealID, dataHash)
-		}
+		return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
 	}
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
@@ -136,27 +132,21 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := d.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
-		if errors.Is(err, panacea.ErrEmptyValue) {
-			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found deal. %v", err)
-		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED, fmt.Errorf("failed to get deal. %v", err)
-		}
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get deal. %v", err)
 	}
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
-		log.Infof("failed to get dataSale (%s)", dataHash)
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get dataSale (%v)", err)
 	}
 
 	if dataSale.Status != types.DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
+		return oracletypes.VOTE_OPTION_NO, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
 	}
 
 	decryptedData, err := d.convertSellerData(deal, dataSale)
 	if err != nil {
-		log.Infof("failed to decrypt seller data, error (%v)", err)
-		return oracletypes.VOTE_OPTION_NO, err
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to decrypt seller data, error (%v)", err)
 	}
 
 	if !d.compareDataHash(dataSale, decryptedData) {

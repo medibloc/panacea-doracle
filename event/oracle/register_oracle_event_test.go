@@ -62,7 +62,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrus
 	e := NewRegisterOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.NoError(suite.T(), err)
+	require.ErrorContains(suite.T(), err, "failed to verify trusted block information")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 
@@ -80,7 +80,7 @@ func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrust
 	e := NewRegisterOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.NoError(suite.T(), err)
+	require.ErrorContains(suite.T(), err, "not found light block.")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 

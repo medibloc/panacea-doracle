@@ -21,7 +21,7 @@ func TestMakeOracleRegistrationVoteYes(t *testing.T) {
 	nodePrivKey, _ := btcec.NewPrivateKey(btcec.S256())
 	nodePubKey := nodePrivKey.PubKey().SerializeCompressed()
 	nonce := []byte("123412341234")
-	orv, err := makeOracleRegistrationVote(uniqueID, address, address, voteOption, oraclePrivKey.Serialize(), nodePubKey, nonce)
+	orv, err := makeMsgVoteOracleRegistration(uniqueID, address, address, voteOption, oraclePrivKey.Serialize(), nodePubKey, nonce)
 
 	require.NoError(t, err)
 	require.Equal(t, uniqueID, orv.OracleRegistrationVote.UniqueId)
@@ -41,7 +41,7 @@ func TestMakeOracleRegistrationVoteNo(t *testing.T) {
 	nodePrivKey, _ := btcec.NewPrivateKey(btcec.S256())
 	nodePubKey := nodePrivKey.PubKey().SerializeCompressed()
 	nonce := []byte("123412341234")
-	orv, err := makeOracleRegistrationVote(uniqueID, address, address, voteOption, oraclePrivKey.Serialize(), nodePubKey, nonce)
+	orv, err := makeMsgVoteOracleRegistration(uniqueID, address, address, voteOption, oraclePrivKey.Serialize(), nodePubKey, nonce)
 
 	require.NoError(t, err)
 	require.Equal(t, uniqueID, orv.OracleRegistrationVote.UniqueId)

@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/medibloc/panacea-doracle/config"
 )
 
 type TxBuilder struct {
@@ -18,6 +19,17 @@ func NewTxBuilder(client QueryClient) *TxBuilder {
 	return &TxBuilder{
 		client: client,
 	}
+}
+
+// GenerateTxBytes generates transaction byte array.
+func (tb TxBuilder) GenerateTxBytes(privKey cryptotypes.PrivKey, conf *config.Config, msg ...sdk.Msg) ([]byte, error) {
+	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+	txBytes, err := tb.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msg...)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
 }
 
 // GenerateSignedTxBytes signs msgs using the private key and returns the signed Tx message in form of byte array.

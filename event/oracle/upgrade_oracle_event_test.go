@@ -71,7 +71,7 @@ func (suite *upgradeOracleEventTestSuite) TestVerifyAndGetVoteOptionNotFoundOrac
 	e := NewUpgradeOracleEvent(svc)
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 
-	require.ErrorContains(suite.T(), err, "not found oracle upgrade info.")
+	require.ErrorContains(suite.T(), err, "failed to get oracle upgrade info.")
 	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
 }
 

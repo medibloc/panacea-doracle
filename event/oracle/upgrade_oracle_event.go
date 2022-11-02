@@ -2,18 +2,16 @@ package oracle
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"github.com/edgelesssys/ego/enclave"
-	"github.com/medibloc/panacea-doracle/sgx"
-	"github.com/tendermint/tendermint/light/provider"
 
+	"github.com/edgelesssys/ego/enclave"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
+	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
+	"github.com/medibloc/panacea-doracle/sgx"
 	log "github.com/sirupsen/logrus"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -42,111 +40,93 @@ func (e UpgradeOracleEvent) GetEventAttributeValue() string {
 
 func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	uniqueID := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyUniqueID][0]
-	addressValue := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyOracleAddress][0]
-	queryClient := e.reactor.QueryClient()
+	votingTargetAddress := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
-	oracleRegistration, err := queryClient.GetOracleRegistration(addressValue, uniqueID)
-	if err != nil {
-		log.Infof("failed to get oracleRegistration, voting ignored. uniqueID(%s), address(%s). %v", uniqueID, addressValue, err)
-		return err
-	}
-
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-	if err != nil {
-		switch voteOption {
-		case oracletypes.VOTE_OPTION_NO:
-			log.Infof("vote No due to error while verify: %v", err)
-		case oracletypes.VOTE_OPTION_UNSPECIFIED:
-			log.Errorf("can't vote due to error whiile verify. uniqueID(%s), votingTargetAddress(%s), error(%v)",
-				uniqueID,
-				addressValue,
-				err)
-			return err
-		default:
-			log.Warnf("if an error occurs, no other voteOption is possible. uniqueID(%s), votingTargetAddress(%s) voteOption(%s), err(%v)",
-				uniqueID,
-				addressValue,
-				voteOption,
-				err)
-		}
-	}
-
-	msgVoteOracleRegistration, err := makeOracleRegistrationVote(
-		uniqueID,
-		e.reactor.OracleAcc().GetAddress(),
-		addressValue,
-		voteOption,
-		e.reactor.OraclePrivKey().Serialize(),
-		oracleRegistration.NodePubKey,
-		oracleRegistration.Nonce,
-	)
+	msgVoteOracleRegistration, err := e.verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("oracle upgrade voting info. uniqueID(%s), votingTargetAddress(%s), voteOption(%s)",
+	log.Infof("oracle upgrade voting info. uniqueID(%s), voterAddress(%s), votingTargetAddress(%s), voteOption(%s)",
 		msgVoteOracleRegistration.OracleRegistrationVote.UniqueId,
+		msgVoteOracleRegistration.OracleRegistrationVote.VoterAddress,
 		msgVoteOracleRegistration.OracleRegistrationVote.VotingTargetAddress,
 		msgVoteOracleRegistration.OracleRegistrationVote.VoteOption,
 	)
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
-
-	txBytes, err := generateTxBytes(msgVoteOracleRegistration, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
+	txBytes, err := txBuilder.GenerateTxBytes(e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), msgVoteOracleRegistration)
 	if err != nil {
 		return err
 	}
 
-	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
+	if err := e.broadcastTx(txBytes); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (e UpgradeOracleEvent) verifyAndGetVoteOption(r *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
-	upgradeInfo, err := e.reactor.QueryClient().GetOracleUpgradeInfo()
+func (e UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+	queryClient := e.reactor.QueryClient()
+	voterAddress := e.reactor.OracleAcc().GetAddress()
+	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
+
+	oracleRegistration, err := queryClient.GetOracleRegistration(votingTargetAddress, uniqueID)
 	if err != nil {
-		if errors.Is(err, panacea.ErrEmptyValue) {
-			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found oracle upgrade info. %w", err)
-		}
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, fmt.Errorf("failed to get oracle upgrade info. %v", err)
+		log.Infof("failed to get oracleRegistration. uniqueID(%s), address(%s). %v", uniqueID, votingTargetAddress, err)
+		return makeMsgVoteOracleRegistrationVoteTypeNo(uniqueID, voterAddress, votingTargetAddress, oraclePrivKeyBz)
 	}
-	if upgradeInfo.UniqueId != r.UniqueId {
+
+	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
+	if err != nil {
+		log.Infof("vote No due to error while verify: %v", err)
+	}
+
+	return makeMsgVoteOracleRegistration(
+		uniqueID,
+		voterAddress,
+		votingTargetAddress,
+		voteOption,
+		oraclePrivKeyBz,
+		oracleRegistration.NodePubKey,
+		oracleRegistration.Nonce,
+	)
+
+}
+
+func (e UpgradeOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+	queryClient := e.reactor.QueryClient()
+	upgradeInfo, err := queryClient.GetOracleUpgradeInfo()
+	if err != nil {
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get oracle upgrade info. %v", err)
+	}
+	if upgradeInfo.UniqueId != oracleRegistration.UniqueId {
 		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("oracle's uniqueID does not match the uniqueID being upgraded. expected uniqueID(%s), oracle's uniqueID(%s), ",
 			upgradeInfo.UniqueId,
-			r.UniqueId)
-	}
-
-	block, err := e.reactor.QueryClient().GetLightBlock(r.TrustedBlockHeight)
-	if err != nil {
-		switch err {
-		case provider.ErrLightBlockNotFound, provider.ErrHeightTooHigh:
-			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found light block. %w", err)
-		default:
-			return oracletypes.VOTE_OPTION_UNSPECIFIED, err
-		}
-	}
-
-	if !bytes.Equal(block.Hash().Bytes(), r.TrustedBlockHash) {
-		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to verify trusted block information. height(%v), expected block hash(%s), got block hash(%s)",
-			r.TrustedBlockHeight,
-			hex.EncodeToString(block.Hash().Bytes()),
-			hex.EncodeToString(r.TrustedBlockHash),
+			oracleRegistration.UniqueId,
 		)
 	}
 
-	nodePubKeyHash := sha256.Sum256(r.NodePubKey)
-	if err := e.VerifyRemoteReport(r.NodePubKeyRemoteReport, nodePubKeyHash[:], r.UniqueId); err != nil {
-		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to verification report. uniqueID(%s), address(%s), err(%v)", r.UniqueId, r.Address, err)
-	} else {
-		return oracletypes.VOTE_OPTION_YES, nil
+	if err := verifyTrustedBlockInfo(queryClient, oracleRegistration.TrustedBlockHeight, oracleRegistration.TrustedBlockHash); err != nil {
+		return oracletypes.VOTE_OPTION_NO, err
 	}
+
+	if err := e.verifyRemoteReport(oracleRegistration); err != nil {
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to verification report. uniqueID(%s), address(%s), err(%v)", oracleRegistration.UniqueId, oracleRegistration.Address, err)
+	}
+
+	return oracletypes.VOTE_OPTION_YES, nil
+
 }
 
-func (e UpgradeOracleEvent) VerifyRemoteReport(reportBytes, expectedData []byte, expectedUniqueID string) error {
+func (e UpgradeOracleEvent) verifyRemoteReport(oracleRegistration *oracletypes.OracleRegistration) error {
+	reportBz := oracleRegistration.NodePubKeyRemoteReport
+	expectedNodePubKeyHash := crypto.KDFSHA256(oracleRegistration.NodePubKey)
+	expectedUniqueID := oracleRegistration.UniqueId
+
 	enclaveInfo := e.reactor.EnclaveInfo()
-	report, err := enclave.VerifyRemoteReport(reportBytes)
+	report, err := enclave.VerifyRemoteReport(reportBz)
 	if err != nil {
 		return err
 	}
@@ -167,12 +147,27 @@ func (e UpgradeOracleEvent) VerifyRemoteReport(reportBytes, expectedData []byte,
 	if !bytes.Equal(report.UniqueID, uniqueID) {
 		return fmt.Errorf("invalid unique ID in the report")
 	}
-	if !bytes.Equal(report.Data[:len(expectedData)], expectedData) {
+	if !bytes.Equal(report.Data[:len(expectedNodePubKeyHash)], expectedNodePubKeyHash) {
 		return fmt.Errorf("invalid data in the report. expected(%s), got(%s)",
-			base64.StdEncoding.EncodeToString(expectedData),
-			base64.StdEncoding.EncodeToString(report.Data[:len(expectedData)]),
+			base64.StdEncoding.EncodeToString(expectedNodePubKeyHash),
+			base64.StdEncoding.EncodeToString(report.Data[:len(expectedNodePubKeyHash)]),
 		)
 	}
+
+	return nil
+}
+
+// broadcastTx broadcast transaction to blockchain.
+func (e UpgradeOracleEvent) broadcastTx(txBz []byte) error {
+	resp, err := e.reactor.GRPCClient().BroadcastTx(txBz)
+	if err != nil {
+		return err
+	}
+	if resp.TxResponse.Code != 0 {
+		return fmt.Errorf("failed to oracleRegistrationVote transaction for oracle upgrade: %v", resp.TxResponse.RawLog)
+	}
+
+	log.Infof("succeeded to oracleRegistrationVote transaction for oracle upgrade. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
 
 	return nil
 }

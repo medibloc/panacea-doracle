@@ -46,7 +46,7 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	query := event.GetEventType() + "." + event.GetEventAttributeKey() + "=" + event.GetEventAttributeValue()
+	query := event.GetEventQuery()
 
 	txs, err := s.client.Subscribe(ctx, "", query)
 	if err != nil {

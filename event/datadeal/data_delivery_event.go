@@ -27,16 +27,8 @@ func NewDataDeliveryVoteEvent(s event.Reactor) DataDeliveryVoteEvent {
 	return DataDeliveryVoteEvent{s}
 }
 
-func (e DataDeliveryVoteEvent) GetEventType() string {
-	return "data_delivery"
-}
-
-func (e DataDeliveryVoteEvent) GetEventAttributeKey() string {
-	return "vote_status"
-}
-
-func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
-	return "'started'"
+func (e DataDeliveryVoteEvent) GetEventQuery() string {
+	return "tm.event='NewBlock' AND ata_delivery.vote_status='started'"
 }
 
 func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {

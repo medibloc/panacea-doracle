@@ -5,11 +5,6 @@ import (
 )
 
 type Event interface {
-	GetEventType() string
-
-	GetEventAttributeKey() string
-
-	GetEventAttributeValue() string
-
+	GetEventQuery() string
 	EventHandler(event ctypes.ResultEvent) error
 }

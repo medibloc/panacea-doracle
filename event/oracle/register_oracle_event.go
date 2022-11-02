@@ -41,16 +41,8 @@ func NewRegisterOracleEvent(r reactor) RegisterOracleEvent {
 	return RegisterOracleEvent{r}
 }
 
-func (e RegisterOracleEvent) GetEventType() string {
-	return "message"
-}
-
-func (e RegisterOracleEvent) GetEventAttributeKey() string {
-	return "action"
-}
-
-func (e RegisterOracleEvent) GetEventAttributeValue() string {
-	return "'RegisterOracle'"
+func (e RegisterOracleEvent) GetEventQuery() string {
+	return "message.action = 'RegisterOracle'"
 }
 
 func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {

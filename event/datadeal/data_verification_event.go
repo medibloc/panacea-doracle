@@ -32,16 +32,8 @@ func NewDataVerificationEvent(r event.Reactor) DataVerificationEvent {
 	return DataVerificationEvent{r}
 }
 
-func (d DataVerificationEvent) GetEventType() string {
-	return "message"
-}
-
-func (d DataVerificationEvent) GetEventAttributeKey() string {
-	return "action"
-}
-
-func (d DataVerificationEvent) GetEventAttributeValue() string {
-	return "'SellData'"
+func (d DataVerificationEvent) GetEventQuery() string {
+	return "message.action = 'SellData'"
 }
 
 func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {

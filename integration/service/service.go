@@ -85,3 +85,7 @@ func (s *TestServiceWithoutSGX) GRPCClient() *panacea.GrpcClient {
 func (s *TestServiceWithoutSGX) QueryClient() *panacea.QueryClient {
 	return s.queryClient
 }
+
+func (s *TestServiceWithoutSGX) Ipfs() *ipfs.Ipfs {
+	return s.ipfs
+}

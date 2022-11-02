@@ -1,6 +1,6 @@
 module github.com/medibloc/panacea-doracle
 
-go 1.17
+go 1.19
 
 require (
 	github.com/btcsuite/btcd v0.22.1
@@ -21,6 +21,11 @@ require (
 	github.com/tendermint/tm-db v0.6.7
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.48.0
+)
+
+require (
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 )
 
 require (
@@ -87,8 +92,6 @@ require (
 	github.com/libp2p/go-libp2p-core v0.6.1 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20181016162300-f8f6d4d2b643 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect

@@ -18,6 +18,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
+	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	sgxdb "github.com/medibloc/panacea-doracle/store/sgxleveldb"
@@ -403,9 +404,43 @@ func (q QueryClient) GetOracleUpgradeInfo() (*oracletypes.OracleUpgradeInfo, err
 	}
 
 	var oracleUpgradeInfo oracletypes.OracleUpgradeInfo
-	err = q.cdc.UnmarshalLengthPrefixed(oracleUpgradeInfoBz, &oracleUpgradeInfo)
-	if err != nil {
+	if err := q.cdc.UnmarshalLengthPrefixed(oracleUpgradeInfoBz, &oracleUpgradeInfo); err != nil {
 		return nil, err
 	}
 	return &oracleUpgradeInfo, nil
+}
+func (q QueryClient) GetDeal(dealID uint64) (*datadealtypes.Deal, error) {
+
+	key := datadealtypes.GetDealKey(dealID)
+
+	bz, err := q.GetStoreData(context.Background(), datadealtypes.StoreKey, key)
+	if err != nil {
+		return nil, err
+	}
+
+	var deal datadealtypes.Deal
+	err = q.cdc.UnmarshalLengthPrefixed(bz, &deal)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deal, nil
+}
+
+func (q QueryClient) GetDataSale(dealID uint64, dataHash string) (*datadealtypes.DataSale, error) {
+
+	key := datadealtypes.GetDataSaleKey(dataHash, dealID)
+
+	bz, err := q.GetStoreData(context.Background(), datadealtypes.StoreKey, key)
+	if err != nil {
+		return nil, err
+	}
+
+	var dataSale datadealtypes.DataSale
+	err = q.cdc.UnmarshalLengthPrefixed(bz, &dataSale)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dataSale, nil
 }

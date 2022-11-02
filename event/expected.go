@@ -3,6 +3,7 @@ package event
 import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
+	"github.com/medibloc/panacea-doracle/ipfs"
 	"github.com/medibloc/panacea-doracle/panacea"
 	"github.com/medibloc/panacea-doracle/sgx"
 )
@@ -15,4 +16,5 @@ type Reactor interface {
 	OraclePrivKey() *btcec.PrivateKey
 	Config() *config.Config
 	QueryClient() *panacea.QueryClient
+	Ipfs() *ipfs.Ipfs
 }

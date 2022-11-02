@@ -106,7 +106,7 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		log.Infof("failed to get data from IPFS: %v", err)
-		return nil, nil
+		return nil, err
 	}
 
 	oraclePrivKey := d.reactor.OraclePrivKey()
@@ -136,13 +136,16 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := d.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
-		log.Infof("failed to find deal (%d)", dealID)
-		return oracletypes.VOTE_OPTION_NO, nil
+		if errors.Is(err, panacea.ErrEmptyValue) {
+			return oracletypes.VOTE_OPTION_NO, fmt.Errorf("not found deal. %v", err)
+		} else {
+			return oracletypes.VOTE_OPTION_UNSPECIFIED, fmt.Errorf("failed to get deal. %v", err)
+		}
 	}
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
-		log.Infof("failed to find dataSale (%s)", dataHash)
+		log.Infof("failed to get dataSale (%s)", dataHash)
 		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
 	}
 

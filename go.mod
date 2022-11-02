@@ -135,6 +135,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
 	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
@@ -148,7 +149,7 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/medibloc/cosmos-sdk v0.45.4-panacea
+	github.com/cosmos/cosmos-sdk => github.com/medibloc/cosmos-sdk v0.45.9-panacea.1
 	github.com/cosmos/ledger-go => github.com/cosmos/ledger-go v0.9.3-0.20220721150524-52ff0c88619c
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2

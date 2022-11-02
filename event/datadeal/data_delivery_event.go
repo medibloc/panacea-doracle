@@ -70,6 +70,14 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		return fmt.Errorf("make DataDeliveryVote failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
+	log.Infof("data delivery vote info. dealID(%d), dataHash(%s), deliveredCid(%s),voterAddress(%s), voteOption(%s)",
+		msgVoteDataDelivery.DataDeliveryVote.DealId,
+		msgVoteDataDelivery.DataDeliveryVote.DataHash,
+		msgVoteDataDelivery.DataDeliveryVote.DeliveredCid,
+		msgVoteDataDelivery.DataDeliveryVote.VoterAddress,
+		msgVoteDataDelivery.DataDeliveryVote.VoteOption,
+	)
+
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
 	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)

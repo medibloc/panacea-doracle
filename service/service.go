@@ -123,3 +123,7 @@ func (s *Service) GRPCClient() *panacea.GrpcClient {
 func (s *Service) QueryClient() *panacea.QueryClient {
 	return s.queryClient
 }
+
+func (s *Service) Ipfs() *ipfs.Ipfs {
+	return s.ipfs
+}

@@ -113,16 +113,14 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 
 	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
-		log.Infof("failed to get account from panacea: %v", err)
-		return nil, nil
+		return nil, err
 	}
 
 	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
 
 	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
 	if err != nil {
-		log.Infof("failed to parsing sellerPubKey: %v", err)
-		return nil, nil
+		return nil, err
 	}
 
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)

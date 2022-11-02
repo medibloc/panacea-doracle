@@ -1,46 +1,62 @@
 package ipfs_test
 
-//type testdata struct {
-//	Name        string `json:"name"`
-//	Description string `json:"description"`
-//}
-//
-//const (
-//	ipfsNodeAddr = "ipfs.io/ipfs"
-//)
-//
-//func TestIpfsAdd(t *testing.T) {
-//	testData := &testdata{
-//		Name:        "panacea",
-//		Description: "medibloc mainnet",
-//	}
-//
-//	newIpfs := store.NewIpfs(ipfsNodeAddr)
-//
-//	testDataBz, err := json.Marshal(testData)
-//	require.NoError(t, err)
-//
-//	_, err = newIpfs.Add(testDataBz)
-//	require.NoError(t, err)
-//
-//}
-//
-//func TestIpfsGet(t *testing.T) {
-//
-//	newIpfs := store.NewIpfs(ipfsNodeAddr)
-//
-//	file, err := ioutil.ReadFile("./testdata/test_deal.json")
-//	require.NoError(t, err)
-//
-//	cid, err := newIpfs.Add(file)
-//	require.NoError(t, err)
-//
-//	getStrings, err := newIpfs.Get(cid)
-//	require.NoError(t, err)
-//
-//	var deal types.Deal
-//	err = json.Unmarshal(file, &deal)
-//	require.NoError(t, err)
-//
-//	require.Equal(t, deal.DataSchema, getStrings)
-//}
+import (
+	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/medibloc/panacea-core/v2/x/datadeal/types"
+	"github.com/medibloc/panacea-doracle/ipfs"
+	"github.com/stretchr/testify/require"
+)
+
+type ipfsTestSuite struct {
+	ipfs.TestSuiteIpfs
+}
+
+func TestIpfs(t *testing.T) {
+	ipfs.Run(t, new(ipfsTestSuite))
+}
+
+type testdata struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+const (
+	ipfsNodeAddr = "localhost:5001"
+)
+
+func (suite *ipfsTestSuite) TestIpfsAdd() {
+	newIpfs := ipfs.NewIpfs(ipfsNodeAddr)
+
+	testData := &testdata{
+		Name:        "panacea",
+		Description: "medibloc mainnet",
+	}
+
+	testDataBz, err := json.Marshal(testData)
+	require.NoError(suite.T(), err)
+
+	_, err = newIpfs.Add(testDataBz)
+	require.NoError(suite.T(), err)
+}
+
+func (suite *ipfsTestSuite) TestIpfsGet() {
+	newIpfs := ipfs.NewIpfs(ipfsNodeAddr)
+
+	file, err := os.ReadFile("./testdata/test_deal.json")
+	require.NoError(suite.T(), err)
+
+	cid, err := newIpfs.Add(file)
+	require.NoError(suite.T(), err)
+
+	getStrings, err := newIpfs.Get(cid)
+	require.NoError(suite.T(), err)
+
+	var deal types.Deal
+	err = json.Unmarshal(file, &deal)
+	require.NoError(suite.T(), err)
+
+	require.Equal(suite.T(), deal.DataSchema, getStrings)
+}

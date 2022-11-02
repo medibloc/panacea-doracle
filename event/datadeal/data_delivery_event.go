@@ -51,11 +51,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, deliveredCid, err := e.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
-		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
-			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
-		} else {
-			log.Infof("vote NO due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
-		}
+		log.Infof("vote NO due to error while verify. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
 	msgVoteDataDelivery, err := e.makeDataDeliveryVote(
@@ -97,11 +93,11 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", fmt.Errorf("failed to get dataSale. %v", err)
+		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get dataSale. %v", err)
 	}
 
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", errors.New("datasale status is not DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD")
+		return oracletypes.VOTE_OPTION_NO, "", errors.New("datasale status is not DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD")
 	}
 
 	if len(dataSale.VerifiableCid) == 0 {
@@ -110,11 +106,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
 	if err != nil {
-		if errors.Is(err, panacea.ErrEmptyValue) {
-			return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("not found deal. %v", err)
-		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", fmt.Errorf("failed to get deal. %v", err)
-		}
+		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get deal. %v", err)
 	}
 
 	deliveredCID, err := e.convertBuyerDataAndAddToIpfs(deal, dataSale, e.reactor.OraclePrivKey())

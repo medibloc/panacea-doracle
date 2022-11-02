@@ -89,7 +89,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
+		return oracletypes.VOTE_OPTION_UNSPECIFIED, "", fmt.Errorf("failed to get dataSale. %v", err)
 	}
 
 	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_DELIVERY_VOTING_PERIOD {
@@ -102,10 +102,10 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
 	if err != nil {
-		if errors.Is(err, datadealtypes.ErrDealNotFound) {
-			return oracletypes.VOTE_OPTION_NO, "", err
+		if errors.Is(err, panacea.ErrEmptyValue) {
+			return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("not found deal. %v", err)
 		} else {
-			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", err
+			return oracletypes.VOTE_OPTION_UNSPECIFIED, "", fmt.Errorf("failed to get deal. %v", err)
 		}
 	}
 
@@ -122,51 +122,51 @@ func (e DataDeliveryVoteEvent) convertBuyerDataAndAddToIpfs(deal *datadealtypes.
 	// get encrypted data from ipfs
 	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get data from ipfs. verifiableCid(%s) .%v", dataSale.VerifiableCid, err)
 	}
 
 	// get shared key oraclePrivKey + sellerPublicKey
 	sellerAcc, err := e.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get seller account. %v", err)
 	}
 	sellerPubKeyBytes := sellerAcc.GetPubKey().Bytes()
 
 	sellerPubKey, err := btcec.ParsePubKey(sellerPubKeyBytes, btcec.S256())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse seller public key. %v", err)
 	}
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
 
 	// decrypt data
 	decryptedData, err := crypto.DecryptWithAES256(decryptSharedKey, deal.Nonce, encryptedDataBz)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to decrypt data. %v", err)
 	}
 
 	// get oraclePrivateKey & buyerPublicKey and make shared key
 	buyerAccount, err := e.reactor.QueryClient().GetAccount(deal.BuyerAddress)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get buyer account. %v", err)
 	}
 
 	buyerPubKeyBytes := buyerAccount.GetPubKey().Bytes()
 	buyerPubKey, err := btcec.ParsePubKey(buyerPubKeyBytes, btcec.S256())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse buyer public key. %v", err)
 	}
 	encryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, buyerPubKey, crypto.KDFSHA256)
 
 	// encrypt data
 	encryptDataWithBuyerKey, err := crypto.EncryptWithAES256(encryptSharedKey, deal.Nonce, decryptedData)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to encrypt data. %v", err)
 	}
 
 	// ipfs.add (decrypted data) & get CID
 	deliveredCid, err := e.reactor.Ipfs().Add(encryptDataWithBuyerKey)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to add data to Ipfs. %v", err)
 	}
 
 	return deliveredCid, nil

@@ -55,7 +55,7 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, err := d.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
-		return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
+		log.Infof("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
 	}
 
 	msgVoteDataVerification, err := makeDataVerificationVote(

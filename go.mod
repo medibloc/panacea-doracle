@@ -10,7 +10,7 @@ require (
 	github.com/cosmos/ibc-go/v2 v2.0.3
 	github.com/edgelesssys/ego v1.0.0
 	github.com/ipfs/go-ipfs-api v0.3.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221102013554-38cb583403c3
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221103064035-3a155f81d914
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0

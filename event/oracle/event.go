@@ -13,7 +13,7 @@ import (
 	"github.com/tendermint/tendermint/light/provider"
 )
 
-func makeMsgVoteOracleRegistration(uniqueID, voterAddr, votingTargetAddr string, voteOption oracletypes.VoteOption, oraclePrivKey, nodePubKey, nonce []byte) (*oracletypes.MsgVoteOracleRegistration, error) {
+func makeMsgVoteOracleRegistration(uniqueID, voterUniqueID, voterAddr, votingTargetAddr string, voteOption oracletypes.VoteOption, oraclePrivKey, nodePubKey, nonce []byte) (*oracletypes.MsgVoteOracleRegistration, error) {
 	if oracletypes.VOTE_OPTION_YES == voteOption {
 		privKey, _ := crypto.PrivKeyFromBytes(oraclePrivKey)
 		pubKey, err := btcec.ParsePubKey(nodePubKey, btcec.S256())
@@ -29,6 +29,7 @@ func makeMsgVoteOracleRegistration(uniqueID, voterAddr, votingTargetAddr string,
 
 		registrationVote := &oracletypes.OracleRegistrationVote{
 			UniqueId:               uniqueID,
+			VoterUniqueId:          voterUniqueID,
 			VoterAddress:           voterAddr,
 			VotingTargetAddress:    votingTargetAddr,
 			VoteOption:             oracletypes.VOTE_OPTION_YES,
@@ -39,15 +40,17 @@ func makeMsgVoteOracleRegistration(uniqueID, voterAddr, votingTargetAddr string,
 	} else {
 		return makeMsgVoteOracleRegistrationVoteTypeNo(
 			uniqueID,
+			voterUniqueID,
 			voterAddr,
 			votingTargetAddr,
 			oraclePrivKey)
 	}
 }
 
-func makeMsgVoteOracleRegistrationVoteTypeNo(uniqueID, voterAddr, votingTargetAddr string, oraclePrivKey []byte) (*oracletypes.MsgVoteOracleRegistration, error) {
+func makeMsgVoteOracleRegistrationVoteTypeNo(uniqueID, voterUniqueID, voterAddr, votingTargetAddr string, oraclePrivKey []byte) (*oracletypes.MsgVoteOracleRegistration, error) {
 	registrationVote := &oracletypes.OracleRegistrationVote{
 		UniqueId:            uniqueID,
+		VoterUniqueId:       voterUniqueID,
 		VoterAddress:        voterAddr,
 		VotingTargetAddress: votingTargetAddr,
 		VoteOption:          oracletypes.VOTE_OPTION_NO,

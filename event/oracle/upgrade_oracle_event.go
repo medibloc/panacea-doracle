@@ -71,11 +71,12 @@ func (e UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, voti
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
+	voterUniqueID := e.reactor.EnclaveInfo().UniqueIDHex()
 
 	oracleRegistration, err := queryClient.GetOracleRegistration(votingTargetAddress, uniqueID)
 	if err != nil {
 		log.Infof("failed to get oracleRegistration. uniqueID(%s), address(%s). %v", uniqueID, votingTargetAddress, err)
-		return makeMsgVoteOracleRegistrationVoteTypeNo(uniqueID, voterAddress, votingTargetAddress, oraclePrivKeyBz)
+		return makeMsgVoteOracleRegistrationVoteTypeNo(uniqueID, voterUniqueID, voterAddress, votingTargetAddress, oraclePrivKeyBz)
 	}
 
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
@@ -85,6 +86,7 @@ func (e UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, voti
 
 	return makeMsgVoteOracleRegistration(
 		uniqueID,
+		voterUniqueID,
 		voterAddress,
 		votingTargetAddress,
 		voteOption,

@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/medibloc/panacea-core/v2/x/datadeal/types"
+	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
@@ -47,11 +47,7 @@ func (d DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	voteOption, err := d.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
-		if voteOption == oracletypes.VOTE_OPTION_UNSPECIFIED {
-			return fmt.Errorf("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
-		} else {
-			log.Infof("vote NO due to error while verifying. dealID(%d). dataHash(%s)", dealID, dataHash)
-		}
+		log.Infof("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
 	}
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
@@ -87,18 +83,18 @@ func (d DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedD
 	return decryptedData, nil
 }
 
-func (d DataVerificationEvent) compareDataHash(dataSale *types.DataSale, decryptedData []byte) bool {
+func (d DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
 	decryptedDataHash := sha256.Sum256(decryptedData)
 	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
 
 	return decryptedDataHashStr == dataSale.DataHash
 }
 
-func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *types.DataSale) ([]byte, error) {
+func (d DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale) ([]byte, error) {
 	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		log.Infof("failed to get data from IPFS: %v", err)
-		return nil, nil
+		return nil, err
 	}
 
 	oraclePrivKey := d.reactor.OraclePrivKey()
@@ -128,24 +124,21 @@ func (d DataVerificationEvent) convertSellerData(deal *types.Deal, dataSale *typ
 func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := d.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
-		log.Infof("failed to find deal (%d)", dealID)
-		return oracletypes.VOTE_OPTION_NO, nil
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get deal. %v", err)
 	}
 
 	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
-		log.Infof("failed to find dataSale (%s)", dataHash)
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, err
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get dataSale (%v)", err)
 	}
 
-	if dataSale.Status != types.DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD {
-		return oracletypes.VOTE_OPTION_UNSPECIFIED, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
+	if dataSale.Status != datadealtypes.DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD {
+		return oracletypes.VOTE_OPTION_NO, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
 	}
 
 	decryptedData, err := d.convertSellerData(deal, dataSale)
 	if err != nil {
-		log.Infof("failed to decrypt seller data, error (%v)", err)
-		return oracletypes.VOTE_OPTION_NO, err
+		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to decrypt seller data, error (%v)", err)
 	}
 
 	if !d.compareDataHash(dataSale, decryptedData) {
@@ -162,8 +155,8 @@ func (d DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 	return oracletypes.VOTE_OPTION_YES, nil
 }
 
-func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*types.MsgVoteDataVerification, error) {
-	dataVerificationVote := &types.DataVerificationVote{
+func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*datadealtypes.MsgVoteDataVerification, error) {
+	dataVerificationVote := &datadealtypes.DataVerificationVote{
 		VoterAddress: voterAddress,
 		DealId:       dealID,
 		DataHash:     dataHash,
@@ -184,7 +177,7 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 		return nil, err
 	}
 
-	msgVoteDataVerification := &types.MsgVoteDataVerification{
+	msgVoteDataVerification := &datadealtypes.MsgVoteDataVerification{
 		DataVerificationVote: dataVerificationVote,
 		Signature:            sig,
 	}
@@ -194,7 +187,7 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 
 // generateTxBytes generates transaction byte array.
 // TODO: generateTxBytes function will be refactored.
-func generateTxBytes(msgVoteDataVerification *types.MsgVoteDataVerification, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
+func generateTxBytes(msgVoteDataVerification *datadealtypes.MsgVoteDataVerification, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataVerification)
 	if err != nil {

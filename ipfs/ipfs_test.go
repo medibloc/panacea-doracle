@@ -7,15 +7,16 @@ import (
 
 	"github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	"github.com/medibloc/panacea-doracle/ipfs"
+	"github.com/medibloc/panacea-doracle/ipfs/suite"
 	"github.com/stretchr/testify/require"
 )
 
 type ipfsTestSuite struct {
-	ipfs.TestSuiteIpfs
+	suite.TestSuiteIpfs
 }
 
 func TestIpfs(t *testing.T) {
-	ipfs.Run(t, new(ipfsTestSuite))
+	suite.Run(t, new(ipfsTestSuite))
 }
 
 type testdata struct {
@@ -45,7 +46,7 @@ func (suite *ipfsTestSuite) TestIpfsAdd() {
 func (suite *ipfsTestSuite) TestIpfsGet() {
 	newIpfs := ipfs.NewIpfs(ipfsNodeAddr)
 
-	file, err := os.ReadFile("./testdata/test_deal.json")
+	file, err := os.ReadFile("testdata/test_deal.json")
 	require.NoError(suite.T(), err)
 
 	cid, err := newIpfs.Add(file)

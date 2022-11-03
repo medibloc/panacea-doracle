@@ -1,7 +1,6 @@
-package ipfs
+package suite
 
 import (
-	"fmt"
 	"testing"
 
 	shell "github.com/ipfs/go-ipfs-api"
@@ -13,9 +12,6 @@ import (
 
 type TestSuiteIpfs struct {
 	suite.Suite
-
-	initScriptDir      string
-	initScriptFilename string
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
@@ -55,7 +51,7 @@ func (suite *TestSuiteIpfs) SetupTest() {
 	}
 
 	if err := suite.dktPool.Retry(func() error {
-		_ = shell.NewShell(fmt.Sprint("http://localhost:5001", suite.dktResource.GetPort("5001/tcp")))
+		_ = shell.NewShell("localhost:5001")
 		return nil
 	}); err != nil {
 		log.Panicf("Could not connect to ipfs: %s", err)

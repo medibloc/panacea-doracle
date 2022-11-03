@@ -1,0 +1,11 @@
+{
+  "data_schema": [
+    "https://json.schemastore.org/github-issue-forms.json"
+  ],
+  "budget": {
+    "denom": "umed",
+    "amount": "1000000"
+  },
+  "max_num_data": 10000,
+  "buyer_address": "panacea1m0vxn07gpdnz76pd8qm9nhv80q9t8ljt8jj8mt"
+}

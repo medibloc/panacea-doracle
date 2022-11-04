@@ -191,7 +191,7 @@ func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("register oracle vote trasnsaction failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("register oracle vote trasnsaction failed: code:%d, raw_log:%v", resp.TxResponse.Code, resp.TxResponse.RawLog)
 	}
 
 	log.Infof("MsgVoteOracleRegistration transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)

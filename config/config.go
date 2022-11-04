@@ -69,7 +69,7 @@ func DefaultConfig() *Config {
 			DefaultFeeAmount:        "2000000umed",
 			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
 			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
-			LightClientLogLevel:     "info",
+			LightClientLogLevel:     "error",
 		},
 		Ipfs: IpfsConfig{
 			IpfsNodeAddr: "127.0.0.1:5001",

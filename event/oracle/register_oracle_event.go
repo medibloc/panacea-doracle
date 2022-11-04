@@ -67,14 +67,15 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
+	voterUniqueID := e.reactor.EnclaveInfo().UniqueIDHex()
 
-	if uniqueID != e.reactor.EnclaveInfo().UniqueIDHex() {
+	if uniqueID != voterUniqueID {
 		log.Infof("vote No due to because oracle's uniqueID does not match the requested uniqueID. expected(%s) got(%s)",
-			e.reactor.EnclaveInfo().UniqueIDHex(),
+			voterUniqueID,
 			uniqueID,
 		)
 		return makeMsgVoteOracleRegistrationVoteTypeNo(
-			uniqueID,
+			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,
 			oraclePrivKeyBz,
@@ -83,7 +84,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		oracleRegistration, err := queryClient.GetOracleRegistration(votingTargetAddress, uniqueID)
 		if err != nil {
 			return makeMsgVoteOracleRegistrationVoteTypeNo(
-				uniqueID,
+				voterUniqueID,
 				voterAddress,
 				votingTargetAddress,
 				oraclePrivKeyBz,
@@ -96,7 +97,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		}
 
 		return makeMsgVoteOracleRegistration(
-			uniqueID,
+			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,
 			voteOption,

@@ -91,7 +91,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, string, error) {
 
-	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
+	dataSale, err := e.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get dataSale. %v", err)
 	}

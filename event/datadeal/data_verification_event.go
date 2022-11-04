@@ -9,11 +9,8 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -63,12 +60,12 @@ func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
-	txBytes, err := generateTxBytes(msgVoteDataVerification, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
+	txBytes, err := txBuilder.GenerateTxBytes(e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), msgVoteDataVerification)
 	if err != nil {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
-	if err := broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
+	if err := e.broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
 		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
@@ -76,11 +73,7 @@ func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 func (e DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
-	decryptedData, err := crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
-	if err != nil {
-		return nil, err
-	}
-	return decryptedData, nil
+	return crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
 }
 
 func (e DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
@@ -185,21 +178,7 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 	return msgVoteDataVerification, nil
 }
 
-// generateTxBytes generates transaction byte array.
-// TODO: generateTxBytes function will be refactored.
-func generateTxBytes(msgVoteDataVerification *datadealtypes.MsgVoteDataVerification, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
-	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
-	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataVerification)
-	if err != nil {
-		return nil, err
-	}
-
-	return txBytes, nil
-}
-
-// broadcastTx broadcast transaction to blockchain.
-// TODO: broadcastTx function will be refactored.
-func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
+func (e DataVerificationEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {
 		return err

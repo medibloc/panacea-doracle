@@ -41,7 +41,7 @@ NOTE: This step must be executed only by the first (genesis) oracle.
 ```bash
 $DOCKER_CMD ego run doracled gen-oracle-key \
     --trusted-block-height <block-height> \
-    --trusted-block-hash <encoded-block-hash>
+    --trusted-block-hash <block-hash>
 ```
 Then, two files are generated under the home directory:
 - `oracle_priv_key.sealed` : sealed oracle private key
@@ -75,7 +75,7 @@ The account number and index are optional with the default value of 0.
 ```bash
 $DOCKER_CMD ego run doracled register-oracle \
     --trusted-block-height <block-height> \
-    --trusted-block-hash <encoded-block-hash>
+    --trusted-block-hash <block-hash>
 ```
 
 ## Get the oracle key registered in the Panacea

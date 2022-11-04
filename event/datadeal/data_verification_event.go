@@ -185,7 +185,7 @@ func (e DataVerificationEvent) broadcastTx(grpcClient *panacea.GrpcClient, txByt
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data verification vote trasnsaction failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("data verification vote transaction failed: %v", resp.TxResponse.RawLog)
 	}
 
 	log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)

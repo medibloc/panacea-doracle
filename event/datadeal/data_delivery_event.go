@@ -201,7 +201,7 @@ func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txByt
 	}
 
 	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data delivery vote trasnsaction failed: %v", resp.TxResponse.RawLog)
+		return fmt.Errorf("data delivery vote transaction failed: %v", resp.TxResponse.RawLog)
 	}
 
 	log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)

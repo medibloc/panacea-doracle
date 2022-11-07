@@ -5,11 +5,17 @@ import (
 )
 
 type Event interface {
+	Prepare() error
+
+	GetEventName() string
+
 	GetEventType() string
 
 	GetEventAttributeKey() string
 
 	GetEventAttributeValue() string
 
-	EventHandler(event ctypes.ResultEvent) error
+	SetEnable(bool)
+
+	EventHandler(ctypes.ResultEvent) error
 }

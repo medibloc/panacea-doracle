@@ -21,25 +21,44 @@ import (
 
 type DataDeliveryVoteEvent struct {
 	reactor event.Reactor
+	enable  bool
 }
 
-func NewDataDeliveryVoteEvent(s event.Reactor) DataDeliveryVoteEvent {
-	return DataDeliveryVoteEvent{s}
+func NewDataDeliveryVoteEvent(r event.Reactor) *DataDeliveryVoteEvent {
+	return &DataDeliveryVoteEvent{
+		reactor: r,
+	}
 }
 
-func (e DataDeliveryVoteEvent) GetEventType() string {
+func (e *DataDeliveryVoteEvent) Prepare() error {
+	return nil
+}
+
+func (e *DataDeliveryVoteEvent) GetEventName() string {
+	return "DataDeliveryVoteEvent"
+}
+
+func (e *DataDeliveryVoteEvent) GetEventType() string {
 	return "data_delivery"
 }
 
-func (e DataDeliveryVoteEvent) GetEventAttributeKey() string {
+func (e *DataDeliveryVoteEvent) GetEventAttributeKey() string {
 	return "vote_status"
 }
 
-func (e DataDeliveryVoteEvent) GetEventAttributeValue() string {
+func (e *DataDeliveryVoteEvent) GetEventAttributeValue() string {
 	return "'started'"
 }
 
-func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *DataDeliveryVoteEvent) SetEnable(enable bool) {
+	e.enable = enable
+}
+
+func (e *DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
+	if !e.enable {
+		log.Info("'DataDeliveryVoteEvent' is not enabled")
+		return nil
+	}
 
 	dealIDStr := event.Events[datadealtypes.EventTypeDataDeliveryVote+"."+datadealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[datadealtypes.EventTypeDataDeliveryVote+"."+datadealtypes.AttributeKeyDataHash][0]
@@ -89,7 +108,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 }
 
-func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, string, error) {
+func (e *DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, string, error) {
 
 	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
 	if err != nil {
@@ -118,7 +137,7 @@ func (e DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash st
 
 }
 
-func (e DataDeliveryVoteEvent) convertBuyerDataAndAddToIpfs(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
+func (e *DataDeliveryVoteEvent) convertBuyerDataAndAddToIpfs(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale, oraclePrivKey *btcec.PrivateKey) (string, error) {
 	// get encrypted data from ipfs
 	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
@@ -172,7 +191,7 @@ func (e DataDeliveryVoteEvent) convertBuyerDataAndAddToIpfs(deal *datadealtypes.
 	return deliveredCid, nil
 }
 
-func (e DataDeliveryVoteEvent) makeDataDeliveryVote(voterAddress, dataHash, deliveredCid string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*datadealtypes.MsgVoteDataDelivery, error) {
+func (e *DataDeliveryVoteEvent) makeDataDeliveryVote(voterAddress, dataHash, deliveredCid string, dealID uint64, voteOption oracletypes.VoteOption, oraclePrivKey []byte) (*datadealtypes.MsgVoteDataDelivery, error) {
 
 	dataDeliveryVote := &datadealtypes.DataDeliveryVote{
 		VoterAddress: voterAddress,
@@ -204,7 +223,7 @@ func (e DataDeliveryVoteEvent) makeDataDeliveryVote(voterAddress, dataHash, deli
 	return msgVoteDataDelivery, nil
 }
 
-func (e DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *datadealtypes.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
+func (e *DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *datadealtypes.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
 	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
 	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataDelivery)
 	if err != nil {
@@ -215,7 +234,7 @@ func (e DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *datadealtype
 }
 
 // broadcastTx broadcast transaction to blockchain.
-func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
+func (e *DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
 	resp, err := grpcClient.BroadcastTx(txBytes)
 	if err != nil {
 		return err

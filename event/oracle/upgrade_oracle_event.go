@@ -18,27 +18,46 @@ import (
 
 type UpgradeOracleEvent struct {
 	reactor event.Reactor
+	enable  bool
 }
 
 var _ event.Event = (*UpgradeOracleEvent)(nil)
 
-func NewUpgradeOracleEvent(s event.Reactor) UpgradeOracleEvent {
-	return UpgradeOracleEvent{s}
+func NewUpgradeOracleEvent(r event.Reactor) *UpgradeOracleEvent {
+	return &UpgradeOracleEvent{
+		reactor: r,
+	}
 }
 
-func (e UpgradeOracleEvent) GetEventType() string {
+func (e *UpgradeOracleEvent) Prepare() error {
+	return nil
+}
+
+func (e *UpgradeOracleEvent) GetEventName() string {
+	return "UpgradeOracleEvent"
+}
+
+func (e *UpgradeOracleEvent) GetEventType() string {
 	return "message"
 }
 
-func (e UpgradeOracleEvent) GetEventAttributeKey() string {
+func (e *UpgradeOracleEvent) GetEventAttributeKey() string {
 	return "action"
 }
 
-func (e UpgradeOracleEvent) GetEventAttributeValue() string {
+func (e *UpgradeOracleEvent) GetEventAttributeValue() string {
 	return "'OracleUpgrade'"
 }
 
-func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *UpgradeOracleEvent) SetEnable(enable bool) {
+	e.enable = enable
+}
+
+func (e *UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+	if !e.enable {
+		log.Info("'UpgradeOracleEvent' is not enabled")
+		return nil
+	}
 	uniqueID := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	votingTargetAddress := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
@@ -67,7 +86,7 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-func (e UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+func (e *UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
@@ -97,7 +116,7 @@ func (e UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, voti
 
 }
 
-func (e UpgradeOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+func (e *UpgradeOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
 	queryClient := e.reactor.QueryClient()
 	upgradeInfo, err := queryClient.GetOracleUpgradeInfo()
 	if err != nil {
@@ -122,7 +141,7 @@ func (e UpgradeOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletyp
 
 }
 
-func (e UpgradeOracleEvent) verifyRemoteReport(oracleRegistration *oracletypes.OracleRegistration) error {
+func (e *UpgradeOracleEvent) verifyRemoteReport(oracleRegistration *oracletypes.OracleRegistration) error {
 	reportBz := oracleRegistration.NodePubKeyRemoteReport
 	expectedNodePubKeyHash := crypto.KDFSHA256(oracleRegistration.NodePubKey)
 	expectedUniqueID := oracleRegistration.UniqueId
@@ -160,7 +179,7 @@ func (e UpgradeOracleEvent) verifyRemoteReport(oracleRegistration *oracletypes.O
 }
 
 // broadcastTx broadcast transaction to blockchain.
-func (e UpgradeOracleEvent) broadcastTx(txBz []byte) error {
+func (e *UpgradeOracleEvent) broadcastTx(txBz []byte) error {
 	resp, err := e.reactor.GRPCClient().BroadcastTx(txBz)
 	if err != nil {
 		return err

@@ -16,25 +16,44 @@ var _ event.Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
 	reactor event.Reactor
+	enable  bool
 }
 
-func NewRegisterOracleEvent(s event.Reactor) RegisterOracleEvent {
-	return RegisterOracleEvent{s}
+func NewRegisterOracleEvent(r event.Reactor) *RegisterOracleEvent {
+	return &RegisterOracleEvent{
+		reactor: r,
+	}
 }
 
-func (e RegisterOracleEvent) GetEventType() string {
+func (e *RegisterOracleEvent) Prepare() error {
+	return nil
+}
+
+func (e *RegisterOracleEvent) GetEventName() string {
+	return "RegisterOracleEvent"
+}
+
+func (e *RegisterOracleEvent) GetEventType() string {
 	return "message"
 }
 
-func (e RegisterOracleEvent) GetEventAttributeKey() string {
+func (e *RegisterOracleEvent) GetEventAttributeKey() string {
 	return "action"
 }
 
-func (e RegisterOracleEvent) GetEventAttributeValue() string {
+func (e *RegisterOracleEvent) GetEventAttributeValue() string {
 	return "'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *RegisterOracleEvent) SetEnable(enable bool) {
+	e.enable = enable
+}
+
+func (e *RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+	if !e.enable {
+		log.Info("'RegisterOracleEvent' is not enabled")
+		return nil
+	}
 	uniqueID := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	votingTargetAddress := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
@@ -63,7 +82,7 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
@@ -114,7 +133,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func (e RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+func (e *RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
 	if err := verifyTrustedBlockInfo(e.reactor.QueryClient(), oracleRegistration.TrustedBlockHeight, oracleRegistration.TrustedBlockHash); err != nil {
 		return oracletypes.VOTE_OPTION_NO, err
 	}
@@ -130,7 +149,7 @@ func (e RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oraclety
 }
 
 // broadcastTx broadcast transaction to blockchain.
-func (e RegisterOracleEvent) broadcastTx(txBz []byte) error {
+func (e *RegisterOracleEvent) broadcastTx(txBz []byte) error {
 	resp, err := e.reactor.GRPCClient().BroadcastTx(txBz)
 	if err != nil {
 		return err

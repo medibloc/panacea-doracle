@@ -22,12 +22,14 @@ type queryClientTestSuite struct {
 
 	chainID           string
 	validatorMnemonic string
+	uniqueID          string
 }
 
 func TestQueryClient(t *testing.T) {
 	initScriptPath, err := filepath.Abs("testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
+	uniqueID := "uniqueID"
 	chainID := "testing"
 	entropy, err := bip39.NewEntropy(256)
 	require.NoError(t, err)
@@ -40,10 +42,12 @@ func TestQueryClient(t *testing.T) {
 			[]string{
 				fmt.Sprintf("CHAIN_ID=%s", chainID),
 				fmt.Sprintf("MNEMONIC=%s", validatorMnemonic),
+				fmt.Sprintf("UNIQUE_ID=%s", uniqueID),
 			},
 		),
 		chainID,
 		validatorMnemonic,
+		uniqueID,
 	})
 }
 
@@ -109,6 +113,18 @@ func (suite *queryClientTestSuite) TestGetOracleUpgradeInfoEmptyValue() {
 	upgradeInfo, err := queryClient.GetOracleUpgradeInfo()
 	require.Nil(suite.T(), upgradeInfo)
 	require.ErrorIs(suite.T(), err, ErrEmptyValue)
+}
+
+func (suite *queryClientTestSuite) TestGetUniqueID() {
+	trustedBlockInfo, conf := suite.prepare()
+
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
+	require.NoError(suite.T(), err)
+	defer queryClient.Close()
+
+	uniqueID, err := queryClient.GetOracleParamsUniqueID()
+	require.NoError(suite.T(), err)
+	require.Equal(suite.T(), suite.uniqueID, uniqueID)
 }
 
 func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {

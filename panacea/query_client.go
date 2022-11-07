@@ -372,6 +372,25 @@ func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
 	return q.safeVerifyLightBlockAtHeight(context.Background(), height)
 }
 
+func (q QueryClient) GetOracleParamsUniqueID() (string, error) {
+	uniqueIDBz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyUniqueID...))
+	if err != nil {
+		return "", err
+	}
+	// TODO: don't need to handle this case after merging https://github.com/medibloc/panacea-doracle/pull/68
+	if uniqueIDBz == nil {
+		return "", fmt.Errorf("uniqueID is empty")
+	}
+
+	var uniqueID string
+	err = q.aminoCdc.LegacyAmino.UnmarshalJSON(uniqueIDBz, &uniqueID)
+	if err != nil {
+		return "", err
+	}
+
+	return uniqueID, nil
+}
+
 func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 	pubKeyBase64Bz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
 	if err != nil {

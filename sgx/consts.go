@@ -1,5 +1,5 @@
 package sgx
 
 const (
-	promisedMinSecurityVersion = 1
+	PromisedMinSecurityVersion = 1
 )

@@ -99,6 +99,18 @@ func (suite *queryClientTestSuite) TestLoadQueryClient() {
 	require.GreaterOrEqual(suite.T(), lastTrustedHeight2, lastTrustedHeight)
 }
 
+func (suite *queryClientTestSuite) TestGetOracleUpgradeInfoEmptyValue() {
+	trustedBlockInfo, conf := suite.prepare()
+
+	queryClient, err := NewQueryClientWithDB(context.Background(), conf, trustedBlockInfo, dbm.NewMemDB())
+	require.NoError(suite.T(), err)
+	defer queryClient.Close()
+
+	upgradeInfo, err := queryClient.GetOracleUpgradeInfo()
+	require.Nil(suite.T(), upgradeInfo)
+	require.ErrorIs(suite.T(), err, ErrEmptyValue)
+}
+
 func (suite *queryClientTestSuite) prepare() (*TrustedBlockInfo, *config.Config) {
 	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)

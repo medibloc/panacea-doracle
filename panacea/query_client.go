@@ -305,16 +305,16 @@ func (q QueryClient) abciQueryWithOptions(ctx context.Context, path string, data
 		return nil, fmt.Errorf("err response code: %v", resp.Code)
 	}
 	if len(resp.Key) == 0 {
-		return nil, errors.New("empty key")
+		return nil, ErrEmptyKey
 	}
 	if len(resp.Value) == 0 {
-		return nil, errors.New("empty value")
+		return nil, ErrEmptyValue
 	}
 	if opts.Prove && (resp.ProofOps == nil || len(resp.ProofOps.Ops) == 0) {
 		return nil, errors.New("no proof ops")
 	}
 	if resp.Height <= 0 {
-		return nil, errors.New("negative or zero height")
+		return nil, ErrNegativeOrZeroHeight
 	}
 
 	return res, nil
@@ -397,6 +397,18 @@ func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
 	return btcec.ParsePubKey(pubKeyBz, btcec.S256())
 }
 
+func (q QueryClient) GetOracleUpgradeInfo() (*oracletypes.OracleUpgradeInfo, error) {
+	oracleUpgradeInfoBz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, oracletypes.OracleUpgradeInfoKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var oracleUpgradeInfo oracletypes.OracleUpgradeInfo
+	if err := q.cdc.UnmarshalLengthPrefixed(oracleUpgradeInfoBz, &oracleUpgradeInfo); err != nil {
+		return nil, err
+	}
+	return &oracleUpgradeInfo, nil
+}
 func (q QueryClient) GetDeal(dealID uint64) (*datadealtypes.Deal, error) {
 	key := datadealtypes.GetDealKey(dealID)
 

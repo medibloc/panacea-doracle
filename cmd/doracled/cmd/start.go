@@ -31,7 +31,7 @@ func startCmd() *cobra.Command {
 
 			err = svc.StartSubscriptions(
 				oracleevent.NewRegisterOracleEvent(svc),
-				datadealevent.NewDataVerificationEvent(svc),
+				oracleevent.NewUpgradeOracleEvent(svc),
 				datadealevent.NewDataDeliveryVoteEvent(svc),
 			)
 			if err != nil {

@@ -17,4 +17,5 @@ type Reactor interface {
 	Config() *config.Config
 	QueryClient() *panacea.QueryClient
 	Ipfs() *ipfs.Ipfs
+	BroadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) (int64, string, error)
 }

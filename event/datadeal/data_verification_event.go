@@ -65,8 +65,11 @@ func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
-	if err := e.broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
-		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
+	txHeight, txHash, err := e.reactor.BroadcastTx(e.reactor.GRPCClient(), txBytes)
+	if err != nil {
+		return fmt.Errorf("data verifiaction vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	} else {
+		log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
@@ -176,19 +179,4 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 	}
 
 	return msgVoteDataVerification, nil
-}
-
-func (e DataVerificationEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
-	resp, err := grpcClient.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data verification vote transaction failed: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
-
-	return nil
 }

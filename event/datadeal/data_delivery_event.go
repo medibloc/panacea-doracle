@@ -70,8 +70,11 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
-	if err := e.broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
-		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	txHeight, txHash, err := e.reactor.BroadcastTx(e.reactor.GRPCClient(), txBytes)
+	if err != nil {
+		return fmt.Errorf("data delivery vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	} else {
+		log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
@@ -191,20 +194,4 @@ func (e DataDeliveryVoteEvent) makeDataDeliveryVote(voterAddress, dataHash, deli
 	}
 
 	return msgVoteDataDelivery, nil
-}
-
-// broadcastTx broadcast transaction to blockchain.
-func (e DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
-	resp, err := grpcClient.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data delivery vote transaction failed: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
-
-	return nil
 }

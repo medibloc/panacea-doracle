@@ -76,6 +76,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		)
 		return makeMsgVoteOracleRegistrationVoteTypeNo(
 			voterUniqueID,
+			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,
 			oraclePrivKeyBz,
@@ -84,6 +85,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		oracleRegistration, err := queryClient.GetOracleRegistration(votingTargetAddress, uniqueID)
 		if err != nil {
 			return makeMsgVoteOracleRegistrationVoteTypeNo(
+				voterUniqueID,
 				voterUniqueID,
 				voterAddress,
 				votingTargetAddress,
@@ -97,6 +99,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		}
 
 		return makeMsgVoteOracleRegistration(
+			voterUniqueID,
 			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,

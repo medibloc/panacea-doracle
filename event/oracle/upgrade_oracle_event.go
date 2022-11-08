@@ -53,11 +53,11 @@ func (e *UpgradeOracleEvent) SetEnable(enable bool) {
 	e.enable = enable
 }
 
+func (e *UpgradeOracleEvent) Enabled() bool {
+	return e.enable
+}
+
 func (e *UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
-	if !e.enable {
-		log.Info("'UpgradeOracleEvent' is not enabled")
-		return nil
-	}
 	uniqueID := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	votingTargetAddress := event.Events[oracletypes.EventTypeUpgradeVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
@@ -101,6 +101,8 @@ func (e *UpgradeOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 	if err != nil {
 		log.Infof("vote No due to error while verify: %v", err)
+	} else {
+		log.Infof("UpgradeOracle verification success. uniqueID(%s), votingTargetAddress(%s)", uniqueID, votingTargetAddress)
 	}
 
 	return makeMsgVoteOracleRegistration(

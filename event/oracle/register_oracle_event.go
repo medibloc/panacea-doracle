@@ -49,11 +49,11 @@ func (e *RegisterOracleEvent) SetEnable(enable bool) {
 	e.enable = enable
 }
 
+func (e *RegisterOracleEvent) Enabled() bool {
+	return e.enable
+}
+
 func (e *RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
-	if !e.enable {
-		log.Info("'RegisterOracleEvent' is not enabled")
-		return nil
-	}
 	uniqueID := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	votingTargetAddress := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
@@ -83,6 +83,8 @@ func (e *RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+	log.Infof("verifing oracleRegistration. uniqueID(%s), votingTargetAddress(%s)", uniqueID, votingTargetAddress)
+
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
@@ -94,7 +96,7 @@ func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vo
 			uniqueID,
 		)
 		return makeMsgVoteOracleRegistrationVoteTypeNo(
-			uniqueID,
+			voterUniqueID,
 			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,
@@ -104,7 +106,7 @@ func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vo
 		oracleRegistration, err := queryClient.GetOracleRegistration(votingTargetAddress, uniqueID)
 		if err != nil {
 			return makeMsgVoteOracleRegistrationVoteTypeNo(
-				uniqueID,
+				voterUniqueID,
 				voterUniqueID,
 				voterAddress,
 				votingTargetAddress,
@@ -115,10 +117,12 @@ func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vo
 		voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 		if err != nil {
 			log.Infof("vote No due to error while verify: %v", err)
+		} else {
+			log.Infof("verification success. uniqueID(%s), votingTargetAddress(%s)", uniqueID, votingTargetAddress)
 		}
 
 		return makeMsgVoteOracleRegistration(
-			uniqueID,
+			voterUniqueID,
 			voterUniqueID,
 			voterAddress,
 			votingTargetAddress,

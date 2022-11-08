@@ -33,6 +33,7 @@ func startCmd() *cobra.Command {
 			voteEvents := []event.Event{
 				oracleevent.NewRegisterOracleEvent(svc),
 				oracleevent.NewUpgradeOracleEvent(svc),
+				datadealevent.NewDataVerificationEvent(svc),
 				datadealevent.NewDataDeliveryVoteEvent(svc),
 			}
 			upgradedOracleEvent := oracleevent.NewUpgradedOracleEvent(svc, voteEvents)

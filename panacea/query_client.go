@@ -429,7 +429,6 @@ func (q QueryClient) GetOracleUpgradeInfo() (*oracletypes.OracleUpgradeInfo, err
 	return &oracleUpgradeInfo, nil
 }
 func (q QueryClient) GetDeal(dealID uint64) (*datadealtypes.Deal, error) {
-
 	key := datadealtypes.GetDealKey(dealID)
 
 	bz, err := q.GetStoreData(context.Background(), datadealtypes.StoreKey, key)
@@ -446,8 +445,7 @@ func (q QueryClient) GetDeal(dealID uint64) (*datadealtypes.Deal, error) {
 	return &deal, nil
 }
 
-func (q QueryClient) GetDataSale(dealID uint64, dataHash string) (*datadealtypes.DataSale, error) {
-
+func (q QueryClient) GetDataSale(dataHash string, dealID uint64) (*datadealtypes.DataSale, error) {
 	key := datadealtypes.GetDataSaleKey(dataHash, dealID)
 
 	bz, err := q.GetStoreData(context.Background(), datadealtypes.StoreKey, key)

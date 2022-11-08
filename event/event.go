@@ -17,5 +17,7 @@ type Event interface {
 
 	SetEnable(bool)
 
+	Enabled() bool
+
 	EventHandler(ctypes.ResultEvent) error
 }

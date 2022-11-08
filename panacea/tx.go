@@ -23,7 +23,10 @@ func NewTxBuilder(client QueryClient) *TxBuilder {
 
 // GenerateTxBytes generates transaction byte array.
 func (tb TxBuilder) GenerateTxBytes(privKey cryptotypes.PrivKey, conf *config.Config, msg ...sdk.Msg) ([]byte, error) {
-	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+	defaultFeeAmount, err := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
+	if err != nil {
+		return nil, err
+	}
 	txBytes, err := tb.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msg...)
 	if err != nil {
 		return nil, err

@@ -54,12 +54,11 @@ func (e *DataDeliveryVoteEvent) SetEnable(enable bool) {
 	e.enable = enable
 }
 
-func (e *DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
-	if !e.enable {
-		log.Info("'DataDeliveryVoteEvent' is not enabled")
-		return nil
-	}
+func (e *DataDeliveryVoteEvent) Enabled() bool {
+	return e.enable
+}
 
+func (e *DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 	dealIDStr := event.Events[datadealtypes.EventTypeDataDeliveryVote+"."+datadealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[datadealtypes.EventTypeDataDeliveryVote+"."+datadealtypes.AttributeKeyDataHash][0]
 
@@ -110,7 +109,7 @@ func (e *DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 func (e *DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, string, error) {
 
-	dataSale, err := e.reactor.QueryClient().GetDataSale(dealID, dataHash)
+	dataSale, err := e.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get dataSale. %v", err)
 	}

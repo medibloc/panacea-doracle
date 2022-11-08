@@ -59,6 +59,12 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 
 	go func(e Event) {
 		for tx := range txs {
+			log.Infof("received event: %s", e.GetEventName())
+			if !e.Enabled() {
+				log.Info("'%s' is not enabled", e.GetEventName())
+				return
+			}
+
 			if err := e.EventHandler(tx); err != nil {
 				log.Errorf("failed to handle event '%s': %v", query, err)
 			}

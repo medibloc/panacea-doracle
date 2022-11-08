@@ -22,6 +22,7 @@ func (e *UpgradedOracleEvent) GetEventName() string {
 func NewUpgradedOracleEvent(r event.Reactor, voteEvents []event.Event) *UpgradedOracleEvent {
 	return &UpgradedOracleEvent{
 		reactor:    r,
+		enable:     true,
 		voteEvents: voteEvents,
 	}
 }
@@ -44,6 +45,10 @@ func (e *UpgradedOracleEvent) GetEventAttributeValue() string {
 
 func (e *UpgradedOracleEvent) SetEnable(enable bool) {
 	e.enable = enable
+}
+
+func (e *UpgradedOracleEvent) Enabled() bool {
+	return e.enable
 }
 
 func (e *UpgradedOracleEvent) EventHandler(event ctypes.ResultEvent) error {

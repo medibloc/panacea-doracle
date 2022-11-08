@@ -10,7 +10,7 @@ require (
 	github.com/cosmos/ibc-go/v2 v2.0.3
 	github.com/edgelesssys/ego v1.0.0
 	github.com/ipfs/go-ipfs-api v0.3.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221102051519-ed49ef6b13dc
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221103064035-3a155f81d914
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
@@ -21,6 +21,11 @@ require (
 	github.com/tendermint/tm-db v0.6.7
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/grpc v1.48.0
+)
+
+require (
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 )
 
 require (
@@ -87,8 +92,6 @@ require (
 	github.com/libp2p/go-libp2p-core v0.6.1 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20181016162300-f8f6d4d2b643 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
@@ -149,8 +152,9 @@ require (
 )
 
 replace (
+	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 	github.com/cosmos/cosmos-sdk => github.com/medibloc/cosmos-sdk v0.45.9-panacea.1
-	github.com/cosmos/ledger-go => github.com/cosmos/ledger-go v0.9.3-0.20220721150524-52ff0c88619c
+	github.com/cosmos/ledger-go => github.com/cosmos/ledger-go v0.9.3
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )

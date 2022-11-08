@@ -21,7 +21,7 @@ func VerifyRemoteReport(reportBytes, expectedData []byte, expectedEnclaveInfo En
 		return err
 	}
 
-	if report.SecurityVersion < promisedMinSecurityVersion {
+	if report.SecurityVersion < PromisedMinSecurityVersion {
 		return fmt.Errorf("invalid security version in the report")
 	}
 	if !bytes.Equal(report.ProductID, expectedEnclaveInfo.ProductID) {

@@ -38,6 +38,7 @@ type PanaceaConfig struct {
 	DefaultFeeAmount        string   `mapstructure:"default-fee-amount"`
 	LightClientPrimaryAddr  string   `mapstructure:"light-client-primary-addr"`
 	LightClientWitnessAddrs []string `mapstructure:"light-client-witness-addrs"`
+	LightClientLogLevel     string   `mapstructure:"light-client-log-level"`
 }
 
 type IpfsConfig struct {
@@ -68,6 +69,7 @@ func DefaultConfig() *Config {
 			DefaultFeeAmount:        "2000000umed",
 			LightClientPrimaryAddr:  "tcp://127.0.0.1:26657",
 			LightClientWitnessAddrs: []string{"tcp://127.0.0.1:26657"},
+			LightClientLogLevel:     "error",
 		},
 		Ipfs: IpfsConfig{
 			IpfsNodeAddr: "127.0.0.1:5001",

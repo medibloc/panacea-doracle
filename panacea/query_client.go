@@ -167,7 +167,7 @@ func NewQueryClientWithDB(ctx context.Context, config *config.Config, info *Trus
 func newTMLogger(conf *config.Config) tmlog.Logger {
 	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
 
-	switch strings.ToLower(conf.LogLevel) {
+	switch strings.ToLower(conf.Panacea.LightClientLogLevel) {
 	case "panic", "fatal", "error":
 		logger = tmlog.NewFilter(logger, tmlog.AllowError())
 	case "warn", "warning", "info":

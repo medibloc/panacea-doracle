@@ -65,7 +65,7 @@ func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
-	txHeight, txHash, err := e.reactor.BroadcastTx(e.reactor.GRPCClient(), txBytes)
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
 	if err != nil {
 		return fmt.Errorf("data verifiaction vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	} else {

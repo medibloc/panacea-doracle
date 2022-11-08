@@ -70,7 +70,7 @@ func (e DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
-	txHeight, txHash, err := e.reactor.BroadcastTx(e.reactor.GRPCClient(), txBytes)
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
 	if err != nil {
 		return fmt.Errorf("data delivery vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	} else {

@@ -128,8 +128,8 @@ func (s *Service) Ipfs() *ipfs.Ipfs {
 	return s.ipfs
 }
 
-func (s *Service) BroadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) (int64, string, error) {
-	resp, err := grpcClient.BroadcastTx(txBytes)
+func (s *Service) BroadcastTx(txBytes []byte) (int64, string, error) {
+	resp, err := s.GRPCClient().BroadcastTx(txBytes)
 	if err != nil {
 		return 0, "", fmt.Errorf("broadcast transaction failed. txBytes(%v)", txBytes)
 	}

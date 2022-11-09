@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/medibloc/panacea-doracle/crypto"
-	"github.com/medibloc/panacea-doracle/integration/rest"
-
 	"log"
 	"path/filepath"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/medibloc/panacea-doracle/crypto"
+	"github.com/medibloc/panacea-doracle/integration/rest"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"

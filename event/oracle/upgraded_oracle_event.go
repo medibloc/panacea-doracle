@@ -54,13 +54,15 @@ func (e *UpgradedOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 }
 
 func (e *UpgradedOracleEvent) setEnableVoteEvents() error {
+	log.Info("checking is activeUniqueID")
 	uniqueID, err := e.reactor.QueryClient().GetOracleParamsUniqueID()
 	if err != nil {
 		return err
 	}
 
-	log.Infof("activeUniqueID(%s), my uniqueID(%s)", uniqueID, e.reactor.EnclaveInfo().UniqueIDHex())
 	enable := e.reactor.EnclaveInfo().UniqueIDHex() == uniqueID
+	log.Infof("activeUniqueID(%s), my uniqueID(%s) enable(%v)", uniqueID, e.reactor.EnclaveInfo().UniqueIDHex(), enable)
+
 	for _, e := range e.voteEvents {
 		e.SetEnable(enable)
 	}

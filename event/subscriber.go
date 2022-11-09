@@ -61,7 +61,7 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 		for tx := range txs {
 			log.Infof("received event: %s", e.GetEventName())
 			if !e.Enabled() {
-				log.Info("'%s' is not enabled", e.GetEventName())
+				log.Infof("'%s' is not enabled", e.GetEventName())
 				return
 			}
 

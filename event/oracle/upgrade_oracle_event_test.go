@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ event.Reactor = (*service.TestServiceWithoutSGX)(nil)
+var _ event.Reactor = (*service.Service)(nil)
 
 type upgradeOracleEventTestSuite struct {
 	suite.TestSuite

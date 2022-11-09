@@ -26,16 +26,8 @@ func NewUpgradeOracleEvent(s event.Reactor) UpgradeOracleEvent {
 	return UpgradeOracleEvent{s}
 }
 
-func (e UpgradeOracleEvent) GetEventType() string {
-	return "message"
-}
-
-func (e UpgradeOracleEvent) GetEventAttributeKey() string {
-	return "action"
-}
-
-func (e UpgradeOracleEvent) GetEventAttributeValue() string {
-	return "'OracleUpgrade'"
+func (e UpgradeOracleEvent) GetEventQuery() string {
+	return "message.action = 'OracleUpgrade'"
 }
 
 func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
@@ -60,8 +52,11 @@ func (e UpgradeOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	if err := e.broadcastTx(txBytes); err != nil {
-		return err
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
+	if err != nil {
+		return fmt.Errorf("failed to oracleRegistrationVote transaction for oracle upgrade: %v", err)
+	} else {
+		log.Infof("succeeded to oracleRegistrationVote transaction for oracle upgrade. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
@@ -155,21 +150,6 @@ func (e UpgradeOracleEvent) verifyRemoteReport(oracleRegistration *oracletypes.O
 			base64.StdEncoding.EncodeToString(report.Data[:len(expectedNodePubKeyHash)]),
 		)
 	}
-
-	return nil
-}
-
-// broadcastTx broadcast transaction to blockchain.
-func (e UpgradeOracleEvent) broadcastTx(txBz []byte) error {
-	resp, err := e.reactor.GRPCClient().BroadcastTx(txBz)
-	if err != nil {
-		return err
-	}
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("failed to oracleRegistrationVote transaction for oracle upgrade: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("succeeded to oracleRegistrationVote transaction for oracle upgrade. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
 
 	return nil
 }

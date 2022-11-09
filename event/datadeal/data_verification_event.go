@@ -9,11 +9,8 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -43,18 +40,6 @@ func (d *DataVerificationEvent) GetEventName() string {
 	return "DataVerificationEvent"
 }
 
-func (d *DataVerificationEvent) GetEventType() string {
-	return "message"
-}
-
-func (d *DataVerificationEvent) GetEventAttributeKey() string {
-	return "action"
-}
-
-func (d *DataVerificationEvent) GetEventAttributeValue() string {
-	return "'SellData'"
-}
-
 func (d *DataVerificationEvent) SetEnable(enable bool) {
 	d.enable = enable
 }
@@ -63,7 +48,11 @@ func (d *DataVerificationEvent) Enabled() bool {
 	return d.enable
 }
 
-func (d *DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *DataVerificationEvent) GetEventQuery() string {
+	return "message.action = 'SellData'"
+}
+
+func (e *DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	dealIDStr := event.Events[datadealtypes.EventTypeDataVerificationVote+"."+datadealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[datadealtypes.EventTypeDataVerificationVote+"."+datadealtypes.AttributeKeyDataHash][0]
 
@@ -72,61 +61,60 @@ func (d *DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	voteOption, err := d.verifyAndGetVoteOption(dealID, dataHash)
+	voteOption, err := e.verifyAndGetVoteOption(dealID, dataHash)
 	if err != nil {
-		log.Infof("can't vote due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
+		log.Infof("vote No due to error while verify. dealID(%d). dataHash(%s)", dealID, dataHash)
 	}
 
 	msgVoteDataVerification, err := makeDataVerificationVote(
-		d.reactor.OracleAcc().GetAddress(),
+		e.reactor.OracleAcc().GetAddress(),
 		dataHash,
 		dealID,
 		voteOption,
-		d.reactor.OraclePrivKey().Serialize(),
+		e.reactor.OraclePrivKey().Serialize(),
 	)
 	if err != nil {
 		return err
 	}
 
-	txBuilder := panacea.NewTxBuilder(*d.reactor.QueryClient())
+	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
-	txBytes, err := generateTxBytes(msgVoteDataVerification, d.reactor.OracleAcc().GetPrivKey(), d.reactor.Config(), txBuilder)
+	txBytes, err := txBuilder.GenerateTxBytes(e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), msgVoteDataVerification)
 	if err != nil {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
 	}
 
-	if err := broadcastTx(d.reactor.GRPCClient(), txBytes); err != nil {
-		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %w", dealID, dataHash, err)
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
+	if err != nil {
+		return fmt.Errorf("data verifiaction vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	} else {
+		log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
 }
 
-func (d *DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
-	decryptedData, err := crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
-	if err != nil {
-		return nil, err
-	}
-	return decryptedData, nil
+func (e *DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
+	return crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
 }
 
-func (d *DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
+func (e *DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
 	decryptedDataHash := sha256.Sum256(decryptedData)
 	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
 
 	return decryptedDataHashStr == dataSale.DataHash
 }
 
-func (d *DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale) ([]byte, error) {
-	encryptedDataBz, err := d.reactor.Ipfs().Get(dataSale.VerifiableCid)
+func (e *DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale) ([]byte, error) {
+	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		log.Infof("failed to get data from IPFS: %v", err)
 		return nil, err
 	}
 
-	oraclePrivKey := d.reactor.OraclePrivKey()
+	oraclePrivKey := e.reactor.OraclePrivKey()
 
-	sellerAcc, err := d.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
+	sellerAcc, err := e.reactor.QueryClient().GetAccount(dataSale.SellerAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +128,7 @@ func (d *DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, data
 
 	decryptSharedKey := crypto.DeriveSharedKey(oraclePrivKey, sellerPubKey, crypto.KDFSHA256)
 
-	decryptedData, err := d.decryptData(decryptSharedKey, deal.Nonce, encryptedDataBz)
+	decryptedData, err := e.decryptData(decryptSharedKey, deal.Nonce, encryptedDataBz)
 	if err != nil {
 		return nil, err
 	}
@@ -148,13 +136,13 @@ func (d *DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, data
 	return decryptedData, nil
 }
 
-func (d *DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
-	deal, err := d.reactor.QueryClient().GetDeal(dealID)
+func (e *DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
+	deal, err := e.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get deal. %v", err)
 	}
 
-	dataSale, err := d.reactor.QueryClient().GetDataSale(dataHash, dealID)
+	dataSale, err := e.reactor.QueryClient().GetDataSale(dataHash, dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get dataSale (%v)", err)
 	}
@@ -163,12 +151,12 @@ func (d *DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash s
 		return oracletypes.VOTE_OPTION_NO, errors.New("dataSale's status is not DATA_SALE_STATUS_VERIFICATION_VOTING_PERIOD")
 	}
 
-	decryptedData, err := d.convertSellerData(deal, dataSale)
+	decryptedData, err := e.convertSellerData(deal, dataSale)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to decrypt seller data, error (%v)", err)
 	}
 
-	if !d.compareDataHash(dataSale, decryptedData) {
+	if !e.compareDataHash(dataSale, decryptedData) {
 		log.Infof("invalid data hash")
 		return oracletypes.VOTE_OPTION_NO, err
 	}
@@ -210,33 +198,4 @@ func makeDataVerificationVote(voterAddress, dataHash string, dealID uint64, vote
 	}
 
 	return msgVoteDataVerification, nil
-}
-
-// generateTxBytes generates transaction byte array.
-// TODO: generateTxBytes function will be refactored.
-func generateTxBytes(msgVoteDataVerification *datadealtypes.MsgVoteDataVerification, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
-	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
-	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataVerification)
-	if err != nil {
-		return nil, err
-	}
-
-	return txBytes, nil
-}
-
-// broadcastTx broadcast transaction to blockchain.
-// TODO: broadcastTx function will be refactored.
-func broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
-	resp, err := grpcClient.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data verification vote trasnsaction failed: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("MsgVoteDataVerification transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
-
-	return nil
 }

@@ -9,11 +9,7 @@ type Event interface {
 
 	GetEventName() string
 
-	GetEventType() string
-
-	GetEventAttributeKey() string
-
-	GetEventAttributeValue() string
+	GetEventQuery() string
 
 	SetEnable(bool)
 

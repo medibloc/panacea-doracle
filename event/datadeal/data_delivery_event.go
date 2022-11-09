@@ -7,11 +7,8 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
-	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/crypto"
 	"github.com/medibloc/panacea-doracle/event"
 	"github.com/medibloc/panacea-doracle/panacea"
@@ -38,16 +35,8 @@ func (e *DataDeliveryVoteEvent) GetEventName() string {
 	return "DataDeliveryVoteEvent"
 }
 
-func (e *DataDeliveryVoteEvent) GetEventType() string {
-	return "data_delivery"
-}
-
-func (e *DataDeliveryVoteEvent) GetEventAttributeKey() string {
-	return "vote_status"
-}
-
-func (e *DataDeliveryVoteEvent) GetEventAttributeValue() string {
-	return "'started'"
+func (e *DataDeliveryVoteEvent) GetEventQuery() string {
+	return "tm.event='NewBlock' AND data_delivery.vote_status='started'"
 }
 
 func (e *DataDeliveryVoteEvent) SetEnable(enable bool) {
@@ -94,13 +83,16 @@ func (e *DataDeliveryVoteEvent) EventHandler(event ctypes.ResultEvent) error {
 
 	txBuilder := panacea.NewTxBuilder(*e.reactor.QueryClient())
 
-	txBytes, err := e.generateTxBytes(msgVoteDataDelivery, e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), txBuilder)
+	txBytes, err := txBuilder.GenerateTxBytes(e.reactor.OracleAcc().GetPrivKey(), e.reactor.Config(), msgVoteDataDelivery)
 	if err != nil {
 		return fmt.Errorf("generate tx failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
 	}
 
-	if err := e.broadcastTx(e.reactor.GRPCClient(), txBytes); err != nil {
-		return fmt.Errorf("broadcast transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
+	if err != nil {
+		return fmt.Errorf("data delivery vote transaction failed. dealID(%d). dataHash(%s): %v", dealID, dataHash, err)
+	} else {
+		log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
@@ -122,7 +114,7 @@ func (e *DataDeliveryVoteEvent) verifyAndGetVoteOption(dealID uint64, dataHash s
 		return oracletypes.VOTE_OPTION_NO, "", errors.New("there is no verifiableCid")
 	}
 
-	deal, err := e.reactor.QueryClient().GetDeal(dataSale.DealId)
+	deal, err := e.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, "", fmt.Errorf("failed to get deal. %v", err)
 	}
@@ -220,30 +212,4 @@ func (e *DataDeliveryVoteEvent) makeDataDeliveryVote(voterAddress, dataHash, del
 	}
 
 	return msgVoteDataDelivery, nil
-}
-
-func (e *DataDeliveryVoteEvent) generateTxBytes(msgVoteDataDelivery *datadealtypes.MsgVoteDataDelivery, privKey cryptotypes.PrivKey, conf *config.Config, txBuilder *panacea.TxBuilder) ([]byte, error) {
-	defaultFeeAmount, _ := sdk.ParseCoinsNormalized(conf.Panacea.DefaultFeeAmount)
-	txBytes, err := txBuilder.GenerateSignedTxBytes(privKey, conf.Panacea.DefaultGasLimit, defaultFeeAmount, msgVoteDataDelivery)
-	if err != nil {
-		return nil, err
-	}
-
-	return txBytes, nil
-}
-
-// broadcastTx broadcast transaction to blockchain.
-func (e *DataDeliveryVoteEvent) broadcastTx(grpcClient *panacea.GrpcClient, txBytes []byte) error {
-	resp, err := grpcClient.BroadcastTx(txBytes)
-	if err != nil {
-		return err
-	}
-
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("data delivery vote trasnsaction failed: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("MsgVoteDataDelivery transaction succeed. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
-
-	return nil
 }

@@ -33,16 +33,8 @@ func (e *RegisterOracleEvent) GetEventName() string {
 	return "RegisterOracleEvent"
 }
 
-func (e *RegisterOracleEvent) GetEventType() string {
-	return "message"
-}
-
-func (e *RegisterOracleEvent) GetEventAttributeKey() string {
-	return "action"
-}
-
-func (e *RegisterOracleEvent) GetEventAttributeValue() string {
-	return "'RegisterOracle'"
+func (e *RegisterOracleEvent) GetEventQuery() string {
+	return "message.action = 'RegisterOracle'"
 }
 
 func (e *RegisterOracleEvent) SetEnable(enable bool) {
@@ -75,8 +67,11 @@ func (e *RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 		return err
 	}
 
-	if err := e.broadcastTx(txBytes); err != nil {
-		return err
+	txHeight, txHash, err := e.reactor.BroadcastTx(txBytes)
+	if err != nil {
+		return fmt.Errorf("failed to oracleRegistrationVote transaction for new oracle registration: %v", err)
+	} else {
+		log.Infof("succeeded to oracleRegistrationVote transaction for new oracle registration. height(%v), hash(%s)", txHeight, txHash)
 	}
 
 	return nil
@@ -150,19 +145,4 @@ func (e *RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oraclet
 	} else {
 		return oracletypes.VOTE_OPTION_YES, nil
 	}
-}
-
-// broadcastTx broadcast transaction to blockchain.
-func (e *RegisterOracleEvent) broadcastTx(txBz []byte) error {
-	resp, err := e.reactor.GRPCClient().BroadcastTx(txBz)
-	if err != nil {
-		return err
-	}
-	if resp.TxResponse.Code != 0 {
-		return fmt.Errorf("failed to oracleRegistrationVote transaction for new oracle registration: %v", resp.TxResponse.RawLog)
-	}
-
-	log.Infof("succeeded to oracleRegistrationVote transaction for new oracle registration. height(%v), hash(%s)", resp.TxResponse.Height, resp.TxResponse.TxHash)
-
-	return nil
 }

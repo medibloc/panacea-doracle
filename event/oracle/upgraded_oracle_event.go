@@ -1,6 +1,8 @@
 package oracle
 
 import (
+	"fmt"
+
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/event"
 	log "github.com/sirupsen/logrus"
@@ -31,16 +33,12 @@ func (e *UpgradedOracleEvent) Prepare() error {
 	return e.setEnableVoteEvents()
 }
 
-func (e *UpgradedOracleEvent) GetEventType() string {
-	return oracletypes.EventTypeUpgradeVote
-}
-
-func (e *UpgradedOracleEvent) GetEventAttributeKey() string {
-	return oracletypes.AttributeKeyVoteStatus
-}
-
-func (e *UpgradedOracleEvent) GetEventAttributeValue() string {
-	return oracletypes.AttributeValueUpgradeStatusEnded
+func (e *UpgradedOracleEvent) GetEventQuery() string {
+	return fmt.Sprintf("tm.event='NewBlock' AND %s.%s='%s'",
+		oracletypes.EventTypeUpgradeVote,
+		oracletypes.AttributeKeyVoteStatus,
+		oracletypes.AttributeValueUpgradeStatusEnded,
+	)
 }
 
 func (e *UpgradedOracleEvent) SetEnable(enable bool) {

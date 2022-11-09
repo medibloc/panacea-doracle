@@ -11,6 +11,8 @@ panacead add-genesis-account $(panacead keys show validator -a) 100000000000000u
 panacead gentx validator 1000000000000umed --commission-rate 0.1 --commission-max-rate 0.2 --commission-max-change-rate 0.01  --min-self-delegation 1000000 --chain-id ${CHAIN_ID}
 panacead collect-gentxs
 
+panacead add-genesis-oracle --oracle-unique-id ${UNIQUE_ID}
+
 # Open a 26657 RPC port publicly
 sed -i 's|^laddr = "tcp://127.0.0.1:26657"$|laddr = "tcp://0.0.0.0:26657"|g' ~/.panacea/config/config.toml
 sed -i 's|^cors_allowed_origins = .*|cors_allowed_origins = \["*"\]|g' ~/.panacea/config/config.toml

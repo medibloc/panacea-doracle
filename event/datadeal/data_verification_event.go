@@ -23,17 +23,36 @@ var _ event.Event = (*DataVerificationEvent)(nil)
 
 type DataVerificationEvent struct {
 	reactor event.Reactor
+	enable  bool
 }
 
-func NewDataVerificationEvent(r event.Reactor) DataVerificationEvent {
-	return DataVerificationEvent{r}
+func NewDataVerificationEvent(r event.Reactor) *DataVerificationEvent {
+	return &DataVerificationEvent{
+		reactor: r,
+	}
 }
 
-func (e DataVerificationEvent) GetEventQuery() string {
+func (d *DataVerificationEvent) Prepare() error {
+	return nil
+}
+
+func (d *DataVerificationEvent) GetEventName() string {
+	return "DataVerificationEvent"
+}
+
+func (d *DataVerificationEvent) SetEnable(enable bool) {
+	d.enable = enable
+}
+
+func (d *DataVerificationEvent) Enabled() bool {
+	return d.enable
+}
+
+func (e *DataVerificationEvent) GetEventQuery() string {
 	return "message.action = 'SellData'"
 }
 
-func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	dealIDStr := event.Events[datadealtypes.EventTypeDataVerificationVote+"."+datadealtypes.AttributeKeyDealID][0]
 	dataHash := event.Events[datadealtypes.EventTypeDataVerificationVote+"."+datadealtypes.AttributeKeyDataHash][0]
 
@@ -75,18 +94,18 @@ func (e DataVerificationEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-func (e DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
+func (e *DataVerificationEvent) decryptData(decryptedSharedKey, nonce, encryptedDataBz []byte) ([]byte, error) {
 	return crypto.DecryptWithAES256(decryptedSharedKey, nonce, encryptedDataBz)
 }
 
-func (e DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
+func (e *DataVerificationEvent) compareDataHash(dataSale *datadealtypes.DataSale, decryptedData []byte) bool {
 	decryptedDataHash := sha256.Sum256(decryptedData)
 	decryptedDataHashStr := hex.EncodeToString(decryptedDataHash[:])
 
 	return decryptedDataHashStr == dataSale.DataHash
 }
 
-func (e DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale) ([]byte, error) {
+func (e *DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataSale *datadealtypes.DataSale) ([]byte, error) {
 	encryptedDataBz, err := e.reactor.Ipfs().Get(dataSale.VerifiableCid)
 	if err != nil {
 		log.Infof("failed to get data from IPFS: %v", err)
@@ -117,7 +136,7 @@ func (e DataVerificationEvent) convertSellerData(deal *datadealtypes.Deal, dataS
 	return decryptedData, nil
 }
 
-func (e DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
+func (e *DataVerificationEvent) verifyAndGetVoteOption(dealID uint64, dataHash string) (oracletypes.VoteOption, error) {
 	deal, err := e.reactor.QueryClient().GetDeal(dealID)
 	if err != nil {
 		return oracletypes.VOTE_OPTION_NO, fmt.Errorf("failed to get deal. %v", err)

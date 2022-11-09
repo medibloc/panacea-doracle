@@ -1,24 +1,24 @@
 package oracle
 
 import (
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/cosmos/go-bip39"
-	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
 	"github.com/medibloc/panacea-doracle/config"
 	"github.com/medibloc/panacea-doracle/event"
+	datadealevent "github.com/medibloc/panacea-doracle/event/datadeal"
 	"github.com/medibloc/panacea-doracle/integration/rest"
 	"github.com/medibloc/panacea-doracle/integration/service"
 	"github.com/medibloc/panacea-doracle/integration/suite"
 	"github.com/medibloc/panacea-doracle/panacea"
+	"github.com/medibloc/panacea-doracle/sgx"
 	"github.com/stretchr/testify/require"
 )
 
-var _ event.Reactor = (*service.Service)(nil)
-
-type registerOracleEventTestSuite struct {
+type upgradedOracleEventTestSuite struct {
 	suite.TestSuite
 
 	chainID           string
@@ -26,7 +26,7 @@ type registerOracleEventTestSuite struct {
 	uniqueID          string
 }
 
-func TestRegisterOracleEvent(t *testing.T) {
+func TestUpgradedOracleEvent(t *testing.T) {
 	initScriptPath, err := filepath.Abs("../testdata/panacea-core-init.sh")
 	require.NoError(t, err)
 
@@ -35,9 +35,9 @@ func TestRegisterOracleEvent(t *testing.T) {
 	require.NoError(t, err)
 	validatorMnemonic, err := bip39.NewMnemonic(entropy)
 	require.NoError(t, err)
-	uniqueID := "uniqueID"
+	uniqueID := hex.EncodeToString([]byte("uniqueID"))
 
-	suite.Run(t, &registerOracleEventTestSuite{
+	suite.Run(t, &upgradedOracleEventTestSuite{
 		suite.NewTestSuite(
 			initScriptPath,
 			[]string{
@@ -52,43 +52,61 @@ func TestRegisterOracleEvent(t *testing.T) {
 	})
 }
 
-func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionInvalidTrustedBlockHash() {
+func (suite *upgradedOracleEventTestSuite) TestSameUniqueID() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
+	enclaveInfo := sgx.NewEnclaveInfo(
+		[]byte("productID"),
+		[]byte("signerID"),
+		[]byte("uniqueID"),
+	)
+
+	svc, err := service.NewTestService(conf, trustedBlockInfo, enclaveInfo)
 	require.NoError(suite.T(), err)
 
-	oracleRegistration := &oracletypes.OracleRegistration{
-		TrustedBlockHeight: trustedBlockInfo.TrustedBlockHeight,
-		TrustedBlockHash:   []byte("invalid"),
+	voteEvents := []event.Event{
+		NewRegisterOracleEvent(svc),
+		NewUpgradeOracleEvent(svc),
+		datadealevent.NewDataVerificationEvent(svc),
+		datadealevent.NewDataDeliveryVoteEvent(svc),
 	}
 
-	e := NewRegisterOracleEvent(svc)
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-
-	require.ErrorContains(suite.T(), err, "failed to verify trusted block information")
-	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
+	e := NewUpgradedOracleEvent(svc, voteEvents)
+	err = e.setEnableVoteEvents()
+	require.NoError(suite.T(), err)
+	for _, voteEvent := range voteEvents {
+		require.True(suite.T(), voteEvent.Enabled())
+	}
 }
 
-func (suite *registerOracleEventTestSuite) TestVerifyAndGetVoteOptionHigherTrustedBlockHeight() {
+func (suite *upgradedOracleEventTestSuite) TestNotSameUniqueID() {
 	trustedBlockInfo, conf := suite.prepare()
 
-	svc, err := service.NewTestServiceWithoutSGX(conf, trustedBlockInfo)
+	enclaveInfo := sgx.NewEnclaveInfo(
+		[]byte("productID"),
+		[]byte("signerID"),
+		[]byte("upgradeUniqueID"),
+	)
+
+	svc, err := service.NewTestService(conf, trustedBlockInfo, enclaveInfo)
 	require.NoError(suite.T(), err)
 
-	oracleRegistration := &oracletypes.OracleRegistration{
-		TrustedBlockHeight: 100,
-		TrustedBlockHash:   trustedBlockInfo.TrustedBlockHash,
+	voteEvents := []event.Event{
+		NewRegisterOracleEvent(svc),
+		NewUpgradeOracleEvent(svc),
+		datadealevent.NewDataVerificationEvent(svc),
+		datadealevent.NewDataDeliveryVoteEvent(svc),
 	}
 
-	e := NewRegisterOracleEvent(svc)
-	voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
-
-	require.ErrorContains(suite.T(), err, "not found light block.")
-	require.Equal(suite.T(), oracletypes.VOTE_OPTION_NO, voteOption)
+	e := NewUpgradedOracleEvent(svc, voteEvents)
+	err = e.setEnableVoteEvents()
+	require.NoError(suite.T(), err)
+	for _, voteEvent := range voteEvents {
+		require.False(suite.T(), voteEvent.Enabled())
+	}
 }
 
-func (suite *registerOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {
+func (suite *upgradedOracleEventTestSuite) prepare() (*panacea.TrustedBlockInfo, *config.Config) {
 	hash, height, err := rest.QueryLatestBlock(suite.PanaceaEndpoint("http", 1317))
 	require.NoError(suite.T(), err)
 

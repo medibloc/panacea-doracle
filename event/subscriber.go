@@ -30,11 +30,15 @@ func NewSubscriber(wsAddr string) (*PanaceaSubscriber, error) {
 }
 
 func (s *PanaceaSubscriber) Run(events ...Event) error {
-	log.Infof("start panacea event subscriber")
+	log.Infof("start panacea events subscriber")
 
 	for _, e := range events {
-		err := s.subscribe(e)
-		if err != nil {
+		log.Infof("'%s' prepare", e.GetEventName())
+		if err := e.Prepare(); err != nil {
+			return err
+		}
+		log.Infof("'%s' subscribe start", e.GetEventName())
+		if err := s.subscribe(e); err != nil {
 			return err
 		}
 	}
@@ -55,6 +59,12 @@ func (s *PanaceaSubscriber) subscribe(event Event) error {
 
 	go func(e Event) {
 		for tx := range txs {
+			log.Infof("received event: %s", e.GetEventName())
+			if !e.Enabled() {
+				log.Infof("'%s' is not enabled", e.GetEventName())
+				return
+			}
+
 			if err := e.EventHandler(tx); err != nil {
 				log.Errorf("failed to handle event '%s': %v", query, err)
 			}

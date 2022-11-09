@@ -5,6 +5,15 @@ import (
 )
 
 type Event interface {
+	Prepare() error
+
+	GetEventName() string
+
 	GetEventQuery() string
-	EventHandler(event ctypes.ResultEvent) error
+
+	SetEnable(bool)
+
+	Enabled() bool
+
+	EventHandler(ctypes.ResultEvent) error
 }

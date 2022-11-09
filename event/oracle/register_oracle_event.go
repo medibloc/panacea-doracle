@@ -16,17 +16,36 @@ var _ event.Event = (*RegisterOracleEvent)(nil)
 
 type RegisterOracleEvent struct {
 	reactor event.Reactor
+	enable  bool
 }
 
-func NewRegisterOracleEvent(s event.Reactor) RegisterOracleEvent {
-	return RegisterOracleEvent{s}
+func NewRegisterOracleEvent(r event.Reactor) *RegisterOracleEvent {
+	return &RegisterOracleEvent{
+		reactor: r,
+	}
 }
 
-func (e RegisterOracleEvent) GetEventQuery() string {
+func (e *RegisterOracleEvent) Prepare() error {
+	return nil
+}
+
+func (e *RegisterOracleEvent) GetEventName() string {
+	return "RegisterOracleEvent"
+}
+
+func (e *RegisterOracleEvent) GetEventQuery() string {
 	return "message.action = 'RegisterOracle'"
 }
 
-func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
+func (e *RegisterOracleEvent) SetEnable(enable bool) {
+	e.enable = enable
+}
+
+func (e *RegisterOracleEvent) Enabled() bool {
+	return e.enable
+}
+
+func (e *RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	uniqueID := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyUniqueID][0]
 	votingTargetAddress := event.Events[oracletypes.EventTypeRegistrationVote+"."+oracletypes.AttributeKeyOracleAddress][0]
 
@@ -58,7 +77,9 @@ func (e RegisterOracleEvent) EventHandler(event ctypes.ResultEvent) error {
 	return nil
 }
 
-func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+func (e *RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, votingTargetAddress string) (*oracletypes.MsgVoteOracleRegistration, error) {
+	log.Infof("verifing oracleRegistration. uniqueID(%s), votingTargetAddress(%s)", uniqueID, votingTargetAddress)
+
 	queryClient := e.reactor.QueryClient()
 	voterAddress := e.reactor.OracleAcc().GetAddress()
 	oraclePrivKeyBz := e.reactor.OraclePrivKey().Serialize()
@@ -91,6 +112,8 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 		voteOption, err := e.verifyAndGetVoteOption(oracleRegistration)
 		if err != nil {
 			log.Infof("vote No due to error while verify: %v", err)
+		} else {
+			log.Infof("verification success. uniqueID(%s), votingTargetAddress(%s)", uniqueID, votingTargetAddress)
 		}
 
 		return makeMsgVoteOracleRegistration(
@@ -109,7 +132,7 @@ func (e RegisterOracleEvent) verifyAndGetMsgVoteOracleRegistration(uniqueID, vot
 // verifyAndGetVoteOption performs a verification to determine a vote.
 // - Verify that trustedBlockInfo registered in OracleRegistration is valid
 // - Verify that the RemoteReport is valid
-func (e RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
+func (e *RegisterOracleEvent) verifyAndGetVoteOption(oracleRegistration *oracletypes.OracleRegistration) (oracletypes.VoteOption, error) {
 	if err := verifyTrustedBlockInfo(e.reactor.QueryClient(), oracleRegistration.TrustedBlockHeight, oracleRegistration.TrustedBlockHash); err != nil {
 		return oracletypes.VOTE_OPTION_NO, err
 	}

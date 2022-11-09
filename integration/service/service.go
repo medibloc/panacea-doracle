@@ -13,8 +13,10 @@ import (
 	dbm "github.com/tendermint/tm-db"
 )
 
-type TestServiceWithoutSGX struct {
-	conf          *config.Config
+type Service struct {
+	conf        *config.Config
+	enclaveInfo *sgx.EnclaveInfo
+
 	oracleAccount *panacea.OracleAccount
 	oraclePrivKey *btcec.PrivateKey
 
@@ -24,20 +26,7 @@ type TestServiceWithoutSGX struct {
 	ipfs        *ipfs.Ipfs
 }
 
-func (s *TestServiceWithoutSGX) BroadcastTx(txBytes []byte) (int64, string, error) {
-	resp, err := s.GRPCClient().BroadcastTx(txBytes)
-	if err != nil {
-		return 0, "", fmt.Errorf("broadcast transaction failed. txBytes(%v)", txBytes)
-	}
-
-	if resp.TxResponse.Code != 0 {
-		return 0, "", fmt.Errorf("transaction failed: %v", resp.TxResponse.RawLog)
-	}
-
-	return resp.TxResponse.Height, resp.TxResponse.TxHash, nil
-}
-
-func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (*TestServiceWithoutSGX, error) {
+func NewTestService(conf *config.Config, info *panacea.TrustedBlockInfo, enclaveInfo *sgx.EnclaveInfo) (*Service, error) {
 	oracleAccount, err := panacea.NewOracleAccount(conf.OracleMnemonic, conf.OracleAccNum, conf.OracleAccIndex)
 	if err != nil {
 		return nil, err
@@ -65,8 +54,9 @@ func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInf
 
 	ipfs := ipfs.NewIpfs(conf.Ipfs.IpfsNodeAddr)
 
-	return &TestServiceWithoutSGX{
+	return &Service{
 		conf:          conf,
+		enclaveInfo:   enclaveInfo,
 		oracleAccount: oracleAccount,
 		oraclePrivKey: oraclePrivKey,
 		queryClient:   queryClient,
@@ -76,30 +66,47 @@ func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInf
 	}, nil
 }
 
-func (s *TestServiceWithoutSGX) Config() *config.Config {
+func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (*Service, error) {
+	return NewTestService(conf, info, nil)
+}
+
+func (s *Service) Config() *config.Config {
 	return s.conf
 }
 
-func (s *TestServiceWithoutSGX) OracleAcc() *panacea.OracleAccount {
+func (s *Service) OracleAcc() *panacea.OracleAccount {
 	return s.oracleAccount
 }
 
-func (s *TestServiceWithoutSGX) OraclePrivKey() *btcec.PrivateKey {
+func (s *Service) OraclePrivKey() *btcec.PrivateKey {
 	return s.oraclePrivKey
 }
 
-func (s *TestServiceWithoutSGX) EnclaveInfo() *sgx.EnclaveInfo {
-	return nil
+func (s *Service) EnclaveInfo() *sgx.EnclaveInfo {
+	return s.enclaveInfo
 }
 
-func (s *TestServiceWithoutSGX) GRPCClient() *panacea.GrpcClient {
+func (s *Service) GRPCClient() *panacea.GrpcClient {
 	return s.grpcClient
 }
 
-func (s *TestServiceWithoutSGX) QueryClient() *panacea.QueryClient {
+func (s *Service) QueryClient() *panacea.QueryClient {
 	return s.queryClient
 }
 
-func (s *TestServiceWithoutSGX) Ipfs() *ipfs.Ipfs {
+func (s *Service) Ipfs() *ipfs.Ipfs {
 	return s.ipfs
+}
+
+func (s *Service) BroadcastTx(txBytes []byte) (int64, string, error) {
+	resp, err := s.GRPCClient().BroadcastTx(txBytes)
+	if err != nil {
+		return 0, "", fmt.Errorf("broadcast transaction failed. txBytes(%v)", txBytes)
+	}
+
+	if resp.TxResponse.Code != 0 {
+		return 0, "", fmt.Errorf("transaction failed: %v", resp.TxResponse.RawLog)
+	}
+
+	return resp.TxResponse.Height, resp.TxResponse.TxHash, nil
 }

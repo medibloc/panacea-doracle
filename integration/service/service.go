@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/medibloc/panacea-doracle/config"
@@ -21,6 +22,19 @@ type TestServiceWithoutSGX struct {
 	grpcClient  *panacea.GrpcClient
 	subscriber  *event.PanaceaSubscriber
 	ipfs        *ipfs.Ipfs
+}
+
+func (s *TestServiceWithoutSGX) BroadcastTx(txBytes []byte) (int64, string, error) {
+	resp, err := s.GRPCClient().BroadcastTx(txBytes)
+	if err != nil {
+		return 0, "", fmt.Errorf("broadcast transaction failed. txBytes(%v)", txBytes)
+	}
+
+	if resp.TxResponse.Code != 0 {
+		return 0, "", fmt.Errorf("transaction failed: %v", resp.TxResponse.RawLog)
+	}
+
+	return resp.TxResponse.Height, resp.TxResponse.TxHash, nil
 }
 
 func NewTestServiceWithoutSGX(conf *config.Config, info *panacea.TrustedBlockInfo) (*TestServiceWithoutSGX, error) {
@@ -84,4 +98,8 @@ func (s *TestServiceWithoutSGX) GRPCClient() *panacea.GrpcClient {
 
 func (s *TestServiceWithoutSGX) QueryClient() *panacea.QueryClient {
 	return s.queryClient
+}
+
+func (s *TestServiceWithoutSGX) Ipfs() *ipfs.Ipfs {
+	return s.ipfs
 }

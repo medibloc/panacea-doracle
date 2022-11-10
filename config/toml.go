@@ -50,6 +50,10 @@ light-client-primary-addr = "{{ .Panacea.LightClientPrimaryAddr }}"
 
 light-client-witness-addrs= "{{ StringsJoin .Panacea.LightClientWitnessAddrs "," }}"
 
+# Setting log information for light client
+
+light-client-log-level = "{{ .Panacea.LightClientLogLevel }}"
+
 ###############################################################################
 ###                         Ipfs Configuration                           ###
 ###############################################################################

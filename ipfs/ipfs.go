@@ -16,7 +16,6 @@ func NewIpfs(url string) *Ipfs {
 	newShell := shell.NewShell(url)
 
 	log.Info("successfully connect to IPFS node")
-
 	return &Ipfs{
 		sh: newShell,
 	}

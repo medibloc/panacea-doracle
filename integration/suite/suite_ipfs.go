@@ -2,7 +2,6 @@ package suite
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	shell "github.com/ipfs/go-ipfs-api"
@@ -17,10 +16,6 @@ type TestSuiteIpfs struct {
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
-}
-
-func Run(t *testing.T, s suite.TestingSuite) {
-	suite.Run(t, s)
 }
 
 func (suite *TestSuiteIpfs) SetupSuite() {

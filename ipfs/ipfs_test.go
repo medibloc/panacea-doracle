@@ -2,12 +2,13 @@ package ipfs_test
 
 import (
 	"encoding/json"
+	"math/rand"
 	"os"
 	"testing"
 
 	"github.com/medibloc/panacea-core/v2/x/datadeal/types"
+	"github.com/medibloc/panacea-doracle/integration/suite"
 	"github.com/medibloc/panacea-doracle/ipfs"
-	"github.com/medibloc/panacea-doracle/ipfs/suite"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,6 +23,7 @@ func TestIpfs(t *testing.T) {
 type testdata struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Id          uint64 `json:"id"`
 }
 
 func (suite *ipfsTestSuite) TestIpfsAdd() {
@@ -30,6 +32,7 @@ func (suite *ipfsTestSuite) TestIpfsAdd() {
 	testData := &testdata{
 		Name:        "panacea",
 		Description: "medibloc mainnet",
+		Id:          rand.Uint64(),
 	}
 
 	testDataBz, err := json.Marshal(testData)

@@ -24,12 +24,8 @@ type testdata struct {
 	Description string `json:"description"`
 }
 
-const (
-	ipfsNodeAddr = "localhost:5001"
-)
-
 func (suite *ipfsTestSuite) TestIpfsAdd() {
-	newIpfs := ipfs.NewIpfs(ipfsNodeAddr)
+	newIpfs := ipfs.NewIpfs(suite.IpfsEndPoint(5001))
 
 	testData := &testdata{
 		Name:        "panacea",
@@ -44,7 +40,7 @@ func (suite *ipfsTestSuite) TestIpfsAdd() {
 }
 
 func (suite *ipfsTestSuite) TestIpfsGet() {
-	newIpfs := ipfs.NewIpfs(ipfsNodeAddr)
+	newIpfs := ipfs.NewIpfs(suite.IpfsEndPoint(5001))
 
 	file, err := os.ReadFile("testdata/test_deal.json")
 	require.NoError(suite.T(), err)
@@ -59,5 +55,9 @@ func (suite *ipfsTestSuite) TestIpfsGet() {
 	err = json.Unmarshal(file, &deal)
 	require.NoError(suite.T(), err)
 
-	require.Equal(suite.T(), deal.DataSchema, getStrings)
+	var deal2 types.Deal
+	err = json.Unmarshal(getStrings, &deal2)
+	require.NoError(suite.T(), err)
+
+	require.Equal(suite.T(), deal, deal2)
 }

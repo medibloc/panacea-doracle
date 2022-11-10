@@ -1,7 +1,9 @@
 package suite
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/ory/dockertest/v3"
@@ -15,6 +17,7 @@ type TestSuiteIpfs struct {
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
+	ipfsHost    string
 }
 
 func Run(t *testing.T, s suite.TestingSuite) {
@@ -34,10 +37,15 @@ func (suite *TestSuiteIpfs) SetupTest() {
 
 	suite.dktResource, err = suite.dktPool.RunWithOptions(
 		&dockertest.RunOptions{
-			Name:         "ipfs_host",
-			Repository:   "ipfs/kubo",
-			Tag:          "latest",
-			ExposedPorts: []string{"4001", "5001", "8080"},
+			Name:       "ipfs_host",
+			Repository: "ipfs/kubo",
+			Tag:        "latest",
+			//ExposedPorts: []string{"4001", "5001", "8080"},
+			//PortBindings: map[docker.Port][]docker.PortBinding{
+			//	"4001/tcp": {{HostIP: "127.0.0.1", HostPort: "4001/tcp"}},
+			//	"5001/tcp": {{HostIP: "127.0.0.1", HostPort: "5001/tcp"}},
+			//	"8080/tcp": {{HostIP: "127.0.0.1", HostPort: "8080/tcp"}},
+			//},
 		},
 		func(config *docker.HostConfig) {
 			config.AutoRemove = true // so that stopped containers are removed automatically
@@ -50,8 +58,12 @@ func (suite *TestSuiteIpfs) SetupTest() {
 		log.Panicf("Could not start resource: %v", err)
 	}
 
+	suite.dktPool.MaxWait = 10 * time.Second
 	if err := suite.dktPool.Retry(func() error {
-		_ = shell.NewShell("localhost:5001")
+		sh := shell.NewShell(suite.IpfsEndPoint(5001))
+		if !sh.IsUp() {
+			return fmt.Errorf("not ready")
+		}
 		return nil
 	}); err != nil {
 		log.Panicf("Could not connect to ipfs: %s", err)
@@ -62,4 +74,11 @@ func (suite *TestSuiteIpfs) TearDownTest() {
 	if err := suite.dktPool.Purge(suite.dktResource); err != nil {
 		log.Printf("Could not purge resource: %s", err)
 	}
+}
+
+func (suite *TestSuiteIpfs) IpfsEndPoint(port int) string {
+	return fmt.Sprintf(
+		"localhost:%s",
+		suite.dktResource.GetPort(fmt.Sprintf("%d/tcp", port)),
+	)
 }

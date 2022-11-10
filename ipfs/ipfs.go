@@ -16,10 +16,13 @@ func NewIpfs(url string) *Ipfs {
 	newShell := shell.NewShell(url)
 
 	log.Info("successfully connect to IPFS node")
-
 	return &Ipfs{
 		sh: newShell,
 	}
+}
+
+func (i *Ipfs) IsUp() bool {
+	return i.sh.IsUp()
 }
 
 // Add method adds a data and returns a CID.

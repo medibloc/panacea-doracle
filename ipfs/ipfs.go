@@ -21,10 +21,6 @@ func NewIpfs(url string) *Ipfs {
 	}
 }
 
-func (i *Ipfs) IsUp() bool {
-	return i.sh.IsUp()
-}
-
 // Add method adds a data and returns a CID.
 func (i *Ipfs) Add(data []byte) (string, error) {
 	reader := bytes.NewReader(data)

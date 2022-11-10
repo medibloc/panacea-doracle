@@ -40,12 +40,6 @@ func (suite *TestSuiteIpfs) SetupTest() {
 			Name:       "ipfs_host",
 			Repository: "ipfs/kubo",
 			Tag:        "latest",
-			//ExposedPorts: []string{"4001", "5001", "8080"},
-			//PortBindings: map[docker.Port][]docker.PortBinding{
-			//	"4001/tcp": {{HostIP: "127.0.0.1", HostPort: "4001/tcp"}},
-			//	"5001/tcp": {{HostIP: "127.0.0.1", HostPort: "5001/tcp"}},
-			//	"8080/tcp": {{HostIP: "127.0.0.1", HostPort: "8080/tcp"}},
-			//},
 		},
 		func(config *docker.HostConfig) {
 			config.AutoRemove = true // so that stopped containers are removed automatically

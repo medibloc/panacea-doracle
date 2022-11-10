@@ -17,7 +17,6 @@ type TestSuiteIpfs struct {
 
 	dktPool     *dockertest.Pool
 	dktResource *dockertest.Resource
-	ipfsHost    string
 }
 
 func Run(t *testing.T, s suite.TestingSuite) {

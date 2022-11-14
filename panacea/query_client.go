@@ -268,7 +268,6 @@ func (q QueryClient) GetStoreData(ctx context.Context, storeKey string, key []by
 			return nil, fmt.Errorf("can not get nextTrustedBlock")
 		}
 	}
-
 	// verify query result with merkle proof & trusted block info
 	merkleProof, err := types.ConvertProofs(result.Response.ProofOps)
 	if err != nil {

@@ -153,7 +153,6 @@ func (s *Service) ValidateData(w http.ResponseWriter, r *http.Request) {
 		UnsignedDataCert: unsignedDataCert,
 		Signature:        sig,
 	}
-	log.Infof("%v", payload)
 
 	marshaledPayload, err := json.Marshal(payload)
 	if err != nil {

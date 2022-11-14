@@ -28,6 +28,6 @@ func New(svc *service.Service) *Server {
 }
 
 func (srv *Server) Run() error {
-	log.Infof("server started on %s", srv.Addr)
+	log.Infof("server is listening on: %s", srv.Addr)
 	return srv.ListenAndServe()
 }

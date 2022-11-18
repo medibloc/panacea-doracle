@@ -2,7 +2,6 @@ package panacea
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -10,13 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
 	datadealtypes "github.com/medibloc/panacea-core/v2/x/datadeal/types"
 	oracletypes "github.com/medibloc/panacea-core/v2/x/oracle/types"
@@ -344,14 +341,14 @@ func (q QueryClient) GetAccount(address string) (authtypes.AccountI, error) {
 	return account, nil
 }
 
-func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID string) (*oracletypes.OracleRegistration, error) {
+func (q QueryClient) GetOracleRegistration(oracleAddr, uniqueID, pubKey string) (*oracletypes.OracleRegistration, error) {
 
 	acc, err := GetAccAddressFromBech32(oracleAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	key := oracletypes.GetOracleRegistrationKey(uniqueID, acc)
+	key := oracletypes.GetOracleRegistrationKey(uniqueID, acc, pubKey)
 
 	bz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, key)
 	if err != nil {
@@ -371,30 +368,30 @@ func (q QueryClient) GetLightBlock(height int64) (*tmtypes.LightBlock, error) {
 	return q.safeVerifyLightBlockAtHeight(context.Background(), height)
 }
 
-func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
-	pubKeyBase64Bz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
-	if err != nil {
-		return nil, err
-	}
-	// TODO: don't need to handle this case after merging https://github.com/medibloc/panacea-doracle/pull/68
-	if pubKeyBase64Bz == nil {
-		return nil, errors.New("the oracle public key's value is nil")
-	}
-
-	// If you get a value from params, you should not use protoCodec, but use legacyAmino.
-	var pubKeyBase64 string
-	err = q.aminoCdc.LegacyAmino.UnmarshalJSON(pubKeyBase64Bz, &pubKeyBase64)
-	if err != nil {
-		return nil, err
-	}
-
-	pubKeyBz, err := base64.StdEncoding.DecodeString(pubKeyBase64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode base64 pubkey: %w", err)
-	}
-
-	return btcec.ParsePubKey(pubKeyBz, btcec.S256())
-}
+//func (q QueryClient) GetOracleParamsPublicKey() (*btcec.PublicKey, error) {
+//	pubKeyBase64Bz, err := q.GetStoreData(context.Background(), paramstypes.StoreKey, append(append([]byte(oracletypes.StoreKey), '/'), oracletypes.KeyOraclePublicKey...))
+//	if err != nil {
+//		return nil, err
+//	}
+//	// TODO: don't need to handle this case after merging https://github.com/medibloc/panacea-doracle/pull/68
+//	if pubKeyBase64Bz == nil {
+//		return nil, errors.New("the oracle public key's value is nil")
+//	}
+//
+//	// If you get a value from params, you should not use protoCodec, but use legacyAmino.
+//	var pubKeyBase64 string
+//	err = q.aminoCdc.LegacyAmino.UnmarshalJSON(pubKeyBase64Bz, &pubKeyBase64)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	pubKeyBz, err := hex.DecodeString(pubKeyBase64)
+//	if err != nil {
+//		return nil, fmt.Errorf("failed to decode hex pubkey: %w", err)
+//	}
+//
+//	return btcec.ParsePubKey(pubKeyBz, btcec.S256())
+//}
 
 func (q QueryClient) GetOracleUpgradeInfo() (*oracletypes.OracleUpgradeInfo, error) {
 	oracleUpgradeInfoBz, err := q.GetStoreData(context.Background(), oracletypes.StoreKey, oracletypes.OracleUpgradeInfoKey)

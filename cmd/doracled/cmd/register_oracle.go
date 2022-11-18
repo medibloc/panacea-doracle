@@ -21,6 +21,12 @@ import (
 	tos "github.com/tendermint/tendermint/libs/os"
 )
 
+const (
+	flagOracleEndpoint       = "oracle-endpoint"
+	flagOracleDescription    = "oracle-description"
+	flagOracleCommissionRate = "oracle-commission-rate"
+)
+
 func registerOracleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-oracle",
@@ -32,10 +38,10 @@ func registerOracleCmd() *cobra.Command {
 			}
 			ctx := context.Background()
 
-			// if node key exists, return error.
-			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
-			if tos.FileExists(nodePrivKeyPath) {
-				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
+			// if oracle key exists, return error.
+			oraclePrivKeyPath := conf.AbsOraclePrivKeyPath()
+			if tos.FileExists(oraclePrivKeyPath) {
+				return errors.New("oracle key already exists. If you want to re-generate oracle key, please delete the oracle_priv_key.sealed file and retry it")
 			}
 
 			// get trusted block information
@@ -57,14 +63,38 @@ func registerOracleCmd() *cobra.Command {
 				return fmt.Errorf("failed to get oracle account from mnemonic: %w", err)
 			}
 
-			// generate node key and its remote report
-			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey(nodePrivKeyPath)
+			// generate oracle key and its remote report
+			oraclePubKey, oraclePubKeyRemoteReport, err := generateOracleKey(oraclePrivKeyPath)
 			if err != nil {
-				return fmt.Errorf("failed to generate node key pair: %w", err)
+				return fmt.Errorf("failed to generate oracle key pair: %w", err)
+			}
+			oraclePubKeyStr := hex.EncodeToString(oraclePubKey)
+
+			report, _ := enclave.VerifyRemoteReport(oraclePubKeyRemoteReport)
+			uniqueID := hex.EncodeToString(report.UniqueID)
+
+			if err := storeOraclePubKey(oraclePubKey, oraclePubKeyRemoteReport, conf.AbsOraclePubKeyPath()); err != nil {
+				return err
 			}
 
-			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
-			uniqueID := hex.EncodeToString(report.UniqueID)
+			endpoint, err := cmd.Flags().GetString(flagOracleEndpoint)
+			if err != nil {
+				return err
+			}
+
+			description, err := cmd.Flags().GetString(flagOracleDescription)
+			if err != nil {
+				return err
+			}
+
+			commissionStr, err := cmd.Flags().GetString(flagOracleCommissionRate)
+			if err != nil {
+				return err
+			}
+			commission, err := sdk.NewDecFromStr(commissionStr)
+			if err != nil {
+				return err
+			}
 
 			nonce := make([]byte, 12)
 			_, err = io.ReadFull(rand.Reader, nonce)
@@ -73,7 +103,7 @@ func registerOracleCmd() *cobra.Command {
 			}
 
 			// sign and broadcast to Panacea
-			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), nodePubKey, nodePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash, nonce)
+			msgRegisterOracle := oracletypes.NewMsgRegisterOracle(uniqueID, oracleAccount.GetAddress(), oraclePubKeyStr, oraclePubKeyRemoteReport, trustedBlockInfo.TrustedBlockHeight, trustedBlockInfo.TrustedBlockHash, endpoint, description, commission, nonce)
 
 			txBuilder := panacea.NewTxBuilder(*queryClient)
 			cli, err := panacea.NewGrpcClient(conf.Panacea.GRPCAddr)
@@ -105,6 +135,9 @@ func registerOracleCmd() *cobra.Command {
 
 	cmd.Flags().Int64(flags.FlagTrustedBlockHeight, 0, "Trusted block height")
 	cmd.Flags().String(flags.FlagTrustedBlockHash, "", "Trusted block hash")
+	cmd.Flags().String(flagOracleEndpoint, "", "endpoint of oracle")
+	cmd.Flags().String(flagOracleDescription, "", "description of oracle")
+	cmd.Flags().String(flagOracleCommissionRate, "0.1", "oracle commission rate")
 	_ = cmd.MarkFlagRequired(flags.FlagTrustedBlockHeight)
 	_ = cmd.MarkFlagRequired(flags.FlagTrustedBlockHash)
 
@@ -140,24 +173,24 @@ func getTrustedBlockInfo(cmd *cobra.Command) (*panacea.TrustedBlockInfo, error) 
 	}, nil
 }
 
-// generateNodeKey generates random node key and its remote report
+// generateOracleKey generates random oracle key and its remote report
 // And the generated private key is sealed and stored
-func generateNodeKey(nodePrivKeyPath string) ([]byte, []byte, error) {
-	nodePrivKey, err := crypto.NewPrivKey()
+func generateOracleKey(oraclePrivKeyPath string) ([]byte, []byte, error) {
+	oraclePrivKey, err := crypto.NewPrivKey()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := sgx.SealToFile(nodePrivKey.Serialize(), nodePrivKeyPath); err != nil {
+	if err := sgx.SealToFile(oraclePrivKey.Serialize(), oraclePrivKeyPath); err != nil {
 		return nil, nil, err
 	}
 
-	nodePubKey := nodePrivKey.PubKey().SerializeCompressed()
-	oraclePubKeyHash := sha256.Sum256(nodePubKey)
-	nodeKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:])
+	oraclePubKey := oraclePrivKey.PubKey().SerializeCompressed()
+	oraclePubKeyHash := sha256.Sum256(oraclePubKey)
+	oracleKeyRemoteReport, err := sgx.GenerateRemoteReport(oraclePubKeyHash[:])
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return nodePubKey, nodeKeyRemoteReport, nil
+	return oraclePubKey, oracleKeyRemoteReport, nil
 }

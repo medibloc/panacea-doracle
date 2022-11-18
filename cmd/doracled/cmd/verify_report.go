@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -52,12 +52,12 @@ func readOracleRemoteReport(filename string) (*OraclePubKeyInfo, error) {
 }
 
 func verifyPubKeyRemoteReport(pubKeyInfo OraclePubKeyInfo) error {
-	pubKey, err := base64.StdEncoding.DecodeString(pubKeyInfo.PublicKeyBase64)
+	pubKey, err := hex.DecodeString(pubKeyInfo.PublicKeyHex)
 	if err != nil {
 		return fmt.Errorf("failed to decode oracle public key: %w", err)
 	}
 
-	targetReport, err := base64.StdEncoding.DecodeString(pubKeyInfo.RemoteReportBase64)
+	targetReport, err := hex.DecodeString(pubKeyInfo.RemoteReportHex)
 	if err != nil {
 		return fmt.Errorf("failed to decode oracle public key remote report: %w", err)
 	}

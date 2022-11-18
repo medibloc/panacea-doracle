@@ -11,7 +11,7 @@ require (
 	github.com/edgelesssys/ego v1.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/ipfs/go-ipfs-api v0.3.0
-	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221114045231-2ac691557cef
+	github.com/medibloc/panacea-core/v2 v2.1.0-alpha2.0.20221118020406-654c7d199021
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0

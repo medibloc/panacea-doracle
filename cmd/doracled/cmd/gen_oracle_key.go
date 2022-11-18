@@ -3,7 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,17 +21,14 @@ import (
 
 // OraclePubKeyInfo is a struct to store oracle public key and its remote report
 type OraclePubKeyInfo struct {
-	PublicKeyBase64    string `json:"public_key_base64"`
-	RemoteReportBase64 string `json:"remote_report_base64"`
+	PublicKeyHex    string `json:"public_key_hex"`
+	RemoteReportHex string `json:"remote_report_hex"`
 }
 
-func genOracleKeyCmd() *cobra.Command {
+func genOracleCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "gen-oracle-key",
-		Short: "Generate oracle key and its remote report",
-		Long: `Generate a new pair of oracle key and its remote report. 
-If the sealed oracle private key exist already, this command will replace the existing one.
-So please be cautious in using this command.`,
+		Use:   "gen-oracle",
+		Short: "Genesis oracle",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf, err := loadConfigFromHome(cmd)
 			if err != nil {
@@ -104,8 +101,8 @@ So please be cautious in using this command.`,
 // storeOraclePubKey stores base64-encoded oracle public key and its remote report
 func storeOraclePubKey(oraclePubKey, oracleKeyRemoteReport []byte, filePath string) error {
 	oraclePubKeyData := OraclePubKeyInfo{
-		PublicKeyBase64:    base64.StdEncoding.EncodeToString(oraclePubKey),
-		RemoteReportBase64: base64.StdEncoding.EncodeToString(oracleKeyRemoteReport),
+		PublicKeyHex:    hex.EncodeToString(oraclePubKey),
+		RemoteReportHex: hex.EncodeToString(oracleKeyRemoteReport),
 	}
 
 	oraclePubKeyFile, err := json.Marshal(oraclePubKeyData)

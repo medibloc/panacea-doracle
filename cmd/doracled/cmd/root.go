@@ -52,10 +52,10 @@ func init() {
 	rootCmd.AddCommand(
 		initCmd(),
 		startCmd(),
-		genOracleKeyCmd(),
+		genOracleCmd(),
 		verifyReportCmd(),
 		registerOracleCmd(),
-		getOracleKeyCmd(),
+		//getOracleKeyCmd(),
 		upgradeOracleCmd(),
 	)
 }

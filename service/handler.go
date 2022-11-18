@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/medibloc/panacea-doracle/validation"
 	"net/http"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -79,11 +80,11 @@ func (s *Service) ValidateData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// skip schema validation
-	//if err := validation.ValidateJSONSchemata(decryptedData, deal.DataSchema); err != nil {
-	//	http.Error(w, "invalid data schema", http.StatusBadRequest)
-	//	return
-	//}
+	// schema validation
+	if err := validation.ValidateJSONSchemata(decryptedData, deal.DataSchema); err != nil {
+		http.Error(w, "invalid data schema", http.StatusBadRequest)
+		return
+	}
 
 	// ***************** 2. re-encrypt data *****************
 

@@ -30,7 +30,7 @@ func upgradeOracleCmd() *cobra.Command {
 			ctx := context.Background()
 
 			// if node key exists, return error.
-			nodePrivKeyPath := conf.AbsNodePrivKeyPath()
+			nodePrivKeyPath := conf.AbsOraclePrivKeyPath()
 			if os.FileExists(nodePrivKeyPath) {
 				return errors.New("node key already exists. If you want to re-generate node key, please delete the node_priv_key.sealed file and retry it")
 			}
@@ -55,11 +55,11 @@ func upgradeOracleCmd() *cobra.Command {
 			}
 
 			// generate node key and its remote report
-			nodePubKey, nodePubKeyRemoteReport, err := generateNodeKey(nodePrivKeyPath)
+			nodePubKey, nodePubKeyRemoteReport, err := generateOracleKey(nodePrivKeyPath)
 			if err != nil {
 				return fmt.Errorf("failed to generate node key pair: %w", err)
 			}
-
+			nodePubKeyStr := hex.EncodeToString(nodePubKey)
 			report, _ := enclave.VerifyRemoteReport(nodePubKeyRemoteReport)
 			uniqueID := hex.EncodeToString(report.UniqueID)
 
@@ -72,7 +72,7 @@ func upgradeOracleCmd() *cobra.Command {
 			msg := oracletypes.NewMsgUpgradeOracle(
 				uniqueID,
 				oracleAccount.GetAddress(),
-				nodePubKey,
+				nodePubKeyStr,
 				nodePubKeyRemoteReport,
 				trustedBlockInfo.TrustedBlockHeight,
 				trustedBlockInfo.TrustedBlockHash,
